@@ -1,5 +1,10 @@
+import { OrdersList } from "@/features/orders";
 import { PageShell } from "@/shared/ui/page-shell";
 
 export function HomePage() {
-  return <PageShell />;
+  return (
+    <PageShell>
+      <OrdersList />
+    </PageShell>
+  );
 }

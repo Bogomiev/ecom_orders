@@ -1,1 +1,1 @@
-export type { Order, OrderStatus } from "./model/types";
+export type { DateTime, Order, OrdersResponse } from "./model/types";

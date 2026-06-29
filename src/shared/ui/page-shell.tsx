@@ -6,7 +6,7 @@ type PageShellProps = {
 
 export function PageShell({ children }: PageShellProps) {
   return (
-    <main className="mx-auto min-h-screen w-full max-w-7xl px-4 py-8">
+    <main className="min-h-screen w-full px-4 pb-8 pt-3">
       {children}
     </main>
   );
