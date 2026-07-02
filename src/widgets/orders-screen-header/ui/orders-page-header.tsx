@@ -1,14 +1,21 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import {
+  PageNotificationStack,
+  type PageNotification
+} from "@/shared/ui/page-notification";
+import { playNotificationSound } from "@/shared/lib/notification-sound";
+import { showSystemNotification } from "@/shared/lib/system-notification";
+
 const SHOP_NAME = "Икорный";
+const NOTIFICATION_TITLE = "Икорный: сборка";
+const TEST_NOTIFICATION_BODY = "Проверка уведомлений для экрана сборки.";
+const TOAST_VISIBLE_MS = 8000;
 
 type OrdersPageHeaderProps = {
   currentTime: Date;
   ordersCount: number;
-};
-
-type HeaderMetricCardProps = {
-  className?: string;
-  label: string;
-  value: string | number;
 };
 
 const HEADER_LABEL_CLASS =
@@ -22,20 +29,15 @@ function formatCurrentTime(value: Date) {
   }).format(value);
 }
 
-function HeaderMetricCard({
-  className = "min-w-36",
-  label,
-  value
-}: HeaderMetricCardProps) {
+function SignalTestButton({ onClick }: { onClick: () => void }) {
   return (
-    <div
-      className={`rounded-xl border border-slate-200 bg-white/70 px-4 py-3 shadow-sm shadow-slate-300/40 ${className}`}
+    <button
+      className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
+      type="button"
+      onClick={onClick}
     >
-      <div className={HEADER_LABEL_CLASS}>{label}</div>
-      <div className="mt-2 text-3xl font-bold leading-none text-slate-950">
-        {value}
-      </div>
-    </div>
+      Тест сигнала и уведомлений
+    </button>
   );
 }
 
@@ -52,17 +54,23 @@ export function OrdersHeaderTitle() {
 
 export function CurrentTimeCard({ currentTime }: { currentTime: Date }) {
   return (
-    <HeaderMetricCard label="Сейчас" value={formatCurrentTime(currentTime)} />
+    <div className="min-w-36 rounded-xl border border-slate-200 bg-white/70 px-4 py-3 shadow-sm shadow-slate-300/40">
+      <div className={HEADER_LABEL_CLASS}>Сейчас</div>
+      <div className="mt-2 text-3xl font-bold leading-none text-slate-950">
+        {formatCurrentTime(currentTime)}
+      </div>
+    </div>
   );
 }
 
 export function OrdersCountCard({ ordersCount }: { ordersCount: number }) {
   return (
-    <HeaderMetricCard
-      className="min-w-28"
-      label="На экране"
-      value={ordersCount}
-    />
+    <div className="min-w-28 rounded-xl border border-slate-200 bg-white/70 px-4 py-3 shadow-sm shadow-slate-300/40">
+      <div className={HEADER_LABEL_CLASS}>На экране</div>
+      <div className="mt-2 text-3xl font-bold leading-none text-slate-950">
+        {ordersCount}
+      </div>
+    </div>
   );
 }
 
@@ -70,13 +78,72 @@ export function OrdersPageHeader({
   currentTime,
   ordersCount
 }: OrdersPageHeaderProps) {
+  const [notifications, setNotifications] = useState<PageNotification[]>([]);
+
+  useEffect(() => {
+    if (notifications.length === 0) {
+      return;
+    }
+
+    const latestNotificationId = notifications[notifications.length - 1]?.id;
+    const timeoutId = window.setTimeout(() => {
+      if (latestNotificationId === undefined) {
+        return;
+      }
+
+      setNotifications((currentNotifications) =>
+        currentNotifications.filter(
+          (notification) => notification.id !== latestNotificationId
+        )
+      );
+    }, TOAST_VISIBLE_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [notifications]);
+
+  function closeNotification(id: number) {
+    setNotifications((currentNotifications) =>
+      currentNotifications.filter((notification) => notification.id !== id)
+    );
+  }
+
+  function handleSignalTestClick() {
+    playNotificationSound();
+    showSystemNotification(NOTIFICATION_TITLE, {
+      body: TEST_NOTIFICATION_BODY,
+      tag: "assembly-notification-test"
+    });
+    setNotifications((currentNotifications) => [
+      ...currentNotifications,
+      {
+        body: TEST_NOTIFICATION_BODY,
+        id: Date.now(),
+        title: NOTIFICATION_TITLE,
+        tone: "info"
+      }
+    ]);
+  }
+
   return (
-    <header className="w-full rounded-3xl border border-white/80 bg-blue-50/70 px-6 py-5 shadow-sm shadow-slate-200/60">
-      <OrdersHeaderTitle />
-      <div className="mt-3 flex flex-wrap gap-3">
-        <CurrentTimeCard currentTime={currentTime} />
-        <OrdersCountCard ordersCount={ordersCount} />
-      </div>
-    </header>
+    <>
+      <header className="w-full rounded-3xl border border-white/80 bg-blue-50/70 px-6 py-5 shadow-sm shadow-slate-200/60">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <OrdersHeaderTitle />
+            <div className="mt-3 flex flex-wrap gap-3">
+              <CurrentTimeCard currentTime={currentTime} />
+              <OrdersCountCard ordersCount={ordersCount} />
+            </div>
+          </div>
+          <SignalTestButton onClick={handleSignalTestClick} />
+        </div>
+      </header>
+      <PageNotificationStack
+        notifications={notifications}
+        onClose={closeNotification}
+      />
+    </>
   );
 }
