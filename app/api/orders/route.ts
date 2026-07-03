@@ -36,7 +36,7 @@ const MOCK_ORDERS: Order[] = [
     updated: mockCreatedAt.toISOString(),
     shipment_store_ref: "STORE-001",
     shipment_store_name: "Интернет-магазин МСК",
-    shipmentStorePhone: "89265252286"
+    shipment_store_phone: "89265252286"
   },
   {
     id: "p3ykz7e2m0n1a8q",
@@ -68,7 +68,7 @@ const MOCK_ORDERS: Order[] = [
     updated: mockCreatedAt.toISOString(),
     shipment_store_ref: "STORE-002",
     shipment_store_name: "Пункт выдачи Север",
-    shipmentStorePhone: "84951234567"
+    shipment_store_phone: "84951234567"
   },
   {
     id: "q8l2m4b6v9s0x1c",
@@ -98,7 +98,7 @@ const MOCK_ORDERS: Order[] = [
     updated: mockCreatedAt.toISOString(),
     shipment_store_ref: "STORE-003",
     shipment_store_name: "Магазин Восток",
-    shipmentStorePhone: "88005553535"
+    shipment_store_phone: "88005553535"
   },
   {
     id: "q8l2m4b6v9s0x5c",
@@ -128,7 +128,7 @@ const MOCK_ORDERS: Order[] = [
     updated: mockCreatedAt.toISOString(),
     shipment_store_ref: "STORE-003",
     shipment_store_name: "Магазин Восток",
-    shipmentStorePhone: "88007006050"
+    shipment_store_phone: "88007006050"
   }
 ];
 

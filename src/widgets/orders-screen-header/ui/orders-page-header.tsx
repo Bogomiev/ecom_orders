@@ -11,6 +11,7 @@ import { showSystemNotification } from "@/shared/lib/system-notification";
 const SHOP_NAME = "Икорный";
 const NOTIFICATION_TITLE = "Икорный: сборка";
 const TEST_NOTIFICATION_BODY = "Проверка уведомлений для экрана сборки.";
+const ACTIVE_ORDERS_NOTIFICATION_INTERVAL_MS = 60_000;
 const TOAST_VISIBLE_MS = 8000;
 
 type OrdersPageHeaderProps = {
@@ -27,6 +28,30 @@ function formatCurrentTime(value: Date) {
     minute: "2-digit",
     second: "2-digit"
   }).format(value);
+}
+
+function getOrderCountLabel(ordersCount: number) {
+  const absoluteCount = Math.abs(ordersCount);
+  const lastTwoDigits = absoluteCount % 100;
+  const lastDigit = absoluteCount % 10;
+
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) {
+    return `${ordersCount} заказов`;
+  }
+
+  if (lastDigit === 1) {
+    return `${ordersCount} заказ`;
+  }
+
+  if (lastDigit >= 2 && lastDigit <= 4) {
+    return `${ordersCount} заказа`;
+  }
+
+  return `${ordersCount} заказов`;
+}
+
+function getActiveOrdersNotificationBody(ordersCount: number) {
+  return `В очереди сборки остается ${getOrderCountLabel(ordersCount)}`;
 }
 
 function SignalTestButton({ onClick }: { onClick: () => void }) {
@@ -79,6 +104,40 @@ export function OrdersPageHeader({
   ordersCount
 }: OrdersPageHeaderProps) {
   const [notifications, setNotifications] = useState<PageNotification[]>([]);
+
+  useEffect(() => {
+    if (ordersCount === 0) {
+      return;
+    }
+
+    function notifyAboutActiveOrders() {
+      const body = getActiveOrdersNotificationBody(ordersCount);
+
+      playNotificationSound();
+      showSystemNotification(NOTIFICATION_TITLE, {
+        body,
+        tag: "assembly-active-orders"
+      });
+      setNotifications((currentNotifications) => [
+        ...currentNotifications,
+        {
+          body,
+          id: Date.now(),
+          title: NOTIFICATION_TITLE,
+          tone: "warning"
+        }
+      ]);
+    }
+
+    const intervalId = window.setInterval(
+      notifyAboutActiveOrders,
+      ACTIVE_ORDERS_NOTIFICATION_INTERVAL_MS
+    );
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [ordersCount]);
 
   useEffect(() => {
     if (notifications.length === 0) {

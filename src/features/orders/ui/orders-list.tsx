@@ -175,7 +175,7 @@ function OrderCard({ order, now }: { order: Order; now: Date }) {
         </div>
         <div className="flex min-w-0 items-center gap-2">
           <InfoIcon type="phone" />
-          <span>Тел: {order.shipmentStorePhone}</span>
+          <span>Тел: {order.shipment_store_phone}</span>
         </div>
         <div className="flex min-w-0 items-center gap-2">
           <InfoIcon type="clock" />

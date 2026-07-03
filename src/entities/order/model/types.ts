@@ -26,7 +26,7 @@ export type Order = {
   updated: DateTime;
   shipment_store_ref: string;
   shipment_store_name: string;
-  shipmentStorePhone: string;
+  shipment_store_phone: string;
 };
 
 export type OrdersResponse = {
