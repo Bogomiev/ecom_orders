@@ -34,7 +34,7 @@ const MOCK_ORDERS: Order[] = [
     raw_ozon: {},
     created: mockCreatedAt.toISOString(),
     updated: mockCreatedAt.toISOString(),
-    shipment_store_ref: "STORE-001",
+    shipment_store_ref: "4h4bve3pp13brab",
     shipment_store_name: "Интернет-магазин МСК",
     shipment_store_phone: "89265252286"
   },
@@ -66,8 +66,8 @@ const MOCK_ORDERS: Order[] = [
     },
     created: mockCreatedAt.toISOString(),
     updated: mockCreatedAt.toISOString(),
-    shipment_store_ref: "STORE-002",
-    shipment_store_name: "Пункт выдачи Север",
+    shipment_store_ref: "p8k2n4s7v9q1x3d",
+    shipment_store_name: "Магазин Отрадное",
     shipment_store_phone: "84951234567"
   },
   {
@@ -96,8 +96,8 @@ const MOCK_ORDERS: Order[] = [
     raw_ozon: {},
     created: mockCreatedAt.toISOString(),
     updated: mockCreatedAt.toISOString(),
-    shipment_store_ref: "STORE-003",
-    shipment_store_name: "Магазин Восток",
+    shipment_store_ref: "m3d9r2h6t1w8c4z",
+    shipment_store_name: "Магазин Бутово",
     shipment_store_phone: "88005553535"
   },
   {
@@ -126,8 +126,8 @@ const MOCK_ORDERS: Order[] = [
     raw_ozon: {},
     created: mockCreatedAt.toISOString(),
     updated: mockCreatedAt.toISOString(),
-    shipment_store_ref: "STORE-003",
-    shipment_store_name: "Магазин Восток",
+    shipment_store_ref: "r6v1j8p4b9n2k5y",
+    shipment_store_name: "Магазин Химки",
     shipment_store_phone: "88007006050"
   }
 ];

@@ -5,6 +5,7 @@ export type Store = {
   uid_1c: string;
   address: string;
   contact: string;
+  manual: boolean;
 };
 
 export type StoresResponse = {

@@ -1,7 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Order, OrdersResponse } from "@/entities/order";
+import {
+  getStoredStoreSelection,
+  STORE_SELECTION_CHANGE_EVENT,
+  type StoreSelectionSnapshot
+} from "@/entities/store/model/store-selection";
 import { OrdersPageHeader } from "@/widgets/orders-screen-header";
 import {
   fetchOrders,
@@ -189,7 +194,32 @@ function OrderCard({ order, now }: { order: Order; now: Date }) {
 export function OrdersList() {
   const [state, setState] = useState<OrdersState>(initialState);
   const [now, setNow] = useState(() => new Date());
+  const [selectedStore, setSelectedStore] = useState<StoreSelectionSnapshot>(null);
   const isRequestInFlightRef = useRef(false);
+
+  useEffect(() => {
+    setSelectedStore(getStoredStoreSelection());
+
+    function handleStoreSelectionChange(event: Event) {
+      setSelectedStore(
+        event instanceof CustomEvent
+          ? (event.detail as StoreSelectionSnapshot)
+          : getStoredStoreSelection()
+      );
+    }
+
+    window.addEventListener(
+      STORE_SELECTION_CHANGE_EVENT,
+      handleStoreSelectionChange
+    );
+
+    return () => {
+      window.removeEventListener(
+        STORE_SELECTION_CHANGE_EVENT,
+        handleStoreSelectionChange
+      );
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -263,8 +293,18 @@ export function OrdersList() {
     };
   }, []);
 
-  const orders = state.data?.items ?? [];
-  const ordersCount = state.data?.totalItems ?? orders.length;
+  const filteredOrders = useMemo(() => {
+    const orders = state.data?.items ?? [];
+
+    if (selectedStore === null) {
+      return orders;
+    }
+
+    return orders.filter(
+      (order) => order.shipment_store_name === selectedStore.name
+    );
+  }, [selectedStore, state.data]);
+  const ordersCount = filteredOrders.length;
 
   return (
     <section className="space-y-3">
@@ -282,15 +322,15 @@ export function OrdersList() {
         </div>
       ) : null}
 
-      {!state.isLoading && orders.length === 0 ? (
+      {!state.isLoading && filteredOrders.length === 0 ? (
         <div className="rounded-lg border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-600">
           Заказов пока нет
         </div>
       ) : null}
 
-      {orders.length > 0 ? (
+      {filteredOrders.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {orders.map((order) => (
+          {filteredOrders.map((order) => (
             <OrderCard key={order.id} now={now} order={order} />
           ))}
         </div>

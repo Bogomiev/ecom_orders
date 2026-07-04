@@ -7,6 +7,7 @@ import {
 } from "@/shared/ui/page-notification";
 import { playNotificationSound } from "@/shared/lib/notification-sound";
 import { showSystemNotification } from "@/shared/lib/system-notification";
+import { StoreSelector } from "@/widgets/store-selector";
 
 const SHOP_NAME = "Икорный";
 const NOTIFICATION_TITLE = "Икорный: сборка";
@@ -196,7 +197,10 @@ export function OrdersPageHeader({
               <OrdersCountCard ordersCount={ordersCount} />
             </div>
           </div>
-          <SignalTestButton onClick={handleSignalTestClick} />
+          <div className="flex flex-col gap-3 sm:flex-row lg:items-start">
+            <StoreSelector />
+            <SignalTestButton onClick={handleSignalTestClick} />
+          </div>
         </div>
       </header>
       <PageNotificationStack
