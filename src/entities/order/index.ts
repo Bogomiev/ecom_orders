@@ -1,1 +1,7 @@
-export type { DateTime, Order, OrdersResponse } from "./model/types";
+export type {
+  DateTime,
+  Order,
+  OrderControlledItem,
+  OrderItem,
+  OrdersResponse
+} from "./model/types";

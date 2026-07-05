@@ -1,4 +1,4 @@
-export type ProductBarcode = {
+export type BarcodeInfo = {
   barcode: string;
   unit: string;
   ratio: number;
@@ -9,7 +9,8 @@ export type Product = {
   uid: string;
   code: string;
   name: string;
-  barcodes: ProductBarcode[];
+  markingType: string;
+  barcodes: BarcodeInfo[];
 };
 
 export type ProductsResponse = Product[];

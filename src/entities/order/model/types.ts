@@ -1,5 +1,21 @@
 export type DateTime = string;
 
+export type OrderItem = {
+  productId: string;
+  productName: string;
+  markingProduct: boolean;
+  quantity: number;
+  price: number;
+  amount: number;
+};
+
+export type OrderControlledItem = {
+  productId: string;
+  productName: string;
+  quantity: number;
+  mark: string;
+};
+
 export type Order = {
   id: string;
   external_id: string;
@@ -27,6 +43,8 @@ export type Order = {
   shipment_store_ref: string;
   shipment_store_name: string;
   shipment_store_phone: string;
+  items: OrderItem[];
+  controlledItems: OrderControlledItem[];
 };
 
 export type OrdersResponse = {

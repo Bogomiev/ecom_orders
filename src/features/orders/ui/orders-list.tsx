@@ -12,6 +12,7 @@ import {
   fetchOrders,
   ORDERS_REFRESH_INTERVAL_SECONDS
 } from "../api/orders";
+import { OrderControl } from "./order-control";
 
 type OrdersState = {
   data: OrdersResponse | null;
@@ -134,13 +135,25 @@ function InfoIcon({ type }: { type: "box" | "phone" | "clock" }) {
   );
 }
 
-function OrderCard({ order, now }: { order: Order; now: Date }) {
+function OrderCard({
+  now,
+  onOpen,
+  order
+}: {
+  now: Date;
+  onOpen: (order: Order) => void;
+  order: Order;
+}) {
   const countdown = formatCountdown(order.delivery_date, now);
   const statusColor = getStatusColor(order.status);
   const siteBadgeClass = getSiteBadgeClass(order.site);
 
   return (
-    <article className="rounded-xl border border-slate-200 bg-white px-3 py-3 shadow-sm shadow-slate-200/70">
+    <button
+      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-left shadow-sm shadow-slate-200/70 transition hover:border-slate-300 hover:bg-slate-50 hover:shadow-md hover:shadow-slate-300/60 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"
+      type="button"
+      onClick={() => onOpen(order)}
+    >
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
         <span
           className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${siteBadgeClass}`}
@@ -187,7 +200,7 @@ function OrderCard({ order, now }: { order: Order; now: Date }) {
           <span>Интервал: {order.delivery_time}</span>
         </div>
       </div>
-    </article>
+    </button>
   );
 }
 
@@ -195,6 +208,7 @@ export function OrdersList() {
   const [state, setState] = useState<OrdersState>(initialState);
   const [now, setNow] = useState(() => new Date());
   const [selectedStore, setSelectedStore] = useState<StoreSelectionSnapshot>(null);
+  const [controlOrder, setControlOrder] = useState<Order | null>(null);
   const isRequestInFlightRef = useRef(false);
 
   useEffect(() => {
@@ -331,11 +345,21 @@ export function OrdersList() {
       {filteredOrders.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {filteredOrders.map((order) => (
-            <OrderCard key={order.id} now={now} order={order} />
+            <OrderCard
+              key={order.id}
+              now={now}
+              order={order}
+              onOpen={setControlOrder}
+            />
           ))}
         </div>
       ) : null}
 
+      <OrderControl
+        isOpen={controlOrder !== null}
+        order={controlOrder}
+        onClose={() => setControlOrder(null)}
+      />
     </section>
   );
 }

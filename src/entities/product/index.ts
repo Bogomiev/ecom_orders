@@ -1,1 +1,1 @@
-export type { Product, ProductBarcode, ProductsResponse } from "./model/types";
+export type { BarcodeInfo, Product, ProductsResponse } from "./model/types";
