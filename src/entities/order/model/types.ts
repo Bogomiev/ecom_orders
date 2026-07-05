@@ -7,6 +7,7 @@ export type OrderItem = {
   quantity: number;
   price: number;
   amount: number;
+  quantityFact: number;
 };
 
 export type OrderControlledItem = {
@@ -14,6 +15,7 @@ export type OrderControlledItem = {
   productName: string;
   quantity: number;
   mark: string;
+  result: boolean;
 };
 
 export type Order = {

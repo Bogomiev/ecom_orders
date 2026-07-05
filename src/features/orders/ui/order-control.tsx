@@ -1,21 +1,26 @@
 "use client";
 
-import { useEffect } from "react";
-import type { Order, OrderItem } from "@/entities/order";
+import { useEffect, useRef, useState } from "react";
+import type { Order, OrderControlledItem, OrderItem } from "@/entities/order";
+import type { Product } from "@/entities/product";
 
 type OrderControlProps = {
   isOpen: boolean;
   onClose: () => void;
+  onOrderChange: (order: Order) => void;
   order: Order | null;
+  products: Product[];
 };
 
-type ProcessingResultLine = {
-  id: string;
-  name: string;
-  quantity: number;
-  mark: string;
-  result: "Ожидает проверки" | "Проверено" | "Ошибка маркировки";
+type ScanNotification = {
+  id: number;
+  message: string;
+  tone: "warning" | "error";
 };
+
+const BARCODE_SCANNER_CAPTURE_EVENT = "order-control:barcode-scanner-capture";
+const SCANNER_MAX_KEY_INTERVAL_MS = 80;
+const SCANNER_MIN_BARCODE_LENGTH = 6;
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat("ru-RU", {
@@ -31,14 +36,250 @@ function formatMoney(value: number) {
   }).format(value);
 }
 
+function isPrintableScannerKey(event: KeyboardEvent) {
+  return (
+    event.key.length === 1 &&
+    !event.altKey &&
+    !event.ctrlKey &&
+    !event.metaKey
+  );
+}
+
+function isEditableElement(element: Element | null) {
+  if (element === null) {
+    return false;
+  }
+
+  return (
+    element instanceof HTMLInputElement ||
+    element instanceof HTMLTextAreaElement ||
+    element instanceof HTMLSelectElement ||
+    element.closest("[contenteditable='true']") !== null
+  );
+}
+
 function OrderControlDetailsPanel({
   lines,
-  order
+  onOrderChange,
+  onNotify,
+  order,
+  products
 }: {
   lines: OrderItem[];
+  onOrderChange: (order: Order) => void;
+  onNotify: (message: string, tone: ScanNotification["tone"]) => void;
   order: Order;
+  products: Product[];
 }) {
+  const barcodeSearchInputRef = useRef<HTMLInputElement>(null);
+  const scannerBufferRef = useRef({
+    lastAt: 0,
+    startedAt: 0,
+    value: ""
+  });
+  const submitBarcodeSearchRef = useRef<(value: string) => void>(() => undefined);
+  const [barcodeSearch, setBarcodeSearch] = useState("");
   const total = lines.reduce((sum, line) => sum + line.amount, 0);
+
+  useEffect(() => {
+    const input = barcodeSearchInputRef.current;
+
+    if (input === null) {
+      return;
+    }
+
+    input.focus();
+    input.select();
+  }, [order.id]);
+
+  useEffect(() => {
+    function focusBarcodeSearchInput(event: KeyboardEvent) {
+      const input = barcodeSearchInputRef.current;
+
+      if (
+        input === null ||
+        document.activeElement === input ||
+        isEditableElement(document.activeElement)
+      ) {
+        return;
+      }
+
+      if (isPrintableScannerKey(event)) {
+        event.preventDefault();
+        input.focus();
+        setBarcodeSearch(event.key);
+        return;
+      }
+
+      if (event.key === "Enter") {
+        input.focus();
+      }
+    }
+
+    window.addEventListener("keydown", focusBarcodeSearchInput, {
+      capture: true
+    });
+
+    return () => {
+      window.removeEventListener("keydown", focusBarcodeSearchInput, {
+        capture: true
+      });
+    };
+  }, []);
+
+  useEffect(() => {
+    function resetScannerBuffer() {
+      scannerBufferRef.current = {
+        lastAt: 0,
+        startedAt: 0,
+        value: ""
+      };
+    }
+
+    function captureScannerInput(event: KeyboardEvent) {
+      const now = event.timeStamp;
+      const buffer = scannerBufferRef.current;
+
+      if (isPrintableScannerKey(event)) {
+        const shouldStartNewBuffer =
+          buffer.value.length === 0 ||
+          now - buffer.lastAt > SCANNER_MAX_KEY_INTERVAL_MS;
+
+        scannerBufferRef.current = {
+          lastAt: now,
+          startedAt: shouldStartNewBuffer ? now : buffer.startedAt,
+          value: shouldStartNewBuffer
+            ? event.key
+            : `${buffer.value}${event.key}`
+        };
+        return;
+      }
+
+      if (event.key !== "Enter") {
+        return;
+      }
+
+      const bufferedBarcode = buffer.value;
+      const barcodeSearchInput = barcodeSearchInputRef.current;
+      const inputBarcode =
+        barcodeSearchInput !== null && document.activeElement === barcodeSearchInput
+          ? barcodeSearchInput.value.trim()
+          : "";
+      const barcode =
+        inputBarcode.length > bufferedBarcode.length
+          ? inputBarcode
+          : bufferedBarcode;
+      const elapsedMs = buffer.lastAt - buffer.startedAt;
+      const maxElapsedMs = Math.max(
+        250,
+        barcode.length * SCANNER_MAX_KEY_INTERVAL_MS
+      );
+      const isScannerInput =
+        barcode.length >= SCANNER_MIN_BARCODE_LENGTH && elapsedMs <= maxElapsedMs;
+
+      resetScannerBuffer();
+
+      if (!isScannerInput) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      submitBarcodeSearchRef.current(barcode);
+    }
+
+    window.addEventListener("keydown", captureScannerInput, {
+      capture: true
+    });
+
+    return () => {
+      window.removeEventListener("keydown", captureScannerInput, {
+        capture: true
+      });
+    };
+  }, []);
+
+  function handleScannedBarcode(scannedBarcode: string) {
+    const barcode = scannedBarcode.trim();
+
+    if (barcode.length === 0) {
+      return;
+    }
+
+    const product = products.find((candidate) =>
+      candidate.barcodes.some((productBarcode) => productBarcode.barcode === barcode)
+    );
+
+    if (product === undefined) {
+      onNotify(`Штрихкод ${barcode} не найден в справочнике товаров`, "error");
+      return;
+    }
+
+    const barcodeInfo = product.barcodes.find(
+      (productBarcode) => productBarcode.barcode === barcode
+    );
+    const orderItem = order.items.find((item) => item.productId === product.uid);
+
+    if (orderItem === undefined) {
+      onNotify(`Товар ${product.name} отсутствует в заказе`, "error");
+      return;
+    }
+
+    const shouldAddControlledItem = orderItem.markingProduct;
+    const isAlreadyControlled =
+      shouldAddControlledItem &&
+      order.controlledItems.some(
+        (controlledItem) => controlledItem.mark === barcode
+      );
+
+    if (isAlreadyControlled) {
+      onNotify(
+        `Просканированный штриход товара ${product.name} уже добавлен в заказ`,
+        "warning"
+      );
+      return;
+    }
+
+    const quantityToAdd = barcodeInfo?.ratio ?? 1;
+    const nextOrder: Order = {
+      ...order,
+      items: order.items.map((item) =>
+        item.productId === product.uid
+          ? {
+              ...item,
+              quantityFact: item.quantityFact + quantityToAdd
+            }
+          : item
+      ),
+      controlledItems: shouldAddControlledItem
+        ? [
+            ...order.controlledItems,
+            {
+              productId: product.uid,
+              productName: product.name,
+              quantity: quantityToAdd,
+              mark: barcode,
+              result: true
+            }
+          ]
+        : order.controlledItems
+    };
+
+    onOrderChange(nextOrder);
+  }
+
+  function submitBarcodeSearch(value: string) {
+    handleScannedBarcode(value);
+    setBarcodeSearch("");
+    window.dispatchEvent(new Event(BARCODE_SCANNER_CAPTURE_EVENT));
+    barcodeSearchInputRef.current?.focus();
+    barcodeSearchInputRef.current?.select();
+  }
+
+  useEffect(() => {
+    submitBarcodeSearchRef.current = submitBarcodeSearch;
+  });
 
   return (
     <section className="flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-200/80">
@@ -58,9 +299,18 @@ function OrderControlDetailsPanel({
 
       <div className="border-b border-slate-200 px-4 py-3">
         <input
+          ref={barcodeSearchInputRef}
           className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 outline-none ring-2 ring-slate-100 transition focus:border-violet-500 focus:ring-violet-100"
           placeholder="Найти товар по штрихкоду"
           type="search"
+          value={barcodeSearch}
+          onChange={(event) => setBarcodeSearch(event.target.value)}
+          onFocus={(event) => event.target.select()}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              submitBarcodeSearch(event.currentTarget.value);
+            }
+          }}
         />
       </div>
 
@@ -106,8 +356,17 @@ function OrderControlDetailsPanel({
                 <td className="border-b border-slate-100 px-3 py-2 text-right tabular-nums text-slate-600">
                   {formatMoney(line.amount)}
                 </td>
-                <td className="border-b border-slate-100 px-3 py-2 text-right tabular-nums text-slate-600" />
-                <td className="border-b border-slate-100 px-3 py-2 text-slate-600" />
+                <td className="border-b border-slate-100 px-3 py-2 text-right font-bold tabular-nums text-slate-700">
+                  {formatNumber(line.quantityFact)}
+                </td>  
+                <td className="border-b border-slate-100 px-3 py-2 text-slate-600">
+                  {line.markingProduct ? (
+                    <span
+                    >
+                      ✓
+                    </span>
+                  ) : null}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -127,8 +386,35 @@ function OrderControlDetailsPanel({
 function OrderProcessingResultsPanel({
   lines
 }: {
-  lines: ProcessingResultLine[];
+  lines: OrderControlledItem[];
 }) {
+  const [search, setSearch] = useState("");
+  const normalizedSearch = search.trim().toLowerCase();
+  const filteredLines =
+    normalizedSearch.length === 0
+      ? lines
+      : lines.filter((line) =>
+          line.productName.toLowerCase().includes(normalizedSearch)
+        );
+
+  useEffect(() => {
+    function clearSearchAfterScannerCapture() {
+      setSearch("");
+    }
+
+    window.addEventListener(
+      BARCODE_SCANNER_CAPTURE_EVENT,
+      clearSearchAfterScannerCapture
+    );
+
+    return () => {
+      window.removeEventListener(
+        BARCODE_SCANNER_CAPTURE_EVENT,
+        clearSearchAfterScannerCapture
+      );
+    };
+  }, []);
+
   return (
     <section className="flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-200/80">
       <div className="border-b border-slate-200 px-4 py-3">
@@ -136,7 +422,7 @@ function OrderProcessingResultsPanel({
           Результаты обработки
         </h3>
         <div className="mt-1 text-sm text-slate-500">
-          Проверка фактического количества, маркировки и сканирования.
+          
         </div>
       </div>
 
@@ -145,11 +431,19 @@ function OrderProcessingResultsPanel({
           className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 outline-none ring-2 ring-slate-100 transition focus:border-violet-500 focus:ring-violet-100"
           placeholder="Поиск (Ctrl+F)"
           type="search"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
         />
       </div>
 
       <div className="min-h-0 flex-1 overflow-auto">
-        <table className="min-w-[620px] w-full border-collapse text-left text-sm">
+        <table className="min-w-[620px] w-full table-fixed border-collapse text-left text-sm">
+          <colgroup>
+            <col className="w-[34%]" />
+            <col className="w-[18%]" />
+            <col className="w-[32%]" />
+            <col className="w-[16%]" />
+          </colgroup>
           <thead className="sticky top-0 bg-slate-50 text-slate-500">
             <tr>
               <th className="border-b border-slate-200 px-3 py-2 font-semibold">
@@ -161,30 +455,48 @@ function OrderProcessingResultsPanel({
               <th className="border-b border-slate-200 px-3 py-2 font-semibold">
                 Марка
               </th>
-              <th className="border-b border-slate-200 px-3 py-2 font-semibold">
-                Результат проверки
+              <th className="border-b border-slate-200 px-3 py-2 font-semibold leading-tight">
+                Результат
+                <br />
+                проверки
               </th>
             </tr>
           </thead>
           <tbody>
-            {lines.map((line) => (
-              <tr className="odd:bg-white even:bg-slate-50/60" key={line.id}>
+            {filteredLines.map((line) => (
+              <tr className="odd:bg-white even:bg-slate-50/60" key={line.mark}>
                 <td className="max-w-56 truncate border-b border-slate-100 px-3 py-2 font-medium text-slate-900">
-                  {line.name}
+                  {line.productName}
                 </td>
                 <td className="border-b border-slate-100 px-3 py-2 text-right tabular-nums text-slate-600">
                   {formatNumber(line.quantity)}
                 </td>
-                <td className="border-b border-slate-100 px-3 py-2 text-slate-600">
+                <td className="break-all border-b border-slate-100 px-3 py-2 text-slate-600">
                   {line.mark}
                 </td>
                 <td className="border-b border-slate-100 px-3 py-2">
-                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                    {line.result}
-                  </span>
+                  {line.result ? (
+                    <span
+                      aria-label="Проверено"
+                      className="text-sm font-bold text-emerald-700"
+                      title="Проверено"
+                    >
+                      ✓
+                    </span>
+                  ) : null}
                 </td>
               </tr>
             ))}
+            {filteredLines.length === 0 ? (
+              <tr>
+                <td
+                  className="border-b border-slate-100 px-3 py-6 text-center text-sm text-slate-500"
+                  colSpan={4}
+                >
+                  Ничего не найдено
+                </td>
+              </tr>
+            ) : null}
           </tbody>
         </table>
       </div>
@@ -195,17 +507,45 @@ function OrderProcessingResultsPanel({
 export function OrderControl({
   isOpen,
   onClose,
-  order
+  onOrderChange,
+  order,
+  products
 }: OrderControlProps) {
+  const [notification, setNotification] = useState<ScanNotification | null>(null);
+  const [isCloseConfirmationOpen, setIsCloseConfirmationOpen] = useState(false);
+
   useEffect(() => {
-    if (!isOpen) {
+    if (notification === null) {
       return;
     }
 
+    const timeoutId = window.setTimeout(() => {
+      setNotification(null);
+    }, 3500);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [notification]);
+
+  useEffect(() => {
+    if (!isOpen || order === null) {
+      return;
+    }
+
+    const currentOrder = order;
+
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        onClose();
+      if (event.key !== "Escape") {
+        return;
       }
+
+      if (currentOrder.items.some((item) => item.quantityFact > 0)) {
+        setIsCloseConfirmationOpen(true);
+        return;
+      }
+
+      onClose();
     }
 
     window.addEventListener("keydown", handleKeyDown);
@@ -213,25 +553,50 @@ export function OrderControl({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, order]);
 
   if (!isOpen || order === null) {
     return null;
   }
 
-  const lines = order.items;
+  const activeOrder = order;
+  const lines = activeOrder.items;
+
+  function showNotification(message: string, tone: ScanNotification["tone"]) {
+    setNotification({
+      id: Date.now(),
+      message,
+      tone
+    });
+  }
+
+  function requestClose() {
+    if (activeOrder.items.some((item) => item.quantityFact > 0)) {
+      setIsCloseConfirmationOpen(true);
+      return;
+    }
+
+    onClose();
+  }
+
+  function confirmClose() {
+    setIsCloseConfirmationOpen(false);
+    onClose();
+  }
+
+  function cancelClose() {
+    setIsCloseConfirmationOpen(false);
+  }
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center bg-slate-950/35 p-4"
       role="presentation"
-      onMouseDown={onClose}
     >
       <div
         aria-modal="true"
         className="mx-auto flex h-[88vh] w-full max-w-[92rem] flex-col overflow-hidden rounded-3xl bg-slate-50 shadow-2xl"
         role="dialog"
-        onMouseDown={(event) => event.stopPropagation()}
       >
         <div className="flex flex-col gap-3 border-b border-slate-200 bg-white px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -239,33 +604,97 @@ export function OrderControl({
               Контроль сборки заказа
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              Форма сборки и проверки заказа № {order.number}
+              Форма сборки и проверки заказа № {activeOrder.number}
             </p>
           </div>
           <button
             className="self-start rounded-lg border border-transparent px-3 py-1.5 text-sm font-bold text-slate-900 transition hover:bg-slate-300 focus:bg-slate-300 focus:outline-none"
             type="button"
-            onClick={onClose}
+            onClick={requestClose}
           >
             Закрыть
           </button>
         </div>
 
-        <div className="grid min-h-0 flex-1 gap-4 p-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.15fr)]">
-          <OrderControlDetailsPanel lines={lines} order={order} />
-          <OrderProcessingResultsPanel lines={[]} />
+        <div className="grid min-h-0 flex-1 gap-4 p-4 lg:grid-cols-2">
+          <OrderControlDetailsPanel
+            key={activeOrder.id}
+            lines={lines}
+            order={activeOrder}
+            products={products}
+            onOrderChange={onOrderChange}
+            onNotify={showNotification}
+          />
+          <OrderProcessingResultsPanel lines={activeOrder.controlledItems} />
         </div>
+
+        {notification !== null ? (
+          <div
+            className={`absolute right-6 top-6 z-10 max-w-md rounded-xl border px-4 py-3 text-sm font-semibold shadow-lg ${
+              notification.tone === "warning"
+                ? "border-amber-200 bg-amber-50 text-amber-900"
+                : "border-red-200 bg-red-50 text-red-800"
+            }`}
+            role="status"
+          >
+            {notification.message}
+          </div>
+        ) : null}
 
         <div className="flex justify-end border-t border-slate-200 bg-white px-5 py-4">
           <button
             className="rounded-xl bg-violet-600 px-5 py-2.5 text-base font-bold text-white shadow-sm transition hover:bg-violet-700 focus:bg-violet-700 focus:outline-none"
             type="button"
-            onClick={onClose}
+            onClick={requestClose}
           >
             Завершить контроль
           </button>
         </div>
       </div>
+
+      {isCloseConfirmationOpen ? (
+        <div
+          aria-modal="true"
+          className="absolute inset-0 z-20 flex items-center justify-center bg-slate-950/35 p-4"
+          role="dialog"
+        >
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
+            <div className="flex items-start gap-3">
+              <div
+                aria-hidden="true"
+                className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-amber-100 text-2xl font-bold text-amber-600"
+              >
+                !
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-base font-bold text-slate-950">
+                  Контроль не завершен полностью!
+                </h3>
+                <p className="mt-1 text-sm text-slate-600">
+                  Закрыть форму?
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-800 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                type="button"
+                onClick={cancelClose}
+              >
+                Нет
+              </button>
+              <button
+                className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"
+                type="button"
+                onClick={confirmClose}
+              >
+                Да
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

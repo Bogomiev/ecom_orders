@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Order, OrdersResponse } from "@/entities/order";
+import type { ProductsResponse } from "@/entities/product";
 import {
   getStoredStoreSelection,
   STORE_SELECTION_CHANGE_EVENT,
@@ -9,6 +10,7 @@ import {
 } from "@/entities/store/model/store-selection";
 import { OrdersPageHeader } from "@/widgets/orders-screen-header";
 import {
+  fetchProducts,
   fetchOrders,
   ORDERS_REFRESH_INTERVAL_SECONDS
 } from "../api/orders";
@@ -19,13 +21,15 @@ type OrdersState = {
   error: string | null;
   isLoading: boolean;
   lastUpdatedAt: Date | null;
+  products: ProductsResponse;
 };
 
 const initialState: OrdersState = {
   data: null,
   error: null,
   isLoading: true,
-  lastUpdatedAt: null
+  lastUpdatedAt: null,
+  products: []
 };
 
 const DEFAULT_SITE_BADGE_CLASS = "bg-amber-100 text-orange-700";
@@ -210,6 +214,7 @@ export function OrdersList() {
   const [selectedStore, setSelectedStore] = useState<StoreSelectionSnapshot>(null);
   const [controlOrder, setControlOrder] = useState<Order | null>(null);
   const isRequestInFlightRef = useRef(false);
+  const controlledOrdersRef = useRef(new Map<string, Order>());
 
   useEffect(() => {
     setSelectedStore(getStoredStoreSelection());
@@ -249,19 +254,30 @@ export function OrdersList() {
       isRequestInFlightRef.current = true;
 
       try {
-        const data = await fetchOrders(controller.signal);
+        const [data, products] = await Promise.all([
+          fetchOrders(controller.signal),
+          fetchProducts(controller.signal)
+        ]);
 
         if (!isMounted) {
           return;
         }
 
+        const dataWithLocalControl = {
+          ...data,
+          items: data.items.map(
+            (order) => controlledOrdersRef.current.get(order.id) ?? order
+          )
+        };
+
         setState((currentState) => ({
-          data: isSameOrdersResponse(currentState.data, data)
+          data: isSameOrdersResponse(currentState.data, dataWithLocalControl)
             ? currentState.data
-            : data,
+            : dataWithLocalControl,
           error: null,
           isLoading: false,
-          lastUpdatedAt: new Date()
+          lastUpdatedAt: new Date(),
+          products
         }));
       } catch (error) {
         if (!isMounted || controller.signal.aborted) {
@@ -320,6 +336,26 @@ export function OrdersList() {
   }, [selectedStore, state.data]);
   const ordersCount = filteredOrders.length;
 
+  function updateControlledOrder(nextOrder: Order) {
+    controlledOrdersRef.current.set(nextOrder.id, nextOrder);
+    setControlOrder(nextOrder);
+    setState((currentState) => {
+      if (currentState.data === null) {
+        return currentState;
+      }
+
+      return {
+        ...currentState,
+        data: {
+          ...currentState.data,
+          items: currentState.data.items.map((order) =>
+            order.id === nextOrder.id ? nextOrder : order
+          )
+        }
+      };
+    });
+  }
+
   return (
     <section className="space-y-3">
       <OrdersPageHeader currentTime={now} ordersCount={ordersCount} />
@@ -358,6 +394,8 @@ export function OrdersList() {
       <OrderControl
         isOpen={controlOrder !== null}
         order={controlOrder}
+        products={state.products}
+        onOrderChange={updateControlledOrder}
         onClose={() => setControlOrder(null)}
       />
     </section>

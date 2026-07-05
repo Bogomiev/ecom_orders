@@ -81,3 +81,21 @@ export async function fetchOrders(signal?: AbortSignal): Promise<OrdersResponse>
 
   return enrichOrders(orders, products);
 }
+
+export async function fetchProducts(
+  signal?: AbortSignal
+): Promise<ProductsResponse> {
+  const response = await fetch(PRODUCTS_SERVICE_PATH, {
+    method: "GET",
+    headers: {
+      Accept: "application/json"
+    },
+    signal
+  });
+
+  if (!response.ok) {
+    throw new Error(`Products request failed with status ${response.status}`);
+  }
+
+  return response.json() as Promise<ProductsResponse>;
+}
