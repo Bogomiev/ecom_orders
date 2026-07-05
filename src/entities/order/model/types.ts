@@ -8,6 +8,7 @@ export type OrderItem = {
   price: number;
   amount: number;
   quantityFact: number;
+  isWeight: boolean;
 };
 
 export type OrderControlledItem = {

@@ -10,6 +10,7 @@ export type Product = {
   code: string;
   name: string;
   markingType: string;
+  isWeight: boolean;
   barcodes: BarcodeInfo[];
 };
 

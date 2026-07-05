@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Order, OrderControlledItem, OrderItem } from "@/entities/order";
 import type { Product } from "@/entities/product";
 
@@ -14,13 +14,14 @@ type OrderControlProps = {
 
 type ScanNotification = {
   id: number;
-  message: string;
+  message: ReactNode;
   tone: "warning" | "error";
 };
 
 const BARCODE_SCANNER_CAPTURE_EVENT = "order-control:barcode-scanner-capture";
 const SCANNER_MAX_KEY_INTERVAL_MS = 80;
 const SCANNER_MIN_BARCODE_LENGTH = 6;
+const WEIGHT_QUANTITY_OVERAGE_PERCENT = 15;
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat("ru-RU", {
@@ -67,7 +68,7 @@ function OrderControlDetailsPanel({
 }: {
   lines: OrderItem[];
   onOrderChange: (order: Order) => void;
-  onNotify: (message: string, tone: ScanNotification["tone"]) => void;
+  onNotify: (message: ReactNode, tone: ScanNotification["tone"]) => void;
   order: Order;
   products: Product[];
 }) {
@@ -222,7 +223,14 @@ function OrderControlDetailsPanel({
     const orderItem = order.items.find((item) => item.productId === product.uid);
 
     if (orderItem === undefined) {
-      onNotify(`Товар ${product.name} отсутствует в заказе`, "error");
+      onNotify(
+        <>
+          Товар{" "}
+          <strong className="font-black text-blue-950">{product.name}</strong>{" "}
+          отсутствует в заказе
+        </>,
+        "error"
+      );
       return;
     }
 
@@ -235,20 +243,43 @@ function OrderControlDetailsPanel({
 
     if (isAlreadyControlled) {
       onNotify(
-        `Просканированный штриход товара ${product.name} уже добавлен в заказ`,
+        <>
+          Просканированный штриход товара{" "}
+          <strong className="font-black text-blue-950">{product.name}</strong>{" "}
+          уже добавлен в заказ
+        </>,
         "warning"
       );
       return;
     }
 
     const quantityToAdd = barcodeInfo?.ratio ?? 1;
+    const nextQuantityFact = orderItem.quantityFact + quantityToAdd;
+    const allowedWeightQuantity =
+      orderItem.quantity * (1 + WEIGHT_QUANTITY_OVERAGE_PERCENT / 100);
+    const isQuantityExceeded = orderItem.isWeight
+      ? nextQuantityFact > allowedWeightQuantity
+      : nextQuantityFact > orderItem.quantity;
+
+    if (isQuantityExceeded) {
+      onNotify(
+        <>
+          Количество товара{" "}
+          <strong className="font-black text-blue-950">{product.name}</strong>{" "}
+          превышает количество в заказе
+        </>,
+        "warning"
+      );
+      return;
+    }
+
     const nextOrder: Order = {
       ...order,
       items: order.items.map((item) =>
         item.productId === product.uid
           ? {
               ...item,
-              quantityFact: item.quantityFact + quantityToAdd
+              quantityFact: nextQuantityFact
             }
           : item
       ),
@@ -356,7 +387,13 @@ function OrderControlDetailsPanel({
                 <td className="border-b border-slate-100 px-3 py-2 text-right tabular-nums text-slate-600">
                   {formatMoney(line.amount)}
                 </td>
-                <td className="border-b border-slate-100 px-3 py-2 text-right font-bold tabular-nums text-slate-700">
+                <td
+                  className={`border-b border-slate-100 px-3 py-2 text-right font-bold tabular-nums ${
+                    line.isWeight && line.quantityFact > line.quantity
+                      ? "text-red-600"
+                      : "text-slate-700"
+                  }`}
+                >
                   {formatNumber(line.quantityFact)}
                 </td>  
                 <td className="border-b border-slate-100 px-3 py-2 text-slate-600">
@@ -422,7 +459,7 @@ function OrderProcessingResultsPanel({
           Результаты обработки
         </h3>
         <div className="mt-1 text-sm text-slate-500">
-          
+          маркируемой продукции
         </div>
       </div>
 
@@ -561,8 +598,9 @@ export function OrderControl({
 
   const activeOrder = order;
   const lines = activeOrder.items;
+  const hasMarkingProducts = lines.some((line) => line.markingProduct);
 
-  function showNotification(message: string, tone: ScanNotification["tone"]) {
+  function showNotification(message: ReactNode, tone: ScanNotification["tone"]) {
     setNotification({
       id: Date.now(),
       message,
@@ -616,7 +654,11 @@ export function OrderControl({
           </button>
         </div>
 
-        <div className="grid min-h-0 flex-1 gap-4 p-4 lg:grid-cols-2">
+        <div
+          className={`grid min-h-0 flex-1 gap-4 p-4 ${
+            hasMarkingProducts ? "lg:grid-cols-2" : "lg:grid-cols-1"
+          }`}
+        >
           <OrderControlDetailsPanel
             key={activeOrder.id}
             lines={lines}
@@ -625,7 +667,9 @@ export function OrderControl({
             onOrderChange={onOrderChange}
             onNotify={showNotification}
           />
-          <OrderProcessingResultsPanel lines={activeOrder.controlledItems} />
+          {hasMarkingProducts ? (
+            <OrderProcessingResultsPanel lines={activeOrder.controlledItems} />
+          ) : null}
         </div>
 
         {notification !== null ? (

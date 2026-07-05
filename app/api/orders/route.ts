@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { Order, OrderItem } from "@/entities/order";
 
-type MockOrderItem = Omit<OrderItem, "markingProduct" | "productName">;
+type MockOrderItem = Omit<OrderItem, "isWeight" | "markingProduct" | "productName">;
 type MockOrder = Omit<Order, "items"> & {
   items: MockOrderItem[];
 };
@@ -296,6 +296,53 @@ const MOCK_ORDERS: MockOrder[] = [
         amount: 899.99,
         quantityFact: 0
       },
+      {
+        productId: "5736c1c4-636d-11ef-8da0-00155d1a6906",
+        quantity: 1,
+        price: 140,
+        amount: 140,
+        quantityFact: 0
+      },
+      {
+        productId: "8d5b8b8f-636d-11ef-8da0-00155d1a6906",
+        quantity: 1,
+        price: 130,
+        amount: 130,
+        quantityFact: 0
+      }
+    ],
+    controlledItems: []
+  },
+  {
+    id: "q8l2m4b6v9s0x8c",
+    external_id: "7d9a4e3c-7256-455b-8d7a-57f1a0369a15",
+    number: "СЦЦБ-001083",
+    site: "Сайт",
+    customer: "Андрей Попович",
+    status: "Ожидает сборки",
+    extended_status: "Ожидает подтверждения",
+    external_status: "Создан",
+    order_method: "pickup",
+    payment_status: "pending",
+    delivery_code: "pickup",
+    order_created_at: mockCreatedAt.toISOString(),
+    delivery_date: addTime(mockCreatedAt, 1, 25),
+    delivery_time: "16:00-20:00",
+    order_sum: 270.00,
+    total_discount: 0,
+    delivery_cost: 0,
+    currency: "RUB",
+    is_paid: false,
+    raw: {
+      source: "mock"
+    },
+    raw_ozon: {},
+    created: mockCreatedAt.toISOString(),
+    updated: mockCreatedAt.toISOString(),
+    shipment_store_ref: "r6v1j8p4b9n2k5y",
+    shipment_store_name: "Магазин Химки",
+    shipment_store_phone: "88007006050",
+    items: [
       {
         productId: "5736c1c4-636d-11ef-8da0-00155d1a6906",
         quantity: 1,

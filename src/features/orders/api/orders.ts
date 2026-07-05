@@ -7,7 +7,7 @@ export const ORDERS_REFRESH_INTERVAL_SECONDS = 5;
 
 type RawOrderItem = Omit<
   OrdersResponse["items"][number]["items"][number],
-  "markingProduct" | "productName"
+  "isWeight" | "markingProduct" | "productName"
 >;
 
 type RawOrder = Omit<OrdersResponse["items"][number], "items"> & {
@@ -38,7 +38,8 @@ function enrichOrders(
           productName: product?.name ?? item.productId,
           markingProduct:
             product !== undefined &&
-            product.markingType !== "БезОсобенностейУчета"
+            product.markingType !== "БезОсобенностейУчета",
+          isWeight: product?.isWeight ?? false
         };
       })
     }))
