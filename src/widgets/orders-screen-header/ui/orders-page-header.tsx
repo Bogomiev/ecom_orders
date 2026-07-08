@@ -7,7 +7,7 @@ import {
 } from "@/shared/ui/page-notification";
 import { playNotificationSound } from "@/shared/lib/notification-sound";
 import { showSystemNotification } from "@/shared/lib/system-notification";
-import { StoreSelector } from "@/widgets/store-selector";
+import { StoreSelector } from "@/features/store-selector";
 
 const SHOP_NAME = "Икорный";
 const NOTIFICATION_TITLE = "Икорный: сборка";

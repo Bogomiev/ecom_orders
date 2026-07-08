@@ -1,1 +1,1 @@
-export { OrdersList } from "./ui/orders-list";
+export { OrderControl } from "./ui/order-control";

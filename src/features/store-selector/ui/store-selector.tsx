@@ -6,7 +6,7 @@ import {
   getStoredStoreSelection,
   setStoredStoreSelection,
   toStoreSelectionSnapshot
-} from "@/entities/store/model/store-selection";
+} from "@/entities/store";
 
 const STORES_SERVICE_PATH = "/api/entities/stores";
 const ALL_STORES_ID = "all-stores";

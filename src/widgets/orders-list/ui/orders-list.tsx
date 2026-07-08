@@ -7,15 +7,14 @@ import {
   getStoredStoreSelection,
   STORE_SELECTION_CHANGE_EVENT,
   type StoreSelectionSnapshot
-} from "@/entities/store/model/store-selection";
-import { OrdersPageHeader } from "@/widgets/orders-screen-header";
+} from "@/entities/store";
+import { OrderControl } from "@/features/orders";
 import {
   fetchProducts,
   fetchOrders,
   ORDERS_REFRESH_INTERVAL_SECONDS
 } from "../api/orders";
 import { OrderCard } from "./order-card";
-import { OrderControl } from "./order-control";
 
 type OrdersState = {
   data: OrdersResponse | null;
@@ -23,6 +22,11 @@ type OrdersState = {
   isLoading: boolean;
   lastUpdatedAt: Date | null;
   products: ProductsResponse;
+};
+
+type OrdersListProps = {
+  layout?: "grid" | "list";
+  onOrdersCountChange?: (ordersCount: number) => void;
 };
 
 const initialState: OrdersState = {
@@ -40,7 +44,10 @@ function isSameOrdersResponse(
   return currentData !== null && JSON.stringify(currentData) === JSON.stringify(nextData);
 }
 
-export function OrdersList() {
+export function OrdersList({
+  layout = "grid",
+  onOrdersCountChange
+}: OrdersListProps = {}) {
   const [state, setState] = useState<OrdersState>(initialState);
   const [now, setNow] = useState(() => new Date());
   const [selectedStore, setSelectedStore] = useState<StoreSelectionSnapshot>(null);
@@ -167,6 +174,12 @@ export function OrdersList() {
     );
   }, [selectedStore, state.data]);
   const ordersCount = filteredOrders.length;
+  const ordersGridClassName =
+    layout === "list" ? "grid gap-3" : "grid gap-4 md:grid-cols-2 xl:grid-cols-4";
+
+  useEffect(() => {
+    onOrdersCountChange?.(ordersCount);
+  }, [onOrdersCountChange, ordersCount]);
 
   function updateControlledOrder(nextOrder: Order) {
     controlledOrdersRef.current.set(nextOrder.id, nextOrder);
@@ -190,8 +203,6 @@ export function OrdersList() {
 
   return (
     <section className="space-y-3">
-      <OrdersPageHeader currentTime={now} ordersCount={ordersCount} />
-
       {state.error ? (
         <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
           {state.error}
@@ -211,7 +222,7 @@ export function OrdersList() {
       ) : null}
 
       {filteredOrders.length > 0 ? (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className={ordersGridClassName}>
           {filteredOrders.map((order) => (
             <OrderCard
               key={order.id}

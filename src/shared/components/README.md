@@ -11,4 +11,4 @@ Use this folder for reusable interface building blocks:
 - badges
 - cards
 
-Keep feature-specific components inside their feature, widget, or view folder.
+Keep feature-specific components inside their feature, widget, or screen folder.
