@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Order, OrderItem } from "@/entities/order";
-import type { Product } from "@/entities/product";
+import type { BarcodeInfo, Product } from "@/entities/product";
 import {
   BARCODE_SCANNER_CAPTURE_EVENT,
   formatMoney,
@@ -44,6 +44,11 @@ type OrderControlDetailsPanelProps = {
   products: Product[];
 };
 
+type BarcodeIndexEntry = {
+  barcodeInfo: BarcodeInfo;
+  product: Product;
+};
+
 export function OrderControlDetailsPanel({
   lines,
   onOrderChange,
@@ -59,6 +64,20 @@ export function OrderControlDetailsPanel({
   });
   const submitBarcodeSearchRef = useRef<(value: string) => void>(() => undefined);
   const [barcodeSearch, setBarcodeSearch] = useState("");
+  const productsByBarcode = useMemo(() => {
+    const index = new Map<string, BarcodeIndexEntry>();
+
+    products.forEach((product) => {
+      product.barcodes.forEach((barcodeInfo) => {
+        index.set(barcodeInfo.barcode, {
+          barcodeInfo,
+          product
+        });
+      });
+    });
+
+    return index;
+  }, [products]);
   const total = lines.reduce((sum, line) => sum + line.amount, 0);
 
   useEffect(() => {
@@ -187,18 +206,14 @@ export function OrderControlDetailsPanel({
       return;
     }
 
-    const product = products.find((candidate) =>
-      candidate.barcodes.some((productBarcode) => productBarcode.barcode === barcode)
-    );
+    const barcodeMatch = productsByBarcode.get(barcode);
 
-    if (product === undefined) {
+    if (barcodeMatch === undefined) {
       onNotify(`Штрихкод ${barcode} не найден в справочнике товаров`, "error");
       return;
     }
 
-    const barcodeInfo = product.barcodes.find(
-      (productBarcode) => productBarcode.barcode === barcode
-    );
+    const { barcodeInfo, product } = barcodeMatch;
     const orderItem = order.items.find((item) => item.productId === product.uid);
 
     if (orderItem === undefined) {

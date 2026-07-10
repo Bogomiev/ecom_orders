@@ -1,3 +1,6 @@
+"use client";
+
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import type { Order } from "@/entities/order";
 
 const DEFAULT_SITE_BADGE_CLASS = "bg-amber-100 text-orange-700";
@@ -102,23 +105,67 @@ function InfoIcon({ type }: { type: "box" | "phone" | "clock" }) {
 
 type OrderCardProps = {
   isOpening?: boolean;
-  now: Date;
   onOpen: (order: Order) => void;
   order: Order;
 };
 
-export function OrderCard({
+function OrderCardComponent({
   isOpening = false,
-  now,
   onOpen,
   order
 }: OrderCardProps) {
+  const cardRef = useRef<HTMLButtonElement>(null);
+  const [isVisible, setIsVisible] = useState(true);
+  const [now, setNow] = useState(() => new Date());
   const countdown = formatCountdown(order.delivery_date, now);
-  const statusColor = getStatusColor(order.status);
-  const siteBadgeClass = getSiteBadgeClass(order.site);
+  const deliveryDeadline = useMemo(
+    () => formatDeliveryDeadline(order.delivery_date),
+    [order.delivery_date]
+  );
+  const statusColor = useMemo(() => getStatusColor(order.status), [order.status]);
+  const siteBadgeClass = useMemo(() => getSiteBadgeClass(order.site), [order.site]);
+
+  useEffect(() => {
+    const card = cardRef.current;
+
+    if (card === null || !("IntersectionObserver" in window)) {
+      setIsVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
+      {
+        rootMargin: "120px 0px"
+      }
+    );
+
+    observer.observe(card);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isVisible || isOpening) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setNow(new Date());
+    }, 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [isOpening, isVisible]);
 
   return (
     <button
+      ref={cardRef}
       className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-left shadow-sm shadow-slate-200/70 transition hover:border-slate-300 hover:bg-slate-50 hover:shadow-md hover:shadow-slate-300/60 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-70"
       disabled={isOpening}
       type="button"
@@ -139,7 +186,7 @@ export function OrderCard({
         <div className="grid gap-2 min-[1500px]:grid-cols-[1fr_auto] min-[1500px]:items-center">
           <div className="space-y-1.5">
             <div className="text-sm font-bold uppercase tracking-normal text-slate-600 xl:text-base">
-              Собрать до {formatDeliveryDeadline(order.delivery_date)}
+              Собрать до {deliveryDeadline}
             </div>
             <span
               className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 xl:text-sm ${statusColor}`}
@@ -173,3 +220,5 @@ export function OrderCard({
     </button>
   );
 }
+
+export const OrderCard = memo(OrderCardComponent);

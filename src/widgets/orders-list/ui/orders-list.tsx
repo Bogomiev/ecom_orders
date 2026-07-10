@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Order, OrderControlledItem, OrderItem, OrdersResponse } from "@/entities/order";
 import type { ProductsResponse } from "@/entities/product";
 import {
@@ -42,6 +42,7 @@ const initialState: OrdersState = {
 };
 
 const PRODUCTS_CACHE_TTL_MS = 15 * 60 * 1000;
+const ORDERS_BATCH_SIZE = 20;
 
 const OrderControl = dynamic(
   () => import("@/features/orders").then((module) => module.OrderControl),
@@ -143,14 +144,15 @@ export function OrdersList({
   onOrdersCountChange
 }: OrdersListProps = {}) {
   const [state, setState] = useState<OrdersState>(initialState);
-  const [now, setNow] = useState(() => new Date());
   const [selectedStore, setSelectedStore] = useState<StoreSelectionSnapshot>(null);
   const [controlOrder, setControlOrder] = useState<Order | null>(null);
   const [controlProducts, setControlProducts] = useState<ProductsResponse>([]);
   const [controlLoadError, setControlLoadError] = useState<string | null>(null);
   const [openingOrderId, setOpeningOrderId] = useState<string | null>(null);
+  const [visibleOrdersLimit, setVisibleOrdersLimit] = useState(ORDERS_BATCH_SIZE);
   const isRequestInFlightRef = useRef(false);
   const isMountedRef = useRef(true);
+  const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
   const controlledOrdersRef = useRef(new Map<string, Order>());
   const productsCacheRef = useRef<ProductsCache | null>(null);
   const productsRequestInFlightRef = useRef<Promise<ProductsResponse> | null>(null);
@@ -254,16 +256,6 @@ export function OrdersList({
     };
   }, []);
 
-  useEffect(() => {
-    const intervalId = window.setInterval(() => {
-      setNow(new Date());
-    }, 1000);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, []);
-
   const filteredOrders = useMemo(() => {
     const orders = state.data?.items ?? [];
 
@@ -276,8 +268,48 @@ export function OrdersList({
     );
   }, [selectedStore, state.data]);
   const ordersCount = filteredOrders.length;
+  const visibleOrders = useMemo(
+    () => filteredOrders.slice(0, visibleOrdersLimit),
+    [filteredOrders, visibleOrdersLimit]
+  );
+  const hasMoreOrders = visibleOrders.length < filteredOrders.length;
   const ordersGridClassName =
     layout === "list" ? "grid gap-3" : "grid gap-4 md:grid-cols-2 xl:grid-cols-4";
+
+  const loadNextOrders = useCallback(() => {
+    setVisibleOrdersLimit((currentLimit) =>
+      Math.min(currentLimit + ORDERS_BATCH_SIZE, filteredOrders.length)
+    );
+  }, [filteredOrders.length]);
+
+  useEffect(() => {
+    if (!hasMoreOrders) {
+      return;
+    }
+
+    const trigger = loadMoreTriggerRef.current;
+
+    if (trigger === null || !("IntersectionObserver" in window)) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          loadNextOrders();
+        }
+      },
+      {
+        rootMargin: "240px 0px"
+      }
+    );
+
+    observer.observe(trigger);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [hasMoreOrders, loadNextOrders]);
 
   useEffect(() => {
     onOrdersCountChange?.(ordersCount);
@@ -303,7 +335,7 @@ export function OrdersList({
     });
   }
 
-  async function getProductsForControl() {
+  const getProductsForControl = useCallback(async () => {
     const cachedProducts = productsCacheRef.current;
     const currentTimestamp = Date.now();
 
@@ -339,9 +371,9 @@ export function OrdersList({
         productsRequestInFlightRef.current = null;
       }
     }
-  }
+  }, []);
 
-  async function openOrderControl(order: Order) {
+  const openOrderControl = useCallback(async (order: Order) => {
     setControlLoadError(null);
     setOpeningOrderId(order.id);
 
@@ -386,7 +418,7 @@ export function OrdersList({
         setOpeningOrderId(null);
       }
     }
-  }
+  }, [getProductsForControl]);
 
   return (
     <section className="space-y-3">
@@ -415,17 +447,26 @@ export function OrdersList({
       ) : null}
 
       {filteredOrders.length > 0 ? (
-        <div className={ordersGridClassName}>
-          {filteredOrders.map((order) => (
-            <OrderCard
-              key={order.id}
-              now={now}
-              isOpening={openingOrderId === order.id}
-              order={order}
-              onOpen={openOrderControl}
+        <>
+          <div className={ordersGridClassName}>
+            {visibleOrders.map((order) => (
+              <OrderCard
+                key={order.id}
+                isOpening={openingOrderId === order.id}
+                order={order}
+                onOpen={openOrderControl}
+              />
+            ))}
+          </div>
+
+          {hasMoreOrders ? (
+            <div
+              ref={loadMoreTriggerRef}
+              aria-hidden="true"
+              className="h-1"
             />
-          ))}
-        </div>
+          ) : null}
+        </>
       ) : null}
 
       <OrderControl
