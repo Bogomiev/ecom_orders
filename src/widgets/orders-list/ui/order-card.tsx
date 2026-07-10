@@ -101,19 +101,26 @@ function InfoIcon({ type }: { type: "box" | "phone" | "clock" }) {
 }
 
 type OrderCardProps = {
+  isOpening?: boolean;
   now: Date;
   onOpen: (order: Order) => void;
   order: Order;
 };
 
-export function OrderCard({ now, onOpen, order }: OrderCardProps) {
+export function OrderCard({
+  isOpening = false,
+  now,
+  onOpen,
+  order
+}: OrderCardProps) {
   const countdown = formatCountdown(order.delivery_date, now);
   const statusColor = getStatusColor(order.status);
   const siteBadgeClass = getSiteBadgeClass(order.site);
 
   return (
     <button
-      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-left shadow-sm shadow-slate-200/70 transition hover:border-slate-300 hover:bg-slate-50 hover:shadow-md hover:shadow-slate-300/60 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"
+      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-left shadow-sm shadow-slate-200/70 transition hover:border-slate-300 hover:bg-slate-50 hover:shadow-md hover:shadow-slate-300/60 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-70"
+      disabled={isOpening}
       type="button"
       onClick={() => onOpen(order)}
     >
@@ -141,7 +148,7 @@ export function OrderCard({ now, onOpen, order }: OrderCardProps) {
             </span>
           </div>
           <div className="text-2xl font-bold tabular-nums text-emerald-700 xl:text-3xl">
-            {countdown}
+            {isOpening ? "..." : countdown}
           </div>
         </div>
         <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-emerald-100">

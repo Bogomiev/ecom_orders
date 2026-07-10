@@ -18,69 +18,63 @@ type RawOrdersResponse = Omit<OrdersResponse, "items"> & {
   items: RawOrder[];
 };
 
-function enrichOrders(
-  ordersResponse: RawOrdersResponse,
+function normalizeOrders(ordersResponse: RawOrdersResponse): OrdersResponse {
+  return {
+    ...ordersResponse,
+    items: ordersResponse.items.map((order) => ({
+      ...order,
+      items: order.items.map((item) => ({
+        ...item,
+        productName: item.productId,
+        markingProduct: false,
+        isWeight: false
+      }))
+    }))
+  };
+}
+
+export function enrichOrder(
+  order: OrdersResponse["items"][number],
   products: ProductsResponse
-): OrdersResponse {
+) {
   const productsById = new Map<string, Product>(
     products.map((product) => [product.uid, product])
   );
 
   return {
-    ...ordersResponse,
-    items: ordersResponse.items.map((order) => ({
-      ...order,
-      items: order.items.map((item) => {
-        const product = productsById.get(item.productId);
+    ...order,
+    items: order.items.map((item) => {
+      const product = productsById.get(item.productId);
 
-        return {
-          ...item,
-          productName: product?.name ?? item.productId,
-          markingProduct:
-            product !== undefined &&
-            product.markingType !== "БезОсобенностейУчета",
-          isWeight: product?.isWeight ?? false
-        };
-      })
-    }))
+      return {
+        ...item,
+        productName: product?.name ?? item.productId,
+        markingProduct:
+          product !== undefined &&
+          product.markingType !== "БезОсобенностейУчета",
+        isWeight: product?.isWeight ?? false
+      };
+    })
   };
 }
 
 export async function fetchOrders(signal?: AbortSignal): Promise<OrdersResponse> {
-  const [ordersResponse, productsResponse] = await Promise.all([
-    fetch(ORDERS_SERVICE_PATH, {
-      cache: "no-store",
-      method: "GET",
-      headers: {
-        Accept: "application/json"
-      },
-      signal
-    }),
-    fetch(PRODUCTS_SERVICE_PATH, {
-      method: "GET",
-      headers: {
-        Accept: "application/json"
-      },
-      signal
-    })
-  ]);
+  const ordersResponse = await fetch(ORDERS_SERVICE_PATH, {
+    cache: "no-store",
+    method: "GET",
+    headers: {
+      Accept: "application/json"
+    },
+    signal
+  });
 
   if (!ordersResponse.ok) {
     throw new Error(`Orders request failed with status ${ordersResponse.status}`);
   }
 
-  if (!productsResponse.ok) {
-    throw new Error(
-      `Products request failed with status ${productsResponse.status}`
-    );
-  }
+  const orders = (await ordersResponse.json()) as RawOrdersResponse;
 
-  const [orders, products] = await Promise.all([
-    ordersResponse.json() as Promise<RawOrdersResponse>,
-    productsResponse.json() as Promise<ProductsResponse>
-  ]);
-
-  return enrichOrders(orders, products);
+  return normalizeOrders(orders);
 }
 
 export async function fetchProducts(
