@@ -5,7 +5,6 @@ export function ServiceDesk() {
     <WidgetPanel
       count={3}
       title="Сервис Desk"
-      description="Короткие операционные карточки с минимальными тестовыми надписями."
     />
   );
 }

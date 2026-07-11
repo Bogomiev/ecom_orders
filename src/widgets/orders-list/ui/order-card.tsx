@@ -1,223 +1,232 @@
 "use client";
 
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useState, type MouseEvent } from "react";
 import type { Order } from "@/entities/order";
 
-const DEFAULT_SITE_BADGE_CLASS = "bg-amber-100 text-orange-700";
+const CONFIRMATION_DEADLINE_MINUTES = 5;
 
 const SITE_BADGE_CLASS_BY_SITE: Record<string, string> = {
-  "ЯндексGO": DEFAULT_SITE_BADGE_CLASS,
-  "Яндекс Маркет": "bg-orange-100 text-orange-700",
-  "Сайт": "bg-blue-100 text-blue-700",
-  "Ozon": "bg-cyan-100 text-cyan-700"
+  Wildberries: "bg-pink-50 text-pink-600",
+  "ЯндексGO": "bg-orange-50 text-orange-700",
+  "Яндекс Маркет": "bg-orange-50 text-orange-700",
+  "Яндекс Еда": "bg-orange-50 text-orange-700",
+  "Сайт": "bg-blue-50 text-blue-600",
+  Ozon: "bg-cyan-50 text-cyan-700",
+  "Ручной": "bg-slate-50 text-slate-700",
+  "Самовывоз": "bg-emerald-50 text-emerald-600",
+  "Купер": "bg-emerald-50 text-emerald-600"
+};
+
+type CardTone = "green" | "yellow" | "red";
+
+const TONE_CLASSES: Record<CardTone, {
+  action: string;
+  border: string;
+  panel: string;
+  progress: string;
+  status: string;
+  timer: string;
+}> = {
+  green: {
+    action: "bg-emerald-600 hover:bg-emerald-700",
+    border: "border-slate-200",
+    panel: "border-emerald-200 bg-emerald-50/40",
+    progress: "bg-emerald-500",
+    status: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    timer: "text-emerald-700"
+  },
+  yellow: {
+    action: "bg-emerald-600 hover:bg-emerald-700",
+    border: "border-amber-200",
+    panel: "border-amber-200 bg-amber-50/70",
+    progress: "bg-amber-500",
+    status: "border-amber-200 bg-amber-50 text-amber-700",
+    timer: "text-amber-700"
+  },
+  red: {
+    action: "bg-red-600 hover:bg-red-700",
+    border: "border-red-300",
+    panel: "border-red-200 bg-red-50/70",
+    progress: "bg-red-500",
+    status: "border-red-500 bg-red-600 text-white",
+    timer: "text-red-700"
+  }
+};
+
+type OrderCardProps = {
+  isOpening?: boolean;
+  onCollapse: () => void;
+  onStartControl: (order: Order) => void;
+  order: Order;
 };
 
 function parseDateTime(value: string) {
   return new Date(value.replace(" ", "T"));
 }
 
-function formatDeliveryDeadline(value: string) {
-  const date = parseDateTime(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("ru-RU", {
-    hour: "2-digit",
-    minute: "2-digit"
-  }).format(date);
+function addMinutes(date: Date, minutes: number) {
+  return new Date(date.getTime() + minutes * 60 * 1000);
 }
 
-function formatCountdown(deadlineValue: string, now: Date) {
-  const deadline = parseDateTime(deadlineValue);
+function getActionDeadline(order: Order) {
+  return order.extended_status === "Ожидает подтверждения"
+    ? addMinutes(parseDateTime(order.order_created_at), CONFIRMATION_DEADLINE_MINUTES)
+    : parseDateTime(order.confirmation_date);
+}
 
-  if (Number.isNaN(deadline.getTime())) {
-    return "00:00:00";
+function getTone(deadline: Date, now: Date): CardTone {
+  const secondsLeft = Math.floor((deadline.getTime() - now.getTime()) / 1000);
+
+  if (Number.isNaN(secondsLeft) || secondsLeft <= 60) {
+    return secondsLeft < 0 ? "red" : "yellow";
   }
 
-  const secondsLeft = Math.max(
-    0,
-    Math.floor((deadline.getTime() - now.getTime()) / 1000)
-  );
-  const hours = Math.floor(secondsLeft / 3600);
-  const minutes = Math.floor((secondsLeft % 3600) / 60);
-  const seconds = secondsLeft % 60;
+  return "green";
+}
+
+function formatCountdown(deadline: Date, now: Date) {
+  if (Number.isNaN(deadline.getTime())) return "--:--:--";
+
+  const diffSeconds = Math.floor((deadline.getTime() - now.getTime()) / 1000);
+  const absoluteSeconds = Math.abs(diffSeconds);
+  const hours = Math.floor(absoluteSeconds / 3600);
+  const minutes = Math.floor((absoluteSeconds % 3600) / 60);
+  const seconds = absoluteSeconds % 60;
   const pad = (value: number) => value.toString().padStart(2, "0");
 
-  return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+  return `${diffSeconds < 0 ? "-" : ""}${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 }
 
-function getStatusColor(status: string) {
-  const normalizedStatus = status.toLowerCase();
-
-  if (normalizedStatus.includes("собран")) {
-    return "bg-sky-100 text-sky-800 ring-sky-200";
-  }
-
-  if (normalizedStatus.includes("нов")) {
-    return "bg-slate-100 text-slate-700 ring-slate-200";
-  }
-
-  return "bg-emerald-100 text-emerald-800 ring-emerald-200";
+function formatMoney(value: number) {
+  return new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(value);
 }
 
-function getSiteBadgeClass(site: string) {
-  return SITE_BADGE_CLASS_BY_SITE[site] ?? DEFAULT_SITE_BADGE_CLASS;
-}
-
-function InfoIcon({ type }: { type: "box" | "phone" | "clock" }) {
-  const commonProps = {
-    className: "h-3.5 w-3.5 flex-none text-slate-400 xl:h-4 xl:w-4",
-    fill: "none",
-    stroke: "currentColor",
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-    strokeWidth: 2,
-    viewBox: "0 0 24 24"
-  };
-
-  if (type === "phone") {
-    return (
-      <svg aria-hidden="true" {...commonProps}>
-        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.95.34 1.88.66 2.76a2 2 0 0 1-.45 2.11L8.05 9.86a16 16 0 0 0 6.09 6.09l1.27-1.27a2 2 0 0 1 2.11-.45c.88.32 1.81.54 2.76.66A2 2 0 0 1 22 16.92Z" />
-      </svg>
-    );
-  }
-
-  if (type === "clock") {
-    return (
-      <svg aria-hidden="true" {...commonProps}>
-        <circle cx="12" cy="12" r="9" />
-        <path d="M12 7v5l3 2" />
-      </svg>
-    );
-  }
-
-  return (
-    <svg aria-hidden="true" {...commonProps}>
-      <path d="m12 3 8 4.5-8 4.5-8-4.5L12 3Z" />
-      <path d="M4 12.5 12 17l8-4.5" />
-      <path d="M4 17.5 12 22l8-4.5" />
+function InfoIcon({ type }: { type: "box" | "clock" }) {
+  return type === "clock" ? (
+    <svg aria-hidden="true" className="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </svg>
+  ) : (
+    <svg aria-hidden="true" className="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
+      <path d="m4 7 8-4 8 4-8 4-8-4Z" />
+      <path d="M12 11v10M20 7v10l-8 4-8-4V7" />
     </svg>
   );
 }
 
-type OrderCardProps = {
-  isOpening?: boolean;
-  onOpen: (order: Order) => void;
-  order: Order;
-};
-
 function OrderCardComponent({
   isOpening = false,
-  onOpen,
+  onCollapse,
+  onStartControl,
   order
 }: OrderCardProps) {
-  const cardRef = useRef<HTMLButtonElement>(null);
-  const [isVisible, setIsVisible] = useState(true);
   const [now, setNow] = useState(() => new Date());
-  const countdown = formatCountdown(order.delivery_date, now);
-  const deliveryDeadline = useMemo(
-    () => formatDeliveryDeadline(order.delivery_date),
-    [order.delivery_date]
-  );
-  const statusColor = useMemo(() => getStatusColor(order.status), [order.status]);
-  const siteBadgeClass = useMemo(() => getSiteBadgeClass(order.site), [order.site]);
+  const deadline = useMemo(() => getActionDeadline(order), [order]);
+  const tone = getTone(deadline, now);
+  const classes = TONE_CLASSES[tone];
+  const isConfirmation = order.extended_status === "Ожидает подтверждения";
+  const isOverdue = tone === "red";
+  const isUrgent = order.extended_status === "" && isOverdue;
+  const statusLabel = isOverdue
+    ? "Просрочен"
+    : isConfirmation
+      ? "До подтверждения осталось"
+      : "До сборки осталось";
+  const heading = isOverdue ? "Просрочен" : statusLabel;
+  const actionLabel = isConfirmation
+      ? "Подтвердить заказ"
+      : isUrgent
+        ? "Срочно собрать!"
+        : "Начать сборку";
+  const actionClass = isUrgent
+    ? "bg-red-600 hover:bg-red-700"
+    : "bg-emerald-600 hover:bg-emerald-700";
 
   useEffect(() => {
-    const card = cardRef.current;
-
-    if (card === null || !("IntersectionObserver" in window)) {
-      setIsVisible(true);
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsVisible(entry.isIntersecting);
-      },
-      {
-        rootMargin: "120px 0px"
-      }
-    );
-
-    observer.observe(card);
-
-    return () => {
-      observer.disconnect();
-    };
+    const intervalId = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(intervalId);
   }, []);
 
-  useEffect(() => {
-    if (!isVisible || isOpening) {
-      return;
+  function stopCardClick(event: MouseEvent<HTMLButtonElement>) {
+    event.stopPropagation();
+  }
+
+  function handleAction(event: MouseEvent<HTMLButtonElement>) {
+    event.stopPropagation();
+
+    if (!isConfirmation || isOverdue) {
+      onStartControl(order);
     }
-
-    const intervalId = window.setInterval(() => {
-      setNow(new Date());
-    }, 1000);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [isOpening, isVisible]);
+  }
 
   return (
-    <button
-      ref={cardRef}
-      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-left shadow-sm shadow-slate-200/70 transition hover:border-slate-300 hover:bg-slate-50 hover:shadow-md hover:shadow-slate-300/60 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-70"
-      disabled={isOpening}
-      type="button"
-      onClick={() => onOpen(order)}
+    <article
+      className={`w-full cursor-pointer rounded-[1.25rem] border bg-white px-3.5 py-3 text-left shadow-sm ${classes.border}`}
+      role="button"
+      tabIndex={0}
+      onClick={onCollapse}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onCollapse();
+        }
+      }}
     >
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-        <span
-          className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${siteBadgeClass}`}
-        >
+      <div className="flex items-center gap-2">
+        <span className={`rounded-full px-2.5 py-1 text-xs font-extrabold ${SITE_BADGE_CLASS_BY_SITE[order.site] ?? "bg-amber-50 text-orange-700"}`}>
           {order.site}
         </span>
-        <h2 className="min-w-0 text-base font-bold text-slate-950 xl:text-lg">
-          № {order.number}
-        </h2>
+        <h3 className="text-base font-extrabold text-slate-950">№ {order.number}</h3>
       </div>
 
-      <div className="mt-2.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5">
-        <div className="grid gap-2 min-[1500px]:grid-cols-[1fr_auto] min-[1500px]:items-center">
-          <div className="space-y-1.5">
-            <div className="text-sm font-bold uppercase tracking-normal text-slate-600 xl:text-base">
-              Собрать до {deliveryDeadline}
-            </div>
-            <span
-              className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 xl:text-sm ${statusColor}`}
-            >
-              {order.status}
-            </span>
-          </div>
-          <div className="text-2xl font-bold tabular-nums text-emerald-700 xl:text-3xl">
-            {isOpening ? "..." : countdown}
-          </div>
+      <div className={`mt-2.5 rounded-2xl border px-3.5 py-3 ${classes.panel}`}>
+        <div className="text-xs font-extrabold uppercase tracking-wide text-slate-600">
+          {heading}
         </div>
-        <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-emerald-100">
-          <div className="h-full w-full rounded-full bg-emerald-500" />
+        <div className={`mt-1 text-right text-3xl font-extrabold leading-none tabular-nums ${classes.timer}`}>
+          {isOpening ? "..." : formatCountdown(deadline, now)}
+        </div>
+        <span className={`mt-2 inline-flex min-h-7 items-center rounded-full border px-3 text-xs font-extrabold ${classes.status}`}>
+          {statusLabel}
+        </span>
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200/70">
+          <div className={`h-full w-4/5 rounded-full ${classes.progress}`} />
         </div>
       </div>
 
-      <div className="mt-3 space-y-1.5 text-xs text-slate-600 xl:text-sm">
-        <div className="flex min-w-0 items-center gap-2">
+      <div className="mt-3 space-y-2 text-sm text-slate-600">
+        <div className="flex items-center gap-2">
           <InfoIcon type="box" />
-          <span className="min-w-0 truncate">{order.shipment_store_name}</span>
+          <span className="truncate">{order.shipment_store_name}</span>
         </div>
-        <div className="flex min-w-0 items-center gap-2">
-          <InfoIcon type="phone" />
-          <span>Тел: {order.shipment_store_phone}</span>
-        </div>
-        <div className="flex min-w-0 items-center gap-2">
+        <div className="flex items-center gap-2">
           <InfoIcon type="clock" />
           <span>Интервал: {order.delivery_time}</span>
         </div>
       </div>
-    </button>
+
+      <div className="mt-3 flex items-center justify-between border-t border-slate-200 pt-3 text-sm text-slate-600">
+        <span>{order.items.length} поз.</span>
+        <strong className="text-base font-extrabold text-slate-950">{formatMoney(order.order_sum)} ₽</strong>
+      </div>
+
+      <button
+        className={`mt-3 min-h-10 w-full rounded-xl px-4 text-sm font-extrabold text-white transition disabled:cursor-wait disabled:opacity-70 ${actionClass}`}
+        disabled={isOpening}
+        type="button"
+        onClick={handleAction}
+      >
+        {isOpening ? "Открываем..." : actionLabel}
+      </button>
+      <button
+        className="mt-2 min-h-9 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-extrabold text-slate-950 transition hover:bg-slate-100"
+        type="button"
+        onClick={stopCardClick}
+      >
+        Просмотр деталей →
+      </button>
+    </article>
   );
 }
 

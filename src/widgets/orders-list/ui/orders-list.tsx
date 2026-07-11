@@ -16,6 +16,7 @@ import {
   ORDERS_REFRESH_INTERVAL_SECONDS
 } from "../api/orders";
 import { OrderCard } from "./order-card";
+import { OrderCardMini } from "./order-card-mini";
 
 type OrdersState = {
   data: OrdersResponse | null;
@@ -104,6 +105,7 @@ function isSameOrder(currentOrder: Order, nextOrder: Order) {
     currentOrder.payment_status === nextOrder.payment_status &&
     currentOrder.delivery_code === nextOrder.delivery_code &&
     currentOrder.order_created_at === nextOrder.order_created_at &&
+    currentOrder.confirmation_date === nextOrder.confirmation_date &&
     currentOrder.delivery_date === nextOrder.delivery_date &&
     currentOrder.delivery_time === nextOrder.delivery_time &&
     currentOrder.order_sum === nextOrder.order_sum &&
@@ -148,6 +150,7 @@ export function OrdersList({
   const [controlOrder, setControlOrder] = useState<Order | null>(null);
   const [controlProducts, setControlProducts] = useState<ProductsResponse>([]);
   const [controlLoadError, setControlLoadError] = useState<string | null>(null);
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [openingOrderId, setOpeningOrderId] = useState<string | null>(null);
   const [visibleOrdersLimit, setVisibleOrdersLimit] = useState(ORDERS_BATCH_SIZE);
   const isRequestInFlightRef = useRef(false);
@@ -274,7 +277,9 @@ export function OrdersList({
   );
   const hasMoreOrders = visibleOrders.length < filteredOrders.length;
   const ordersGridClassName =
-    layout === "list" ? "grid gap-3" : "grid gap-4 md:grid-cols-2 xl:grid-cols-4";
+    layout === "list"
+      ? "-mx-1.5 grid gap-1.5"
+      : "grid gap-4 md:grid-cols-2 xl:grid-cols-4";
 
   const loadNextOrders = useCallback(() => {
     setVisibleOrdersLimit((currentLimit) =>
@@ -421,7 +426,7 @@ export function OrdersList({
   }, [getProductsForControl]);
 
   return (
-    <section className="space-y-3">
+    <section className="-mt-2 space-y-3">
       {state.error ? (
         <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
           {state.error}
@@ -441,7 +446,7 @@ export function OrdersList({
       ) : null}
 
       {!state.isLoading && filteredOrders.length === 0 ? (
-        <div className="rounded-lg border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-600">
+        <div className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-center text-sm text-slate-600">
           Заказов пока нет
         </div>
       ) : null}
@@ -449,14 +454,25 @@ export function OrdersList({
       {filteredOrders.length > 0 ? (
         <>
           <div className={ordersGridClassName}>
-            {visibleOrders.map((order) => (
-              <OrderCard
-                key={order.id}
-                isOpening={openingOrderId === order.id}
-                order={order}
-                onOpen={openOrderControl}
-              />
-            ))}
+            {visibleOrders.map((order) =>
+              expandedOrderId === order.id ? (
+                <OrderCard
+                  key={order.id}
+                  isOpening={openingOrderId === order.id}
+                  order={order}
+                  onCollapse={() => setExpandedOrderId(null)}
+                  onStartControl={openOrderControl}
+                />
+              ) : (
+                <OrderCardMini
+                  key={order.id}
+                  order={order}
+                  onOpen={(selectedOrder) =>
+                    setExpandedOrderId(selectedOrder.id)
+                  }
+                />
+              )
+            )}
           </div>
 
           {hasMoreOrders ? (

@@ -5,7 +5,6 @@ export function KeyIndicators() {
     <WidgetPanel
       count={3}
       title="Ключевые показатели"
-      description="Касса · E-com · Мотивация"
     />
   );
 }

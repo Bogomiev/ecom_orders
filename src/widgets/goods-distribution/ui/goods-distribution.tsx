@@ -5,7 +5,6 @@ export function GoodsDistribution() {
     <WidgetPanel
       count={3}
       title="Товародвижение"
-      description="Простые карточки-заглушки для будущего сценария."
     />
   );
 }

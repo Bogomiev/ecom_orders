@@ -19,7 +19,6 @@ export function HomePage() {
           className="md:col-span-2 xl:col-span-1"
           count={ordersCount}
           title="Список заказов для сборки"
-          description="Карточки собраны по реальному паттерну экрана сборки: канал, дедлайн, статус, магазин, интервал, позиции и сумма."
         >
           <OrdersList
             layout="list"

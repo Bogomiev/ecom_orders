@@ -32,6 +32,7 @@ export type Order = {
   payment_status: string;
   delivery_code: string;
   order_created_at: DateTime;
+  confirmation_date: DateTime;
   delivery_date: DateTime;
   delivery_time: string;
   order_sum: number;
