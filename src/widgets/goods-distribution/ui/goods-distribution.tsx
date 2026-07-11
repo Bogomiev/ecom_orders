@@ -3,7 +3,7 @@ import { WidgetPanel } from "@/shared/ui/widget-panel";
 export function GoodsDistribution() {
   return (
     <WidgetPanel
-      count={3}
+      count={0}
       title="Товародвижение"
     />
   );

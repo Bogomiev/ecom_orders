@@ -6,3 +6,9 @@ export {
   toStoreSelectionSnapshot
 } from "./model/store-selection";
 export type { StoreSelectionSnapshot } from "./model/store-selection";
+export {
+  ACCESS_STORES_STORAGE_KEY,
+  getAccessTokenFromLocation,
+  getStoreUidForAccessToken,
+  setStoreUidForAccessToken
+} from "./model/access-store";

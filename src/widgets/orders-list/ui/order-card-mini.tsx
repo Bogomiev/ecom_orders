@@ -40,6 +40,7 @@ const TONE_CLASS_BY_TONE = {
 type OrderCardMiniTone = keyof typeof TONE_CLASS_BY_TONE;
 
 type OrderCardMiniProps = {
+  disabled?: boolean;
   isOpening?: boolean;
   onOpen: (order: Order) => void;
   order: Order;
@@ -138,6 +139,7 @@ function getStatusLabel(order: Order, tone: OrderCardMiniTone) {
 }
 
 function OrderCardMiniComponent({
+  disabled = false,
   isOpening = false,
   onOpen,
   order
@@ -200,7 +202,7 @@ function OrderCardMiniComponent({
       ref={cardRef}
       aria-label={accessibleLabel}
       className={`group relative w-full overflow-hidden rounded-[1.25rem] border px-3.5 py-2 text-left transition-[box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 active:translate-y-0 disabled:cursor-wait disabled:opacity-70 ${toneClass.card}`}
-      disabled={isOpening}
+      disabled={disabled || isOpening}
       type="button"
       onClick={() => onOpen(order)}
     >

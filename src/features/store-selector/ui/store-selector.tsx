@@ -3,49 +3,36 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Store, StoresResponse } from "@/entities/store";
 import {
-  getStoredStoreSelection,
+  getAccessTokenFromLocation,
+  getStoreUidForAccessToken,
   setStoredStoreSelection,
+  setStoreUidForAccessToken,
   toStoreSelectionSnapshot
 } from "@/entities/store";
 
 const STORES_SERVICE_PATH = "/api/entities/stores";
-const ALL_STORES_ID = "all-stores";
 const LEGACY_STORAGE_KEY = "ecom-orders-selected-store-id";
+const PIN_LENGTH = 4;
 
 type StoreSelection = Store | null;
-
-type StorePickerButtonProps = {
-  selectedStore: StoreSelection;
-  onOpen: () => void;
-};
-
-type StoreSelectorModalProps = {
-  isOpen: boolean;
-  onClose: () => void;
-  onSelect: (store: StoreSelection) => void;
-  selectedStore: StoreSelection;
-  state: StoresState;
-};
 
 type StoresState = {
   error: string | null;
   isLoading: boolean;
   stores: Store[];
-  totalItems: number;
 };
 
 const initialStoresState: StoresState = {
   error: null,
   isLoading: true,
-  stores: [],
-  totalItems: 0
+  stores: []
 };
 
-function LocationIcon() {
+function LocationIcon({ selected = false }: { selected?: boolean }) {
   return (
     <svg
       aria-hidden="true"
-      className="h-5 w-5 text-slate-800"
+      className={`h-5 w-5 shrink-0 ${selected ? "text-blue-600" : "text-slate-800"}`}
       fill="none"
       stroke="currentColor"
       strokeLinecap="round"
@@ -59,243 +46,51 @@ function LocationIcon() {
   );
 }
 
-function StorePickerButton({ selectedStore, onOpen }: StorePickerButtonProps) {
+function StorePickerButton({
+  disabled,
+  selectedStore,
+  onOpen
+}: {
+  disabled: boolean;
+  selectedStore: StoreSelection;
+  onOpen: () => void;
+}) {
   return (
     <button
-      className="flex min-h-14 min-w-52 items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2 text-left shadow-md shadow-slate-300/50 transition hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"
+      className="flex min-h-10 w-fit max-w-full items-center justify-start gap-2.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-left shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none"
+      disabled={disabled}
       type="button"
       onClick={onOpen}
     >
       <LocationIcon />
-      <span className="min-w-0">
-        <span className="block truncate text-base font-bold leading-tight text-slate-950">
-          {selectedStore?.name ?? "Все склады"}
-        </span>
-        <span className="mt-1 block text-sm leading-tight text-slate-600">
-          Все • с МСК
+      <span className="flex min-w-0 items-center">
+        <span className="block truncate text-base font-bold leading-none text-slate-950 sm:text-lg">
+          {disabled
+            ? "Магазин не выбран"
+            : selectedStore
+            ? `${selectedStore.name}, ${selectedStore.address} · 08:00–22:00`
+            : "Магазин не выбран"}
         </span>
       </span>
     </button>
   );
 }
 
-function StoreSelectorSearchPanel({
-  onResetSelection,
-  onSearchQueryChange,
-  searchQuery,
-  shownItems,
-  totalItems
-}: {
-  onResetSelection: () => void;
-  onSearchQueryChange: (query: string) => void;
-  searchQuery: string;
-  shownItems: number;
-  totalItems: number;
-}) {
+function PinDots({ pin, hasError }: { pin: string; hasError: boolean }) {
   return (
-    <div className="grid gap-3 lg:grid-cols-[minmax(320px,1fr)_auto_auto] lg:items-center">
-      <input
-        className="h-12 rounded-2xl border border-slate-300 bg-white px-4 text-base font-medium text-slate-500 shadow-inner outline-none ring-2 ring-slate-200/70"
-        placeholder="Найти склад по названию или коду..."
-        type="search"
-        value={searchQuery}
-        onChange={(event) => onSearchQueryChange(event.target.value)}
-      />
-      <div className="text-base font-medium text-slate-500">
-        Показано: {shownItems} из {totalItems}
-      </div>
-      <button
-        className="h-10 rounded-xl border border-transparent px-4 text-base font-bold text-slate-900 transition hover:bg-slate-300 focus:bg-slate-300 focus:outline-none"
-        type="button"
-        onClick={onResetSelection}
-      >
-        Сбросить выбор
-      </button>
-    </div>
-  );
-}
-
-function OrdersStoreFilterPanel() {
-  const [activeFilter, setActiveFilter] = useState("all");
-  const filters = [
-    { id: "all", label: "Все" },
-    { id: "aggregators", label: "Агрегаторы" },
-    { id: "retail", label: "Retail" }
-  ];
-
-  return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-md shadow-slate-200/70">
-      <div className="text-xs font-bold uppercase tracking-[0.25em] text-slate-400">
-        Отображение заказов
-      </div>
-      <div className="mt-3 flex flex-wrap gap-2">
-        {filters.map((filter) => {
-          const isActive = activeFilter === filter.id;
-
-          return (
-            <button
-              className={`rounded-xl border border-transparent px-4 py-2 text-base font-bold transition focus:outline-none ${
-                isActive
-                  ? "bg-violet-600 text-white shadow-sm"
-                  : "text-slate-900 hover:bg-slate-300 focus:bg-slate-300"
-              }`}
-              key={filter.id}
-              type="button"
-              onClick={() => setActiveFilter(filter.id)}
-            >
-              {filter.label}
-            </button>
-          );
-        })}
-      </div>
-      <div className="mt-4 flex items-center justify-between gap-4 rounded-2xl border border-slate-200 px-4 py-3">
-        <div>
-          <div className="text-base font-bold text-slate-950">
-            Исключить Интернет-магазин МСК
-          </div>
-          <div className="mt-1 text-sm text-slate-500">
-            Заказы со складом Интернет-магазин МСК не будут показаны на экране сборки.
-          </div>
-        </div>
-        <button
-          aria-label="Исключить Интернет-магазин МСК"
-          className="h-7 w-14 shrink-0 rounded-full border border-slate-500 bg-white p-1"
-          type="button"
-        >
-          <span className="block h-5 w-5 rounded-full bg-slate-400" />
-        </button>
-      </div>
-    </section>
-  );
-}
-
-function StoreSelectorHeader({
-  onResetSelection,
-  onSearchQueryChange,
-  searchQuery,
-  shownItems,
-  totalItems
-}: {
-  onResetSelection: () => void;
-  onSearchQueryChange: (query: string) => void;
-  searchQuery: string;
-  shownItems: number;
-  totalItems: number;
-}) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-      <StoreSelectorSearchPanel
-        searchQuery={searchQuery}
-        shownItems={shownItems}
-        totalItems={totalItems}
-        onResetSelection={onResetSelection}
-        onSearchQueryChange={onSearchQueryChange}
-      />
-      <div className="mt-4">
-        <OrdersStoreFilterPanel />
-      </div>
-    </div>
-  );
-}
-
-function AllStoresListItem({
-  isSelected,
-  onSelect
-}: {
-  isSelected: boolean;
-  onSelect: () => void;
-}) {
-  return (
-    <button
-      className={`flex w-full items-center gap-3 rounded-2xl border px-5 py-4 text-left text-lg font-bold ${
-        isSelected
-          ? "border-violet-600 bg-violet-100/70 text-slate-950 ring-2 ring-violet-500"
-          : "border-slate-200 bg-white text-slate-950"
-      }`}
-      type="button"
-      onClick={onSelect}
-    >
-      <span>Все склады</span>
-      {isSelected ? (
-        <span className="rounded-full bg-violet-600 px-3 py-1 text-base font-medium text-white">
-          Выбран
-        </span>
-      ) : null}
-    </button>
-  );
-}
-
-function StoreListItem({
-  isSelected,
-  onSelect,
-  store
-}: {
-  isSelected: boolean;
-  onSelect: () => void;
-  store: Store;
-}) {
-  return (
-    <button
-      className={`grid w-full gap-3 rounded-2xl border px-5 py-4 text-left transition md:grid-cols-[minmax(0,1fr)_auto] md:items-center ${
-        isSelected
-          ? "border-violet-600 bg-slate-100 shadow-md shadow-slate-300/70 ring-2 ring-violet-500"
-          : "border-slate-200 bg-white shadow-sm shadow-slate-200/80 hover:bg-slate-50 hover:shadow-md hover:shadow-slate-300/60"
-      }`}
-      type="button"
-      onClick={onSelect}
-    >
-      <div className="min-w-0">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <h3 className="min-w-0 truncate text-lg font-bold text-slate-950">
-            {store.name}
-          </h3>
-          {store.manual ? (
-            <span className="rounded-full bg-pink-500 px-3 py-1 text-sm font-medium text-white">
-              Ручной
-            </span>
-          ) : null}
-        </div>
-        <div className="mt-1 truncate text-base text-slate-500">
-          {store.code} • {store.address}
-        </div>
-      </div>
-      {isSelected ? (
-        <span className="rounded-full bg-violet-600 px-3 py-1 text-base text-white">
-          Выбран
-        </span>
-      ) : null}
-    </button>
-  );
-}
-
-function StoresList({
-  onSelect,
-  selectedStore,
-  stores
-}: {
-  onSelect: (store: StoreSelection) => void;
-  selectedStore: StoreSelection;
-  stores: Store[];
-}) {
-  return (
-    <div className="space-y-3">
-      <AllStoresListItem
-        isSelected={selectedStore === null}
-        onSelect={() => onSelect(null)}
-      />
-      {stores.map((store) => (
-        <StoreListItem
-          isSelected={selectedStore?.id === store.id}
-          key={store.id}
-          store={store}
-          onSelect={() => onSelect(store)}
+    <div aria-label={`Введено цифр PIN: ${pin.length} из ${PIN_LENGTH}`} className="flex justify-center gap-4">
+      {Array.from({ length: PIN_LENGTH }, (_, index) => (
+        <span
+          className={`h-3.5 w-3.5 rounded-full border-2 ${
+            index < pin.length
+              ? hasError
+                ? "border-red-500 bg-red-500"
+                : "border-blue-500 bg-blue-500"
+              : "border-slate-300 bg-white"
+          }`}
+          key={index}
         />
       ))}
-      {stores.length === 0 ? (
-        <div className="rounded-2xl border border-slate-200 bg-white px-5 py-6 text-center text-base font-medium text-slate-500 shadow-sm shadow-slate-200/80">
-          Магазины не найдены
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -306,78 +101,152 @@ function StoreSelectorModal({
   onSelect,
   selectedStore,
   state
-}: StoreSelectorModalProps) {
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSelect: (store: StoreSelection) => void;
+  selectedStore: StoreSelection;
+  state: StoresState;
+}) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [pin, setPin] = useState("");
+  const [pinHasError, setPinHasError] = useState(false);
   const filteredStores = useMemo(() => {
-    const normalizedQuery = searchQuery.trim().toLowerCase();
+    const query = searchQuery.trim().toLowerCase();
 
-    if (!normalizedQuery) {
-      return state.stores;
-    }
+    if (!query) return state.stores;
 
-    return state.stores.filter((store) => {
-      const name = store.name.toLowerCase();
-      const code = store.code.toLowerCase();
-
-      return name.includes(normalizedQuery) || code.includes(normalizedQuery);
-    });
+    return state.stores.filter(
+      (store) =>
+        store.name.toLowerCase().includes(query) ||
+        store.code.toLowerCase().includes(query)
+    );
   }, [searchQuery, state.stores]);
 
-  function handleResetSelection() {
-    setSearchQuery("");
-    onSelect(null);
-  }
+  useEffect(() => {
+    if (!isOpen) return;
 
-  if (!isOpen) {
-    return null;
+    function handleKeyDown(event: KeyboardEvent) {
+      if (/^\d$/.test(event.key)) {
+        const nextPin = pin.length === PIN_LENGTH ? event.key : `${pin}${event.key}`;
+        setPin(nextPin);
+        setPinHasError(false);
+
+        if (nextPin.length === PIN_LENGTH) {
+          const matchedStore = state.stores.find((store) => store.pin === nextPin);
+          if (matchedStore) onSelect(matchedStore);
+          else setPinHasError(true);
+        }
+      } else if (event.key === "Backspace") {
+        setPin((currentPin) => currentPin.slice(0, -1));
+        setPinHasError(false);
+      } else if (event.key === "Escape") {
+        onClose();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose, onSelect, pin, state.stores]);
+
+  if (!isOpen) return null;
+
+  function enterDigit(digit: string) {
+    const nextPin = pin.length === PIN_LENGTH ? digit : `${pin}${digit}`;
+    setPin(nextPin);
+    setPinHasError(false);
+
+    if (nextPin.length === PIN_LENGTH) {
+      const matchedStore = state.stores.find((store) => store.pin === nextPin);
+      if (matchedStore) onSelect(matchedStore);
+      else setPinHasError(true);
+    }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center bg-slate-950/35 p-4">
-      <div className="mx-auto flex h-[90vh] max-h-[90vh] w-full max-w-[64.8rem] flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
-        <div className="flex flex-col gap-4 border-b border-slate-200 px-6 py-5 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h2 className="text-lg font-bold text-slate-950">Выбор склада</h2>
-            <p className="mt-2 text-lg text-slate-500">
-              Поиск по названию и коду. Выбор сохраняется в браузере.
-            </p>
-          </div>
-          <button
-            className="self-start rounded-lg border border-transparent px-3 py-1.5 text-sm font-bold text-slate-900 transition hover:bg-slate-300 focus:bg-slate-300 focus:outline-none"
-            type="button"
-            onClick={onClose}
-          >
-            Закрыть
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-3 backdrop-blur-[1px]" onMouseDown={onClose}>
+      <section
+        aria-modal="true"
+        className="flex max-h-[96vh] w-full max-w-xl flex-col overflow-hidden rounded-[2rem] bg-white px-5 py-6 shadow-2xl sm:px-8"
+        role="dialog"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <h2 className="text-center text-2xl font-extrabold text-slate-950">Смена точки</h2>
+        <p className="mt-3 text-center text-base text-slate-500">
+          Выберите магазин или введите PIN для подтверждения
+        </p>
+
+        <input
+          autoFocus
+          className="mt-5 h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-950 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+          placeholder="Поиск магазина по названию или коду"
+          type="search"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+        />
+
+        <div className="mt-3 max-h-52 space-y-2 overflow-y-auto pr-1">
+          {state.error ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{state.error}</div>
+          ) : state.isLoading ? (
+            <div className="px-4 py-6 text-center text-sm text-slate-500">Загружаем магазины...</div>
+          ) : (
+            filteredStores.map((store) => {
+              const isSelected = selectedStore?.id === store.id;
+
+              return (
+                <button
+                  className={`flex min-h-12 w-full items-center gap-3 rounded-xl border px-4 text-left text-base font-bold transition ${
+                    isSelected
+                      ? "border-blue-300 bg-blue-50 text-blue-600"
+                      : "border-slate-200 bg-slate-50/70 text-slate-950 hover:border-blue-200 hover:bg-blue-50/50"
+                  }`}
+                  key={store.id}
+                  type="button"
+                  onClick={() => onSelect(store)}
+                >
+                  <LocationIcon selected={isSelected} />
+                  <span className="truncate">{store.name}</span>
+                  <span className="ml-auto text-xs font-medium text-slate-400">{store.code}</span>
+                </button>
+              );
+            })
+          )}
+          {!state.isLoading && !state.error && filteredStores.length === 0 ? (
+            <div className="px-4 py-5 text-center text-sm text-slate-500">Магазины не найдены</div>
+          ) : null}
+        </div>
+
+        <div className="mt-5">
+          <PinDots hasError={pinHasError} pin={pin} />
+          {pinHasError ? (
+            <div className="mt-2 text-center text-xs font-semibold text-red-600">Магазин с таким PIN не найден</div>
+          ) : null}
+        </div>
+
+        <div className="mt-5 grid grid-cols-3 gap-2.5">
+          {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((digit) => (
+            <button
+              className="h-12 rounded-xl border border-slate-200 bg-slate-50 text-xl font-bold text-slate-950 transition hover:bg-slate-100 active:bg-blue-50"
+              key={digit}
+              type="button"
+              onClick={() => enterDigit(digit)}
+            >
+              {digit}
+            </button>
+          ))}
+          <button className="h-12 rounded-xl border border-slate-200 bg-slate-50 text-sm font-bold text-slate-500 hover:bg-slate-100" type="button" onClick={onClose}>
+            Отмена
+          </button>
+          <button className="h-12 rounded-xl border border-slate-200 bg-slate-50 text-xl font-bold text-slate-950 hover:bg-slate-100" type="button" onClick={() => enterDigit("0")}>
+            0
+          </button>
+          <button aria-label="Удалить последнюю цифру" className="h-12 rounded-xl border border-slate-200 bg-slate-50 text-lg font-bold text-slate-500 hover:bg-slate-100" type="button" onClick={() => { setPin((currentPin) => currentPin.slice(0, -1)); setPinHasError(false); }}>
+            ⌫
           </button>
         </div>
-        <div className="flex min-h-0 flex-1 flex-col px-6 py-5">
-          <StoreSelectorHeader
-            searchQuery={searchQuery}
-            shownItems={filteredStores.length}
-            totalItems={state.totalItems}
-            onResetSelection={handleResetSelection}
-            onSearchQueryChange={setSearchQuery}
-          />
-          <div className="mt-7 min-h-0 flex-1 overflow-y-auto pt-1 pr-2">
-            {state.error ? (
-              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-800">
-                {state.error}
-              </div>
-            ) : null}
-            {state.isLoading ? (
-              <div className="rounded-xl border border-slate-200 bg-white px-4 py-8 text-center text-slate-600">
-                Загружаем склады...
-              </div>
-            ) : (
-              <StoresList
-                selectedStore={selectedStore}
-                stores={filteredStores}
-                onSelect={onSelect}
-              />
-            )}
-          </div>
-        </div>
-      </div>
+
+      </section>
     </div>
   );
 }
@@ -386,58 +255,51 @@ export function StoreSelector() {
   const [isOpen, setIsOpen] = useState(false);
   const [state, setState] = useState<StoresState>(initialStoresState);
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setSelectedStoreId(
-      getStoredStoreSelection()?.id ??
-        window.localStorage.getItem(LEGACY_STORAGE_KEY)
-    );
-  }, []);
+  const [accessToken, setAccessToken] = useState<string | null | undefined>(undefined);
 
   useEffect(() => {
     const controller = new AbortController();
 
     async function loadStores() {
       try {
-        const response = await fetch(STORES_SERVICE_PATH, {
-          cache: "no-store",
-          headers: {
-            Accept: "application/json"
-          },
-          signal: controller.signal
-        });
-
-        if (!response.ok) {
-          throw new Error(`Stores request failed with status ${response.status}`);
-        }
-
+        const token = getAccessTokenFromLocation();
+        setAccessToken(token);
+        const response = await fetch(STORES_SERVICE_PATH, { cache: "no-store", signal: controller.signal });
+        if (!response.ok) throw new Error(`Stores request failed with status ${response.status}`);
         const data = (await response.json()) as StoresResponse;
+        setState({ error: null, isLoading: false, stores: data.items });
 
-        setState({
-          error: null,
-          isLoading: false,
-          stores: data.items,
-          totalItems: data.totalItems
-        });
-      } catch (error) {
-        if (controller.signal.aborted) {
+        if (token === null) {
+          setSelectedStoreId(null);
+          setStoredStoreSelection(null);
           return;
         }
 
+        const mappedStoreUid = getStoreUidForAccessToken(token);
+        const mappedStore = data.items.find(
+          (store) => store.uid_1c === mappedStoreUid
+        );
+
+        if (mappedStore) {
+          setSelectedStoreId(mappedStore.id);
+          setStoredStoreSelection(toStoreSelectionSnapshot(mappedStore));
+        } else {
+          setSelectedStoreId(null);
+          setStoredStoreSelection(null);
+          setIsOpen(true);
+        }
+      } catch (error) {
+        if (controller.signal.aborted) return;
         setState((currentState) => ({
           ...currentState,
-          error:
-            error instanceof Error ? error.message : "Не удалось загрузить склады",
+          error: error instanceof Error ? error.message : "Не удалось загрузить магазины",
           isLoading: false
         }));
       }
     }
 
     loadStores();
-
-    return () => {
-      controller.abort();
-    };
+    return () => controller.abort();
   }, []);
 
   const selectedStore = useMemo(
@@ -446,22 +308,19 @@ export function StoreSelector() {
   );
 
   function handleSelect(store: StoreSelection) {
+    if (accessToken === null || accessToken === undefined || store === null) return;
+
     setSelectedStoreId(store?.id ?? null);
-
-    if (store === null) {
-      setStoredStoreSelection(null);
-      window.localStorage.removeItem(LEGACY_STORAGE_KEY);
-    } else {
-      setStoredStoreSelection(toStoreSelectionSnapshot(store));
-      window.localStorage.removeItem(LEGACY_STORAGE_KEY);
-    }
-
+    setStoredStoreSelection(toStoreSelectionSnapshot(store));
+    setStoreUidForAccessToken(accessToken, store.uid_1c);
+    window.localStorage.removeItem(LEGACY_STORAGE_KEY);
     setIsOpen(false);
   }
 
   return (
     <>
       <StorePickerButton
+        disabled={accessToken === null || accessToken === undefined}
         selectedStore={selectedStore}
         onOpen={() => setIsOpen(true)}
       />

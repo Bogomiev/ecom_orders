@@ -6,6 +6,7 @@ export type Store = {
   address: string;
   contact: string;
   manual: boolean;
+  pin: string;
 };
 
 export type StoresResponse = {

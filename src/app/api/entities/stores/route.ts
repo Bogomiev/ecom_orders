@@ -199,11 +199,12 @@ const STORE_RECORDS = [
   }
 ] as const;
 
-const MOCK_STORES: Store[] = STORE_RECORDS.map((store) => ({
+const MOCK_STORES: Store[] = STORE_RECORDS.map((store, index) => ({
   id: store.id,
   code: store.code,
   manual: store.manual,
   name: store.name,
+  pin: String(1001 + index),
   uid_1c: store.uid_1c,
   address: store.raw.address.text,
   contact: store.raw.contact

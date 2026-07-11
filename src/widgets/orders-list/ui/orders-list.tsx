@@ -6,6 +6,7 @@ import type { Order, OrderControlledItem, OrderItem, OrdersResponse } from "@/en
 import type { ProductsResponse } from "@/entities/product";
 import {
   getStoredStoreSelection,
+  getAccessTokenFromLocation,
   STORE_SELECTION_CHANGE_EVENT,
   type StoreSelectionSnapshot
 } from "@/entities/store";
@@ -148,6 +149,7 @@ export function OrdersList({
   const [state, setState] = useState<OrdersState>(initialState);
   const [selectedStore, setSelectedStore] = useState<StoreSelectionSnapshot>(null);
   const [controlOrder, setControlOrder] = useState<Order | null>(null);
+  const [hasAccessToken, setHasAccessToken] = useState(false);
   const [controlProducts, setControlProducts] = useState<ProductsResponse>([]);
   const [controlLoadError, setControlLoadError] = useState<string | null>(null);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
@@ -159,6 +161,10 @@ export function OrdersList({
   const controlledOrdersRef = useRef(new Map<string, Order>());
   const productsCacheRef = useRef<ProductsCache | null>(null);
   const productsRequestInFlightRef = useRef<Promise<ProductsResponse> | null>(null);
+
+  useEffect(() => {
+    setHasAccessToken(getAccessTokenFromLocation() !== null);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -466,9 +472,10 @@ export function OrdersList({
               ) : (
                 <OrderCardMini
                   key={order.id}
+                  disabled={!hasAccessToken}
                   order={order}
                   onOpen={(selectedOrder) =>
-                    setExpandedOrderId(selectedOrder.id)
+                    hasAccessToken && setExpandedOrderId(selectedOrder.id)
                   }
                 />
               )

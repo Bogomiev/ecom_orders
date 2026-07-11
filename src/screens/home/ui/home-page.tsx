@@ -6,6 +6,7 @@ import { WidgetPanel } from "@/shared/ui/widget-panel";
 import { GoodsDistribution } from "@/widgets/goods-distribution";
 import { KeyIndicators } from "@/widgets/key-indicators";
 import { OrdersList } from "@/widgets/orders-list";
+import { OrdersPageHeader } from "@/widgets/orders-screen-header";
 import { PricePrinting } from "@/widgets/price-printing";
 import { ServiceDesk } from "@/widgets/service-desk";
 
@@ -14,7 +15,10 @@ export function HomePage() {
 
   return (
     <PageShell>
-      <div className="grid min-h-[calc(100vh-1.5rem)] gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <div className="space-y-3">
+        <OrdersPageHeader />
+
+        <div className="grid min-h-[calc(100vh-1.5rem)] gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <WidgetPanel
           className="md:col-span-2 xl:col-span-1"
           count={ordersCount}
@@ -30,6 +34,7 @@ export function HomePage() {
         <PricePrinting />
         <ServiceDesk />
         <KeyIndicators />
+        </div>
       </div>
     </PageShell>
   );
