@@ -21,32 +21,17 @@ export type OrderControlledItem = {
 
 export type Order = {
   id: string;
-  external_id: string;
   number: string;
   source: string;
-  customer: string;
   status: string;
   extended_status: string;
-  external_status: string;
-  order_method: string;
-  payment_status: string;
-  delivery_code: string;
   order_created_at: DateTime;
   confirmation_date: DateTime;
   delivery_date: DateTime;
   delivery_time: string;
   order_sum: number;
-  total_discount: number;
-  delivery_cost: number;
-  currency: string;
-  is_paid: boolean;
-  raw: Record<string, unknown>;
-  raw_ozon: Record<string, unknown>;
-  created: DateTime;
-  updated: DateTime;
-  shipment_store_ref: string;
   shipment_store_name: string;
-  shipment_store_phone: string;
+  store_id: string;
   items: OrderItem[];
   controlledItems: OrderControlledItem[];
 };

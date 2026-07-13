@@ -5,34 +5,6 @@ export const ORDERS_SERVICE_PATH = "/api/orders";
 export const PRODUCTS_SERVICE_PATH = "/api/entities/product";
 export const ORDERS_REFRESH_INTERVAL_SECONDS = 5;
 
-type RawOrderItem = Omit<
-  OrdersResponse["items"][number]["items"][number],
-  "is_weight" | "marking_product" | "product_name"
->;
-
-type RawOrder = Omit<OrdersResponse["items"][number], "items"> & {
-  items: RawOrderItem[];
-};
-
-type RawOrdersResponse = Omit<OrdersResponse, "items"> & {
-  items: RawOrder[];
-};
-
-function normalizeOrders(ordersResponse: RawOrdersResponse): OrdersResponse {
-  return {
-    ...ordersResponse,
-    items: ordersResponse.items.map((order) => ({
-      ...order,
-      items: order.items.map((item) => ({
-        ...item,
-        product_name: item.product_id,
-        marking_product: false,
-        is_weight: false
-      }))
-    }))
-  };
-}
-
 export function enrichOrder(
   order: OrdersResponse["items"][number],
   products: ProductsResponse
@@ -72,9 +44,7 @@ export async function fetchOrders(signal?: AbortSignal): Promise<OrdersResponse>
     throw new Error(`Orders request failed with status ${ordersResponse.status}`);
   }
 
-  const orders = (await ordersResponse.json()) as RawOrdersResponse;
-
-  return normalizeOrders(orders);
+  return ordersResponse.json() as Promise<OrdersResponse>;
 }
 
 export async function fetchProducts(

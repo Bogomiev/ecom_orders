@@ -95,30 +95,16 @@ function areSameArrays<T>(
 function isSameOrder(currentOrder: Order, nextOrder: Order) {
   return (
     currentOrder.id === nextOrder.id &&
-    currentOrder.external_id === nextOrder.external_id &&
     currentOrder.number === nextOrder.number &&
     currentOrder.source === nextOrder.source &&
-    currentOrder.customer === nextOrder.customer &&
     currentOrder.status === nextOrder.status &&
     currentOrder.extended_status === nextOrder.extended_status &&
-    currentOrder.external_status === nextOrder.external_status &&
-    currentOrder.order_method === nextOrder.order_method &&
-    currentOrder.payment_status === nextOrder.payment_status &&
-    currentOrder.delivery_code === nextOrder.delivery_code &&
     currentOrder.order_created_at === nextOrder.order_created_at &&
     currentOrder.confirmation_date === nextOrder.confirmation_date &&
     currentOrder.delivery_date === nextOrder.delivery_date &&
     currentOrder.delivery_time === nextOrder.delivery_time &&
     currentOrder.order_sum === nextOrder.order_sum &&
-    currentOrder.total_discount === nextOrder.total_discount &&
-    currentOrder.delivery_cost === nextOrder.delivery_cost &&
-    currentOrder.currency === nextOrder.currency &&
-    currentOrder.is_paid === nextOrder.is_paid &&
-    currentOrder.created === nextOrder.created &&
-    currentOrder.updated === nextOrder.updated &&
-    currentOrder.shipment_store_ref === nextOrder.shipment_store_ref &&
     currentOrder.shipment_store_name === nextOrder.shipment_store_name &&
-    currentOrder.shipment_store_phone === nextOrder.shipment_store_phone &&
     areSameArrays(currentOrder.items, nextOrder.items, isSameOrderItem) &&
     areSameArrays(
       currentOrder.controlledItems,
@@ -273,7 +259,7 @@ export function OrdersList({
     }
 
     return orders.filter(
-      (order) => order.shipment_store_name === selectedStore.name
+      (order) => order.store_id === selectedStore.id
     );
   }, [selectedStore, state.data]);
   const ordersCount = filteredOrders.length;

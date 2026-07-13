@@ -1,15 +1,22 @@
 import { NextResponse } from "next/server";
 import type { ProductsResponse } from "@/entities/product";
-import mockProducts from "@/shared/api/mock-data/products.json";
-
-const MOCK_PRODUCTS = mockProducts satisfies ProductsResponse;
+import { fetchOneCJson } from "@/server/one-c/client";
 
 export const revalidate = 900;
 
 export async function GET() {
-  return NextResponse.json(MOCK_PRODUCTS, {
-    headers: {
-      "Cache-Control": "s-maxage=900, stale-while-revalidate=60"
-    }
-  });
+  try {
+    const products = await fetchOneCJson<ProductsResponse>("/GetGoods", {
+      next: { revalidate }
+    });
+
+    return NextResponse.json(products);
+  } catch (error) {
+    console.error("Failed to load products from 1C", error);
+
+    return NextResponse.json(
+      { message: "Не удалось получить список товаров из 1С" },
+      { status: 502 }
+    );
+  }
 }
