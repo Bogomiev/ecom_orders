@@ -174,8 +174,8 @@ function OrderCardComponent({
       }}
     >
       <div className="flex items-center gap-2">
-        <span className={`rounded-full px-2.5 py-1 text-xs font-extrabold ${SITE_BADGE_CLASS_BY_SITE[order.site] ?? "bg-amber-50 text-orange-700"}`}>
-          {order.site}
+        <span className={`rounded-full px-2.5 py-1 text-xs font-extrabold ${SITE_BADGE_CLASS_BY_SITE[order.source] ?? "bg-amber-50 text-orange-700"}`}>
+          {order.source}
         </span>
         <h3 className="text-base font-extrabold text-slate-950">№ {order.number}</h3>
       </div>

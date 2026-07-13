@@ -20,7 +20,7 @@ export function OrderProcessingResultsPanel({
     normalizedSearch.length === 0
       ? lines
       : lines.filter((line) =>
-          line.productName.toLowerCase().includes(normalizedSearch)
+          line.product_name.toLowerCase().includes(normalizedSearch)
         );
 
   useEffect(() => {
@@ -92,7 +92,7 @@ export function OrderProcessingResultsPanel({
             {filteredLines.map((line) => (
               <tr className="odd:bg-white even:bg-slate-50/60" key={line.mark}>
                 <td className="max-w-56 truncate border-b border-slate-100 px-3 py-2 font-medium text-slate-900">
-                  {line.productName}
+                  {line.product_name}
                 </td>
                 <td className="border-b border-slate-100 px-3 py-2 text-right tabular-nums text-slate-600">
                   {formatNumber(line.quantity)}

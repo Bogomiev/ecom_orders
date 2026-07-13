@@ -1,19 +1,19 @@
 export type DateTime = string;
 
 export type OrderItem = {
-  productId: string;
-  productName: string;
-  markingProduct: boolean;
+  product_id: string;
+  product_name: string;
+  marking_product: boolean;
   quantity: number;
   price: number;
   amount: number;
-  quantityFact: number;
-  isWeight: boolean;
+  quantity_fact: number;
+  is_weight: boolean;
 };
 
 export type OrderControlledItem = {
-  productId: string;
-  productName: string;
+  product_id: string;
+  product_name: string;
   quantity: number;
   mark: string;
   result: boolean;
@@ -23,7 +23,7 @@ export type Order = {
   id: string;
   external_id: string;
   number: string;
-  site: string;
+  source: string;
   customer: string;
   status: string;
   extended_status: string;

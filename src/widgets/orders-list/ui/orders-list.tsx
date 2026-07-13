@@ -55,14 +55,14 @@ const OrderControl = dynamic(
 
 function isSameOrderItem(currentItem: OrderItem, nextItem: OrderItem) {
   return (
-    currentItem.productId === nextItem.productId &&
-    currentItem.productName === nextItem.productName &&
-    currentItem.markingProduct === nextItem.markingProduct &&
+    currentItem.product_id === nextItem.product_id &&
+    currentItem.product_name === nextItem.product_name &&
+    currentItem.marking_product === nextItem.marking_product &&
     currentItem.quantity === nextItem.quantity &&
     currentItem.price === nextItem.price &&
     currentItem.amount === nextItem.amount &&
-    currentItem.quantityFact === nextItem.quantityFact &&
-    currentItem.isWeight === nextItem.isWeight
+    currentItem.quantity_fact === nextItem.quantity_fact &&
+    currentItem.is_weight === nextItem.is_weight
   );
 }
 
@@ -71,8 +71,8 @@ function isSameControlledItem(
   nextItem: OrderControlledItem
 ) {
   return (
-    currentItem.productId === nextItem.productId &&
-    currentItem.productName === nextItem.productName &&
+    currentItem.product_id === nextItem.product_id &&
+    currentItem.product_name === nextItem.product_name &&
     currentItem.quantity === nextItem.quantity &&
     currentItem.mark === nextItem.mark &&
     currentItem.result === nextItem.result
@@ -97,7 +97,7 @@ function isSameOrder(currentOrder: Order, nextOrder: Order) {
     currentOrder.id === nextOrder.id &&
     currentOrder.external_id === nextOrder.external_id &&
     currentOrder.number === nextOrder.number &&
-    currentOrder.site === nextOrder.site &&
+    currentOrder.source === nextOrder.source &&
     currentOrder.customer === nextOrder.customer &&
     currentOrder.status === nextOrder.status &&
     currentOrder.extended_status === nextOrder.extended_status &&

@@ -214,7 +214,7 @@ export function OrderControlDetailsPanel({
     }
 
     const { barcodeInfo, product } = barcodeMatch;
-    const orderItem = order.items.find((item) => item.productId === product.uid);
+    const orderItem = order.items.find((item) => item.product_id === product.uid);
 
     if (orderItem === undefined) {
       onNotify(
@@ -228,7 +228,7 @@ export function OrderControlDetailsPanel({
       return;
     }
 
-    const shouldAddControlledItem = orderItem.markingProduct;
+    const shouldAddControlledItem = orderItem.marking_product;
     const isAlreadyControlled =
       shouldAddControlledItem &&
       order.controlledItems.some(
@@ -248,10 +248,10 @@ export function OrderControlDetailsPanel({
     }
 
     const quantityToAdd = barcodeInfo?.ratio ?? 1;
-    const nextQuantityFact = orderItem.quantityFact + quantityToAdd;
+    const nextQuantityFact = orderItem.quantity_fact + quantityToAdd;
     const allowedWeightQuantity =
       orderItem.quantity * (1 + WEIGHT_QUANTITY_OVERAGE_PERCENT / 100);
-    const isQuantityExceeded = orderItem.isWeight
+    const isQuantityExceeded = orderItem.is_weight
       ? nextQuantityFact > allowedWeightQuantity
       : nextQuantityFact > orderItem.quantity;
 
@@ -270,10 +270,10 @@ export function OrderControlDetailsPanel({
     const nextOrder: Order = {
       ...order,
       items: order.items.map((item) =>
-        item.productId === product.uid
+        item.product_id === product.uid
           ? {
               ...item,
-              quantityFact: nextQuantityFact
+              quantity_fact: nextQuantityFact
             }
           : item
       ),
@@ -281,8 +281,8 @@ export function OrderControlDetailsPanel({
         ? [
             ...order.controlledItems,
             {
-              productId: product.uid,
-              productName: product.name,
+              product_id: product.uid,
+              product_name: product.name,
               quantity: quantityToAdd,
               mark: barcode,
               result: true
@@ -318,7 +318,7 @@ export function OrderControlDetailsPanel({
           </span>
         </div>
         <div className="mt-1 text-sm text-slate-500">
-          {order.site} • {order.shipment_store_name} • {order.delivery_time}
+          {order.source} • {order.shipment_store_name} • {order.delivery_time}
         </div>
       </div>
 
@@ -367,10 +367,10 @@ export function OrderControlDetailsPanel({
             {lines.map((line, index) => (
               <tr
                 className={index === 0 ? "bg-violet-50" : "odd:bg-white even:bg-slate-50/60"}
-                key={line.productId}
+                key={line.product_id}
               >
                 <td className="max-w-64 truncate border-b border-slate-100 px-3 py-2 font-medium text-slate-900">
-                  {line.productName}
+                  {line.product_name}
                 </td>
                 <td className="border-b border-slate-100 px-3 py-2 text-right tabular-nums text-slate-600">
                   {formatNumber(line.quantity)}
@@ -383,15 +383,15 @@ export function OrderControlDetailsPanel({
                 </td>
                 <td
                   className={`border-b border-slate-100 px-3 py-2 text-right font-bold tabular-nums ${
-                    line.isWeight && line.quantityFact > line.quantity
+                    line.is_weight && line.quantity_fact > line.quantity
                       ? "text-red-600"
                       : "text-slate-700"
                   }`}
                 >
-                  {formatNumber(line.quantityFact)}
+                  {formatNumber(line.quantity_fact)}
                 </td>
                 <td className="border-b border-slate-100 px-3 py-2 text-slate-600">
-                  {line.markingProduct ? <span>✓</span> : null}
+                  {line.marking_product ? <span>✓</span> : null}
                 </td>
               </tr>
             ))}

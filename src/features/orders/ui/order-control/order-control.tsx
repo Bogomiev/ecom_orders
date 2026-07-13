@@ -51,7 +51,7 @@ export function OrderControl({
         return;
       }
 
-      if (currentOrder.items.some((item) => item.quantityFact > 0)) {
+      if (currentOrder.items.some((item) => item.quantity_fact > 0)) {
         setIsCloseConfirmationOpen(true);
         return;
       }
@@ -72,7 +72,7 @@ export function OrderControl({
 
   const activeOrder = order;
   const lines = activeOrder.items;
-  const hasMarkingProducts = lines.some((line) => line.markingProduct);
+  const hasMarkingProducts = lines.some((line) => line.marking_product);
 
   function showNotification(message: ReactNode, tone: ScanNotification["tone"]) {
     setNotification({
@@ -83,7 +83,7 @@ export function OrderControl({
   }
 
   function requestClose() {
-    if (activeOrder.items.some((item) => item.quantityFact > 0)) {
+    if (activeOrder.items.some((item) => item.quantity_fact > 0)) {
       setIsCloseConfirmationOpen(true);
       return;
     }

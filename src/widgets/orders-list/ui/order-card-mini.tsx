@@ -8,7 +8,7 @@ const CONFIRMATION_DEADLINE_MINUTES = 5;
 const SITE_BADGE_CLASS_BY_SITE: Record<string, string> = {
   "Wildberries": "border-pink-200 bg-pink-50 text-pink-600",
   "ЯндексGO": "border-orange-200 bg-orange-50 text-orange-700",
-  "Яндекс Маркет": "border-orange-200 bg-orange-50 text-orange-700",
+  "Яндекс.Маркет": "border-orange-200 bg-orange-50 text-orange-700",
   "Яндекс Еда": "border-orange-200 bg-orange-50 text-orange-700",
   "Сайт": "border-blue-200 bg-blue-50 text-blue-600",
   "Ozon": "border-cyan-200 bg-cyan-50 text-cyan-700",
@@ -93,8 +93,8 @@ function formatCountdown(deadline: Date, now: Date) {
   return `${sign}${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 }
 
-function getSiteBadgeClass(site: string) {
-  return SITE_BADGE_CLASS_BY_SITE[site] ?? DEFAULT_SITE_BADGE_CLASS;
+function getSiteBadgeClass(source: string) {
+  return SITE_BADGE_CLASS_BY_SITE[source] ?? DEFAULT_SITE_BADGE_CLASS;
 }
 
 function getActionDeadline(order: Order) {
@@ -156,8 +156,8 @@ function OrderCardMiniComponent({
   const toneClass = TONE_CLASS_BY_TONE[tone];
   const statusLabel = getStatusLabel(order, tone);
   const countdown = formatCountdown(actionDeadline, now);
-  const siteBadgeClass = useMemo(() => getSiteBadgeClass(order.site), [order.site]);
-  const accessibleLabel = `${order.site}, ${formatPositions(order.items.length)}, ${formatMoney(order.order_sum)} рублей, ${statusLabel}, ${countdown}`;
+  const siteBadgeClass = useMemo(() => getSiteBadgeClass(order.source), [order.source]);
+  const accessibleLabel = `${order.source}, ${formatPositions(order.items.length)}, ${formatMoney(order.order_sum)} рублей, ${statusLabel}, ${countdown}`;
 
   useEffect(() => {
     const card = cardRef.current;
@@ -210,7 +210,7 @@ function OrderCardMiniComponent({
         <span
           className={`inline-flex min-h-[1.4rem] shrink-0 items-center rounded-full border px-2.5 text-xs font-extrabold leading-none ${siteBadgeClass}`}
         >
-          {order.site}
+          {order.source}
         </span>
         <div className="flex min-w-0 flex-1 items-center justify-end gap-x-1.5 whitespace-nowrap text-xs font-extrabold tabular-nums">
           <span>{formatPositions(order.items.length)}</span>

@@ -7,7 +7,7 @@ export const ORDERS_REFRESH_INTERVAL_SECONDS = 5;
 
 type RawOrderItem = Omit<
   OrdersResponse["items"][number]["items"][number],
-  "isWeight" | "markingProduct" | "productName"
+  "is_weight" | "marking_product" | "product_name"
 >;
 
 type RawOrder = Omit<OrdersResponse["items"][number], "items"> & {
@@ -25,9 +25,9 @@ function normalizeOrders(ordersResponse: RawOrdersResponse): OrdersResponse {
       ...order,
       items: order.items.map((item) => ({
         ...item,
-        productName: item.productId,
-        markingProduct: false,
-        isWeight: false
+        product_name: item.product_id,
+        marking_product: false,
+        is_weight: false
       }))
     }))
   };
@@ -44,15 +44,15 @@ export function enrichOrder(
   return {
     ...order,
     items: order.items.map((item) => {
-      const product = productsById.get(item.productId);
+      const product = productsById.get(item.product_id);
 
       return {
         ...item,
-        productName: product?.name ?? item.productId,
-        markingProduct:
+        product_name: product?.name ?? item.product_id,
+        marking_product:
           product !== undefined &&
           product.markingType !== "БезОсобенностейУчета",
-        isWeight: product?.isWeight ?? false
+        is_weight: product?.isWeight ?? false
       };
     })
   };

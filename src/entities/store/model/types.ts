@@ -4,8 +4,6 @@ export type Store = {
   name: string;
   uid_1c: string;
   address: string;
-  contact: string;
-  manual: boolean;
   pin: string;
 };
 
