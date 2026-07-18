@@ -7,6 +7,9 @@ import { OrderControlDetailsPanel } from "./order-control-details-panel";
 import type { ScanNotification } from "./order-control-shared";
 import { OrderProcessingResultsPanel } from "./order-processing-results-panel";
 
+// Временно отключено. Установите true, чтобы вернуть правый блок результатов.
+const SHOW_PROCESSING_RESULTS = false;
+
 type OrderControlProps = {
   isOpen: boolean;
   onClose: () => void;
@@ -73,6 +76,8 @@ export function OrderControl({
   const activeOrder = order;
   const lines = activeOrder.items;
   const hasMarkingProducts = lines.some((line) => line.marking_product);
+  const showProcessingResults =
+    SHOW_PROCESSING_RESULTS && hasMarkingProducts;
 
   function showNotification(message: ReactNode, tone: ScanNotification["tone"]) {
     setNotification({
@@ -107,7 +112,9 @@ export function OrderControl({
     >
       <div
         aria-modal="true"
-        className="mx-auto flex h-[88vh] w-full max-w-[92rem] flex-col overflow-hidden rounded-3xl bg-slate-50 shadow-2xl"
+        className={`mx-auto flex h-[88vh] w-full flex-col overflow-hidden rounded-3xl bg-slate-50 shadow-2xl ${
+          showProcessingResults ? "max-w-[92rem]" : "max-w-[46rem]"
+        }`}
         role="dialog"
       >
         <div className="flex flex-col gap-3 border-b border-slate-200 bg-white px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
@@ -130,7 +137,7 @@ export function OrderControl({
 
         <div
           className={`grid min-h-0 flex-1 gap-4 p-4 ${
-            hasMarkingProducts ? "lg:grid-cols-2" : "lg:grid-cols-1"
+            showProcessingResults ? "lg:grid-cols-2" : "lg:grid-cols-1"
           }`}
         >
           <OrderControlDetailsPanel
@@ -141,7 +148,7 @@ export function OrderControl({
             onOrderChange={onOrderChange}
             onNotify={showNotification}
           />
-          {hasMarkingProducts ? (
+          {showProcessingResults ? (
             <OrderProcessingResultsPanel lines={activeOrder.controlledItems} />
           ) : null}
         </div>
