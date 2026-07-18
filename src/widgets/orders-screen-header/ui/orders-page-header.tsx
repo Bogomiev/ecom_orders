@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { StoreSelector } from "@/features/store-selector";
 import { playNotificationSound } from "@/shared/lib/notification-sound";
 import {
@@ -11,10 +11,73 @@ import { showSystemNotification } from "@/shared/lib/system-notification";
 
 const NOTIFICATION_TITLE = "Икорный: сборка";
 const TEST_NOTIFICATION_BODY = "Проверка уведомлений для экрана сборки.";
+const ACTIVE_ORDERS_NOTIFICATION_INTERVAL_MS = 60_000;
 const TOAST_VISIBLE_MS = 8000;
 
-export function OrdersPageHeader() {
+type OrdersPageHeaderProps = {
+  ordersCount: number;
+};
+
+function getOrderCountLabel(ordersCount: number) {
+  const lastTwoDigits = Math.abs(ordersCount) % 100;
+  const lastDigit = Math.abs(ordersCount) % 10;
+
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) {
+    return `${ordersCount} заказов`;
+  }
+
+  if (lastDigit === 1) {
+    return `${ordersCount} заказ`;
+  }
+
+  if (lastDigit >= 2 && lastDigit <= 4) {
+    return `${ordersCount} заказа`;
+  }
+
+  return `${ordersCount} заказов`;
+}
+
+export function OrdersPageHeader({ ordersCount }: OrdersPageHeaderProps) {
   const [notifications, setNotifications] = useState<PageNotification[]>([]);
+  const ordersCountRef = useRef(ordersCount);
+
+  useEffect(() => {
+    ordersCountRef.current = ordersCount;
+  }, [ordersCount]);
+
+  useEffect(() => {
+    function notifyAboutActiveOrders() {
+      const activeOrdersCount = ordersCountRef.current;
+
+      if (activeOrdersCount === 0) {
+        return;
+      }
+
+      const body = `В очереди сборки остается ${getOrderCountLabel(activeOrdersCount)}`;
+
+      playNotificationSound();
+      void showSystemNotification(NOTIFICATION_TITLE, {
+        body,
+        tag: "assembly-active-orders"
+      });
+      setNotifications((currentNotifications) => [
+        ...currentNotifications,
+        {
+          body,
+          id: Date.now(),
+          title: NOTIFICATION_TITLE,
+          tone: "warning"
+        }
+      ]);
+    }
+
+    const intervalId = window.setInterval(
+      notifyAboutActiveOrders,
+      ACTIVE_ORDERS_NOTIFICATION_INTERVAL_MS
+    );
+
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   useEffect(() => {
     if (notifications.length === 0) return;
@@ -33,7 +96,7 @@ export function OrdersPageHeader() {
 
   function handleSignalTestClick() {
     playNotificationSound();
-    showSystemNotification(NOTIFICATION_TITLE, {
+    void showSystemNotification(NOTIFICATION_TITLE, {
       body: TEST_NOTIFICATION_BODY,
       tag: "assembly-notification-test"
     });

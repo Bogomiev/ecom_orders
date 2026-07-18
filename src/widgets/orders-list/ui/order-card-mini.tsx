@@ -2,6 +2,7 @@
 
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import type { Order } from "@/entities/order";
+import { parseMoscowDateTime } from "@/shared/lib/date-time";
 
 const CONFIRMATION_DEADLINE_MINUTES = 5;
 
@@ -46,16 +47,12 @@ type OrderCardMiniProps = {
   order: Order;
 };
 
-function parseDateTime(value: string) {
-  return new Date(value.replace(" ", "T"));
-}
-
 function addMinutes(date: Date, minutes: number) {
   return new Date(date.getTime() + minutes * 60 * 1000);
 }
 
-function formatDeadlineTime(value: string) {
-  const date = parseDateTime(value);
+function formatOrderTime(value: string) {
+  const date = parseMoscowDateTime(value);
 
   if (Number.isNaN(date.getTime())) {
     return "--:--";
@@ -100,12 +97,12 @@ function getSiteBadgeClass(source: string) {
 function getActionDeadline(order: Order) {
   if (order.extended_status === "Ожидает подтверждения") {
     return addMinutes(
-      parseDateTime(order.order_created_at),
+      parseMoscowDateTime(order.order_created_at),
       CONFIRMATION_DEADLINE_MINUTES
     );
   }
 
-  return parseDateTime(order.confirmation_date);
+  return parseMoscowDateTime(order.confirmation_date);
 }
 
 function getOrderTone(deadline: Date, now: Date): OrderCardMiniTone {
@@ -148,9 +145,9 @@ function OrderCardMiniComponent({
   const [isVisible, setIsVisible] = useState(true);
   const [now, setNow] = useState(() => new Date());
   const actionDeadline = useMemo(() => getActionDeadline(order), [order]);
-  const deadlineTime = useMemo(
-    () => formatDeadlineTime(order.delivery_date),
-    [order.delivery_date]
+  const orderCreatedTime = useMemo(
+    () => formatOrderTime(order.order_created_at),
+    [order.order_created_at]
   );
   const tone = getOrderTone(actionDeadline, now);
   const toneClass = TONE_CLASS_BY_TONE[tone];
@@ -217,7 +214,7 @@ function OrderCardMiniComponent({
           <span className="opacity-45">·</span>
           <span>{formatMoney(order.order_sum)} ₽</span>
           <span className="opacity-45">·</span>
-          <span>{deadlineTime}</span>
+          <span>{orderCreatedTime}</span>
         </div>
       </div>
 

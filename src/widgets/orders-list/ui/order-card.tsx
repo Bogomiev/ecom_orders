@@ -2,6 +2,7 @@
 
 import { memo, useEffect, useMemo, useState, type MouseEvent } from "react";
 import type { Order } from "@/entities/order";
+import { parseMoscowDateTime } from "@/shared/lib/date-time";
 
 const CONFIRMATION_DEADLINE_MINUTES = 5;
 
@@ -60,18 +61,17 @@ type OrderCardProps = {
   order: Order;
 };
 
-function parseDateTime(value: string) {
-  return new Date(value.replace(" ", "T"));
-}
-
 function addMinutes(date: Date, minutes: number) {
   return new Date(date.getTime() + minutes * 60 * 1000);
 }
 
 function getActionDeadline(order: Order) {
   return order.extended_status === "Ожидает подтверждения"
-    ? addMinutes(parseDateTime(order.order_created_at), CONFIRMATION_DEADLINE_MINUTES)
-    : parseDateTime(order.confirmation_date);
+    ? addMinutes(
+        parseMoscowDateTime(order.order_created_at),
+        CONFIRMATION_DEADLINE_MINUTES
+      )
+    : parseMoscowDateTime(order.confirmation_date);
 }
 
 function getTone(deadline: Date, now: Date): CardTone {
@@ -126,23 +126,15 @@ function OrderCardComponent({
   const tone = getTone(deadline, now);
   const classes = TONE_CLASSES[tone];
   const isConfirmation = order.extended_status === "Ожидает подтверждения";
+  const isAwaitingAssembly = order.extended_status === "Ожидает сборку";
   const isOverdue = tone === "red";
-  const isUrgent = order.extended_status === "" && isOverdue;
+  const isUrgent = isAwaitingAssembly && isOverdue;
   const statusLabel = isOverdue
     ? "Просрочен"
     : isConfirmation
       ? "До подтверждения осталось"
       : "До сборки осталось";
   const heading = isOverdue ? "Просрочен" : statusLabel;
-  const actionLabel = isConfirmation
-      ? "Подтвердить заказ"
-      : isUrgent
-        ? "Срочно собрать!"
-        : "Начать сборку";
-  const actionClass = isUrgent
-    ? "bg-red-600 hover:bg-red-700"
-    : "bg-emerald-600 hover:bg-emerald-700";
-
   useEffect(() => {
     const intervalId = window.setInterval(() => setNow(new Date()), 1000);
     return () => window.clearInterval(intervalId);
@@ -152,12 +144,9 @@ function OrderCardComponent({
     event.stopPropagation();
   }
 
-  function handleAction(event: MouseEvent<HTMLButtonElement>) {
+  function handleStartControl(event: MouseEvent<HTMLButtonElement>) {
     event.stopPropagation();
-
-    if (!isConfirmation || isOverdue) {
-      onStartControl(order);
-    }
+    onStartControl(order);
   }
 
   return (
@@ -200,10 +189,6 @@ function OrderCardComponent({
           <InfoIcon type="box" />
           <span className="truncate">{order.shipment_store_name}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <InfoIcon type="clock" />
-          <span>Интервал: {order.delivery_time}</span>
-        </div>
       </div>
 
       <div className="mt-3 flex items-center justify-between border-t border-slate-200 pt-3 text-sm text-slate-600">
@@ -211,14 +196,33 @@ function OrderCardComponent({
         <strong className="text-base font-extrabold text-slate-950">{formatMoney(order.order_sum)} ₽</strong>
       </div>
 
-      <button
-        className={`mt-3 min-h-10 w-full rounded-xl px-4 text-sm font-extrabold text-white transition disabled:cursor-wait disabled:opacity-70 ${actionClass}`}
-        disabled={isOpening}
-        type="button"
-        onClick={handleAction}
-      >
-        {isOpening ? "Открываем..." : actionLabel}
-      </button>
+      {isConfirmation ? (
+        <button
+          className="mt-3 min-h-10 w-full rounded-xl bg-emerald-600 px-4 text-sm font-extrabold text-white transition hover:bg-emerald-700"
+          type="button"
+          onClick={stopCardClick}
+        >
+          Подтвердить заказ
+        </button>
+      ) : null}
+      {isAwaitingAssembly ? (
+        <button
+          className={`mt-3 min-h-10 w-full rounded-xl px-4 text-sm font-extrabold text-white transition disabled:cursor-wait disabled:opacity-70 ${
+            isUrgent
+              ? "bg-red-600 hover:bg-red-700"
+              : "bg-emerald-600 hover:bg-emerald-700"
+          }`}
+          disabled={isOpening}
+          type="button"
+          onClick={handleStartControl}
+        >
+          {isOpening
+            ? "Открываем..."
+            : isUrgent
+              ? "Срочно собрать!"
+              : "Начать сборку"}
+        </button>
+      ) : null}
       <button
         className="mt-2 min-h-9 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-extrabold text-slate-950 transition hover:bg-slate-100"
         type="button"

@@ -16,7 +16,7 @@ export function HomePage() {
   return (
     <PageShell>
       <div className="space-y-3">
-        <OrdersPageHeader />
+        <OrdersPageHeader ordersCount={ordersCount} />
 
         <div className="grid min-h-[calc(100vh-1.5rem)] gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <WidgetPanel

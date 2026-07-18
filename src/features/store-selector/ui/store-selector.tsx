@@ -127,27 +127,12 @@ function StoreSelectorModal({
     if (!isOpen) return;
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (/^\d$/.test(event.key)) {
-        const nextPin = pin.length === PIN_LENGTH ? event.key : `${pin}${event.key}`;
-        setPin(nextPin);
-        setPinHasError(false);
-
-        if (nextPin.length === PIN_LENGTH) {
-          const matchedStore = state.stores.find((store) => store.pin === nextPin);
-          if (matchedStore) onSelect(matchedStore);
-          else setPinHasError(true);
-        }
-      } else if (event.key === "Backspace") {
-        setPin((currentPin) => currentPin.slice(0, -1));
-        setPinHasError(false);
-      } else if (event.key === "Escape") {
-        onClose();
-      }
+      if (event.key === "Escape") onClose();
     }
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose, onSelect, pin, state.stores]);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -196,7 +181,7 @@ function StoreSelectorModal({
 
               return (
                 <button
-                  className={`flex min-h-12 w-full items-center gap-3 rounded-xl border px-4 text-left text-base font-bold transition ${
+                  className={`flex min-h-12 w-full items-center gap-3 rounded-xl border px-4 py-2 text-left transition ${
                     isSelected
                       ? "border-blue-300 bg-blue-50 text-blue-600"
                       : "border-slate-200 bg-slate-50/70 text-slate-950 hover:border-blue-200 hover:bg-blue-50/50"
@@ -206,8 +191,13 @@ function StoreSelectorModal({
                   onClick={() => onSelect(store)}
                 >
                   <LocationIcon selected={isSelected} />
-                  <span className="truncate">{store.name}</span>
-                  <span className="ml-auto text-xs font-medium text-slate-400">{store.code}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-base font-bold">{store.name}</span>
+                    <span className="mt-0.5 block truncate text-xs font-normal text-slate-500">
+                      {store.address}
+                    </span>
+                  </span>
+                  <span className="text-xs font-medium text-slate-400">{store.code}</span>
                 </button>
               );
             })
