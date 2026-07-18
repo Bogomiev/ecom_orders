@@ -225,7 +225,7 @@ function OrderCardMiniComponent({
           {statusLabel}
         </span>
         <span
-          className={`inline-flex min-h-5 items-center whitespace-nowrap rounded-full border px-2.5 text-[0.65rem] font-extrabold leading-none tabular-nums ${toneClass.pill}`}
+          className={`ml-auto inline-flex min-h-5 items-center whitespace-nowrap rounded-full border px-2.5 text-[0.65rem] font-extrabold leading-none tabular-nums ${toneClass.pill}`}
         >
           {isOpening ? "..." : countdown}
         </span>

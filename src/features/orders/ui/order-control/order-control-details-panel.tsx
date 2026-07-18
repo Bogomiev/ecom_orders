@@ -49,6 +49,39 @@ type BarcodeIndexEntry = {
   product: Product;
 };
 
+function HonestSignIcon() {
+  return (
+    <svg
+      aria-label="Маркируемый товар — Честный ЗНАК"
+      className="h-6 w-6 shrink-0"
+      role="img"
+      viewBox="0 0 48 48"
+    >
+      <rect fill="#ffec00" height="48" rx="8" width="48" />
+      <g
+        fill="none"
+        stroke="#5f6065"
+        strokeLinecap="square"
+        strokeLinejoin="round"
+        strokeWidth="5"
+      >
+        <path d="M11 20v-4a5 5 0 0 1 5-5h4" />
+        <path d="M28 11h4a5 5 0 0 1 5 5v4" />
+        <path d="M37 28v4a5 5 0 0 1-5 5h-4" />
+        <path d="M20 37h-4a5 5 0 0 1-5-5v-4" />
+      </g>
+      <path
+        d="m15.5 25 7 7 11-13"
+        fill="none"
+        stroke="#5f6065"
+        strokeLinecap="square"
+        strokeLinejoin="miter"
+        strokeWidth="5.5"
+      />
+    </svg>
+  );
+}
+
 export function OrderControlDetailsPanel({
   lines,
   onOrderChange,
@@ -339,27 +372,36 @@ export function OrderControlDetailsPanel({
         />
       </div>
 
-      <div className="min-h-0 flex-1 overflow-auto">
-        <table className="min-w-[760px] w-full border-collapse text-left text-sm">
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+        <table className="w-full table-fixed border-collapse text-left text-sm">
+          <colgroup>
+            <col className="w-[42%]" />
+            <col className="w-[15%]" />
+            <col className="w-[13%]" />
+            <col className="w-[13%]" />
+            <col className="w-[17%]" />
+          </colgroup>
           <thead className="sticky top-0 bg-slate-50 text-slate-500">
             <tr>
-              <th className="border-b border-slate-200 px-3 py-2 font-semibold">
+              <th className="border-b border-slate-200 px-3 py-2 font-semibold" rowSpan={2}>
                 Номенклатура
               </th>
-              <th className="border-b border-slate-200 px-3 py-2 text-right font-semibold">
-                Количество
-              </th>
-              <th className="border-b border-slate-200 px-3 py-2 text-right font-semibold">
+              <th className="border-b border-slate-200 px-2 py-2 text-right font-semibold" rowSpan={2}>
                 Цена
               </th>
-              <th className="border-b border-slate-200 px-3 py-2 text-right font-semibold">
+              <th className="px-2 py-2 text-center font-semibold" colSpan={2}>
+                Количество
+              </th>
+              <th className="border-b border-slate-200 px-2 py-2 text-right font-semibold" rowSpan={2}>
                 Сумма
               </th>
-              <th className="border-b border-slate-200 px-3 py-2 text-right font-semibold">
-                Количество факт
+            </tr>
+            <tr>
+              <th className="border-b border-slate-200 px-2 py-1 text-right text-xs font-semibold">
+                Заказ
               </th>
-              <th className="border-b border-slate-200 px-3 py-2 font-semibold">
-                Маркируемый товар
+              <th className="border-b border-slate-200 px-2 py-1 text-right text-xs font-semibold">
+                Факт
               </th>
             </tr>
           </thead>
@@ -369,20 +411,22 @@ export function OrderControlDetailsPanel({
                 className={index === 0 ? "bg-violet-50" : "odd:bg-white even:bg-slate-50/60"}
                 key={line.product_id}
               >
-                <td className="max-w-64 truncate border-b border-slate-100 px-3 py-2 font-medium text-slate-900">
-                  {line.product_name}
+                <td className="border-b border-slate-100 px-3 py-2 font-medium text-slate-900">
+                  <div className="flex items-start gap-2">
+                    {line.marking_product ? <HonestSignIcon /> : null}
+                    <span className="line-clamp-2 min-w-0 break-words leading-5">
+                      {line.product_name}
+                    </span>
+                  </div>
                 </td>
-                <td className="border-b border-slate-100 px-3 py-2 text-right tabular-nums text-slate-600">
-                  {formatNumber(line.quantity)}
-                </td>
-                <td className="border-b border-slate-100 px-3 py-2 text-right tabular-nums text-slate-600">
+                <td className="border-b border-slate-100 px-2 py-2 text-right tabular-nums text-slate-600">
                   {formatNumber(line.price)}
                 </td>
-                <td className="border-b border-slate-100 px-3 py-2 text-right tabular-nums text-slate-600">
-                  {formatMoney(line.amount)}
+                <td className="border-b border-slate-100 px-2 py-2 text-right tabular-nums text-slate-600">
+                  {formatNumber(line.quantity)}
                 </td>
                 <td
-                  className={`border-b border-slate-100 px-3 py-2 text-right font-bold tabular-nums ${
+                  className={`border-b border-slate-100 px-2 py-2 text-right font-bold tabular-nums ${
                     line.is_weight && line.quantity_fact > line.quantity
                       ? "text-red-600"
                       : "text-slate-700"
@@ -390,8 +434,8 @@ export function OrderControlDetailsPanel({
                 >
                   {formatNumber(line.quantity_fact)}
                 </td>
-                <td className="border-b border-slate-100 px-3 py-2 text-slate-600">
-                  {line.marking_product ? <span>✓</span> : null}
+                <td className="border-b border-slate-100 px-2 py-2 text-right tabular-nums text-slate-600">
+                  {formatMoney(line.amount)}
                 </td>
               </tr>
             ))}

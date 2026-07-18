@@ -118,20 +118,16 @@ export function OrderControl({
         role="dialog"
       >
         <div className="flex flex-col gap-3 border-b border-slate-200 bg-white px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h2 className="text-xl font-bold text-slate-950">
-              Контроль сборки заказа
-            </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Форма сборки и проверки заказа № {activeOrder.number}
-            </p>
-          </div>
+          <h2 className="text-xl font-bold text-slate-950">
+            Контроль сборки заказа
+          </h2>
           <button
-            className="self-start rounded-lg border border-transparent px-3 py-1.5 text-sm font-bold text-slate-900 transition hover:bg-slate-300 focus:bg-slate-300 focus:outline-none"
+            aria-label="Закрыть"
+            className="flex h-9 w-9 items-center justify-center self-start rounded-lg border border-transparent text-2xl leading-none font-medium text-slate-500 transition hover:bg-slate-200 hover:text-slate-900 focus:bg-slate-200 focus:outline-none"
             type="button"
             onClick={requestClose}
           >
-            Закрыть
+            ×
           </button>
         </div>
 

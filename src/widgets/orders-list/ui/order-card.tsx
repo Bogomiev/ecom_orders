@@ -24,7 +24,6 @@ const TONE_CLASSES: Record<CardTone, {
   action: string;
   border: string;
   panel: string;
-  progress: string;
   status: string;
   timer: string;
 }> = {
@@ -32,15 +31,13 @@ const TONE_CLASSES: Record<CardTone, {
     action: "bg-emerald-600 hover:bg-emerald-700",
     border: "border-slate-200",
     panel: "border-emerald-200 bg-emerald-50/40",
-    progress: "bg-emerald-500",
     status: "border-emerald-200 bg-emerald-50 text-emerald-700",
     timer: "text-emerald-700"
   },
   yellow: {
-    action: "bg-emerald-600 hover:bg-emerald-700",
+    action: "bg-amber-500 hover:bg-amber-600",
     border: "border-amber-200",
     panel: "border-amber-200 bg-amber-50/70",
-    progress: "bg-amber-500",
     status: "border-amber-200 bg-amber-50 text-amber-700",
     timer: "text-amber-700"
   },
@@ -48,7 +45,6 @@ const TONE_CLASSES: Record<CardTone, {
     action: "bg-red-600 hover:bg-red-700",
     border: "border-red-300",
     panel: "border-red-200 bg-red-50/70",
-    progress: "bg-red-500",
     status: "border-red-500 bg-red-600 text-white",
     timer: "text-red-700"
   }
@@ -103,20 +99,6 @@ function formatMoney(value: number) {
   return new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(value);
 }
 
-function InfoIcon({ type }: { type: "box" | "clock" }) {
-  return type === "clock" ? (
-    <svg aria-hidden="true" className="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v5l3 2" />
-    </svg>
-  ) : (
-    <svg aria-hidden="true" className="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
-      <path d="m4 7 8-4 8 4-8 4-8-4Z" />
-      <path d="M12 11v10M20 7v10l-8 4-8-4V7" />
-    </svg>
-  );
-}
-
 function OrderCardComponent({
   isConfirming = false,
   isOpening = false,
@@ -132,21 +114,15 @@ function OrderCardComponent({
   const isConfirmation = order.extended_status === "Ожидает подтверждения";
   const isAwaitingAssembly = order.extended_status === "Ожидает сборку";
   const isOverdue = tone === "red";
-  const isUrgent = isAwaitingAssembly && isOverdue;
   const statusLabel = isOverdue
     ? "Просрочен"
     : isConfirmation
       ? "До подтверждения осталось"
       : "До сборки осталось";
-  const heading = isOverdue ? "Просрочен" : statusLabel;
   useEffect(() => {
     const intervalId = window.setInterval(() => setNow(new Date()), 1000);
     return () => window.clearInterval(intervalId);
   }, []);
-
-  function stopCardClick(event: MouseEvent<HTMLButtonElement>) {
-    event.stopPropagation();
-  }
 
   function handleStartControl(event: MouseEvent<HTMLButtonElement>) {
     event.stopPropagation();
@@ -179,24 +155,13 @@ function OrderCardComponent({
       </div>
 
       <div className={`mt-2.5 rounded-2xl border px-3.5 py-3 ${classes.panel}`}>
-        <div className="text-xs font-extrabold uppercase tracking-wide text-slate-600">
-          {heading}
-        </div>
-        <div className={`mt-1 text-right text-3xl font-extrabold leading-none tabular-nums ${classes.timer}`}>
-          {isOpening ? "..." : formatCountdown(deadline, now)}
-        </div>
-        <span className={`mt-2 inline-flex min-h-7 items-center rounded-full border px-3 text-xs font-extrabold ${classes.status}`}>
-          {statusLabel}
-        </span>
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200/70">
-          <div className={`h-full w-4/5 rounded-full ${classes.progress}`} />
-        </div>
-      </div>
-
-      <div className="mt-3 space-y-2 text-sm text-slate-600">
-        <div className="flex items-center gap-2">
-          <InfoIcon type="box" />
-          <span className="truncate">{order.shipment_store_name}</span>
+        <div className="flex items-center justify-between gap-3">
+          <span className={`inline-flex min-h-7 items-center rounded-full border px-3 text-xs font-extrabold ${classes.status}`}>
+            {statusLabel}
+          </span>
+          <div className={`text-right text-2xl font-extrabold leading-none tabular-nums ${classes.timer}`}>
+            {isOpening ? "..." : formatCountdown(deadline, now)}
+          </div>
         </div>
       </div>
 
@@ -207,7 +172,7 @@ function OrderCardComponent({
 
       {isConfirmation ? (
         <button
-          className="mt-3 min-h-10 w-full rounded-xl bg-emerald-600 px-4 text-sm font-extrabold text-white transition hover:bg-emerald-700 disabled:cursor-wait disabled:opacity-70"
+          className={`mt-3 min-h-10 w-full rounded-xl px-4 text-sm font-extrabold text-white transition disabled:cursor-wait disabled:opacity-70 ${classes.action}`}
           disabled={isConfirming}
           type="button"
           onClick={handleConfirm}
@@ -217,29 +182,14 @@ function OrderCardComponent({
       ) : null}
       {isAwaitingAssembly ? (
         <button
-          className={`mt-3 min-h-10 w-full rounded-xl px-4 text-sm font-extrabold text-white transition disabled:cursor-wait disabled:opacity-70 ${
-            isUrgent
-              ? "bg-red-600 hover:bg-red-700"
-              : "bg-emerald-600 hover:bg-emerald-700"
-          }`}
+          className={`mt-3 min-h-10 w-full rounded-xl px-4 text-sm font-extrabold text-white transition disabled:cursor-wait disabled:opacity-70 ${classes.action}`}
           disabled={isOpening}
           type="button"
           onClick={handleStartControl}
         >
-          {isOpening
-            ? "Открываем..."
-            : isUrgent
-              ? "Срочно собрать!"
-              : "Начать сборку"}
+          {isOpening ? "Открываем..." : "Начать сборку"}
         </button>
       ) : null}
-      <button
-        className="mt-2 min-h-9 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-extrabold text-slate-950 transition hover:bg-slate-100"
-        type="button"
-        onClick={stopCardClick}
-      >
-        Просмотр деталей →
-      </button>
     </article>
   );
 }
