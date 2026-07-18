@@ -55,8 +55,10 @@ const TONE_CLASSES: Record<CardTone, {
 };
 
 type OrderCardProps = {
+  isConfirming?: boolean;
   isOpening?: boolean;
   onCollapse: () => void;
+  onConfirm: (order: Order) => void;
   onStartControl: (order: Order) => void;
   order: Order;
 };
@@ -116,8 +118,10 @@ function InfoIcon({ type }: { type: "box" | "clock" }) {
 }
 
 function OrderCardComponent({
+  isConfirming = false,
   isOpening = false,
   onCollapse,
+  onConfirm,
   onStartControl,
   order
 }: OrderCardProps) {
@@ -147,6 +151,11 @@ function OrderCardComponent({
   function handleStartControl(event: MouseEvent<HTMLButtonElement>) {
     event.stopPropagation();
     onStartControl(order);
+  }
+
+  function handleConfirm(event: MouseEvent<HTMLButtonElement>) {
+    event.stopPropagation();
+    onConfirm(order);
   }
 
   return (
@@ -198,11 +207,12 @@ function OrderCardComponent({
 
       {isConfirmation ? (
         <button
-          className="mt-3 min-h-10 w-full rounded-xl bg-emerald-600 px-4 text-sm font-extrabold text-white transition hover:bg-emerald-700"
+          className="mt-3 min-h-10 w-full rounded-xl bg-emerald-600 px-4 text-sm font-extrabold text-white transition hover:bg-emerald-700 disabled:cursor-wait disabled:opacity-70"
+          disabled={isConfirming}
           type="button"
-          onClick={stopCardClick}
+          onClick={handleConfirm}
         >
-          Подтвердить заказ
+          {isConfirming ? "Подтверждаем..." : "Подтвердить заказ"}
         </button>
       ) : null}
       {isAwaitingAssembly ? (

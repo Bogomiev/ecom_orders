@@ -5,6 +5,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Order, OrderControlledItem, OrderItem, OrdersResponse } from "@/entities/order";
 import type { ProductsResponse } from "@/entities/product";
 import {
+  PageNotificationStack,
+  type PageNotification
+} from "@/shared/ui/page-notification";
+import {
   getStoredStoreSelection,
   getAccessTokenFromLocation,
   STORE_SELECTION_CHANGE_EVENT,
@@ -12,6 +16,7 @@ import {
 } from "@/entities/store";
 import {
   enrichOrder,
+  confirmOrder,
   fetchProducts,
   fetchOrders,
   ORDERS_REFRESH_INTERVAL_SECONDS
@@ -140,6 +145,9 @@ export function OrdersList({
   const [controlLoadError, setControlLoadError] = useState<string | null>(null);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [openingOrderId, setOpeningOrderId] = useState<string | null>(null);
+  const [confirmingOrderId, setConfirmingOrderId] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState<PageNotification[]>([]);
+  const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
   const [visibleOrdersLimit, setVisibleOrdersLimit] = useState(ORDERS_BATCH_SIZE);
   const isRequestInFlightRef = useRef(false);
   const isMountedRef = useRef(true);
@@ -231,9 +239,8 @@ export function OrdersList({
       } finally {
         if (activeController === controller) {
           activeController = null;
+          isRequestInFlightRef.current = false;
         }
-
-        isRequestInFlightRef.current = false;
       }
     }
 
@@ -247,9 +254,11 @@ export function OrdersList({
     return () => {
       isMounted = false;
       activeController?.abort();
+      activeController = null;
+      isRequestInFlightRef.current = false;
       window.clearInterval(intervalId);
     };
-  }, []);
+  }, [ordersRefreshKey]);
 
   const filteredOrders = useMemo(() => {
     const orders = state.data?.items ?? [];
@@ -417,6 +426,54 @@ export function OrdersList({
     }
   }, [getProductsForControl]);
 
+  const showOrderNotification = useCallback(
+    (title: string, body: string, tone: PageNotification["tone"]) => {
+      const id = Date.now();
+      setNotifications((current) => [...current, { id, title, body, tone }]);
+      window.setTimeout(() => {
+        setNotifications((current) => current.filter((item) => item.id !== id));
+      }, 5000);
+    },
+    []
+  );
+
+  const handleConfirmOrder = useCallback(async (order: Order) => {
+    setConfirmingOrderId(order.id);
+
+    try {
+      const result = await confirmOrder({
+        orderId: order.uid_1c,
+        seller: "Давыдова ЮВ"
+      });
+
+      if (result.status === 200) {
+        showOrderNotification(
+          "Заказ подтверждён",
+          "Заказ успешно подтвержден",
+          "success"
+        );
+      } else {
+        showOrderNotification(
+          "Ошибка подтверждения",
+          `При подтверждении заказа произошла ошибка: ${result.data.mess}, статус заказа: ${result.data.data.status}`,
+          "warning"
+        );
+      }
+
+      if (result.status === 200 || result.status === 400) {
+        setOrdersRefreshKey((current) => current + 1);
+      }
+    } catch {
+      showOrderNotification(
+        "Ошибка подтверждения",
+        "При подтверждении заказа произошла ошибка: не удалось получить ответ сервера, статус заказа: неизвестен",
+        "warning"
+      );
+    } finally {
+      setConfirmingOrderId(null);
+    }
+  }, [showOrderNotification]);
+
   return (
     <section className="-mt-2 space-y-3">
       {state.error ? (
@@ -450,9 +507,11 @@ export function OrdersList({
               expandedOrderId === order.id ? (
                 <OrderCard
                   key={order.id}
+                  isConfirming={confirmingOrderId === order.id}
                   isOpening={openingOrderId === order.id}
                   order={order}
                   onCollapse={() => setExpandedOrderId(null)}
+                  onConfirm={handleConfirmOrder}
                   onStartControl={openOrderControl}
                 />
               ) : (
@@ -484,6 +543,12 @@ export function OrdersList({
         products={controlProducts}
         onOrderChange={updateControlledOrder}
         onClose={() => setControlOrder(null)}
+      />
+      <PageNotificationStack
+        notifications={notifications}
+        onClose={(id) =>
+          setNotifications((current) => current.filter((item) => item.id !== id))
+        }
       />
     </section>
   );

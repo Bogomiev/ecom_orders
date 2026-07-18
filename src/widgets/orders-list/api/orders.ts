@@ -1,9 +1,18 @@
-import type { OrdersResponse } from "@/entities/order";
+import type {
+  ConfirmOrderRequest,
+  ConfirmOrderResponse,
+  OrdersResponse
+} from "@/entities/order";
 import type { Product, ProductsResponse } from "@/entities/product";
 
 export const ORDERS_SERVICE_PATH = "/api/orders";
 export const PRODUCTS_SERVICE_PATH = "/api/entities/product";
 export const ORDERS_REFRESH_INTERVAL_SECONDS = 5;
+
+export type ConfirmOrderResult = {
+  data: ConfirmOrderResponse;
+  status: number;
+};
 
 export function enrichOrder(
   order: OrdersResponse["items"][number],
@@ -45,6 +54,24 @@ export async function fetchOrders(signal?: AbortSignal): Promise<OrdersResponse>
   }
 
   return ordersResponse.json() as Promise<OrdersResponse>;
+}
+
+export async function confirmOrder(
+  body: ConfirmOrderRequest
+): Promise<ConfirmOrderResult> {
+  const response = await fetch(`${ORDERS_SERVICE_PATH}/confirm`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+
+  return {
+    data: (await response.json()) as ConfirmOrderResponse,
+    status: response.status
+  };
 }
 
 export async function fetchProducts(

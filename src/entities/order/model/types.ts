@@ -21,6 +21,7 @@ export type OrderControlledItem = {
 
 export type Order = {
   id: string;
+  uid_1c: string;
   number: string;
   source: string;
   status: string;
@@ -34,6 +35,21 @@ export type Order = {
   store_id: string;
   items: OrderItem[];
   controlledItems: OrderControlledItem[];
+};
+
+export type ConfirmOrderRequest = {
+  orderId: string;
+  seller: string;
+};
+
+export type ConfirmOrderResponse = {
+  code: number;
+  mess: string;
+  data: {
+    order: string;
+    status: string;
+    seller: string;
+  };
 };
 
 export type OrdersResponse = {
