@@ -25,7 +25,7 @@ export function WidgetPanel({
         <header className="border-b border-slate-200 bg-slate-50/80 px-4 pb-3 pt-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h2 className="text-sm font-extrabold uppercase tracking-normal text-slate-900">
+              <h2 className="text-xs font-black uppercase leading-snug tracking-wide text-slate-900">
                 {title}
               </h2>
               {description ? (

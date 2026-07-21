@@ -113,13 +113,13 @@ export function OrdersPageHeader({ ordersCount }: OrdersPageHeaderProps) {
 
   return (
     <>
-      <header className="w-full rounded-[1.75rem] border border-white/80 bg-blue-50/70 px-2.5 py-2.5 shadow-sm shadow-slate-200/60">
+      <header className="w-full rounded-[1.75rem] border border-white/90 bg-slate-50/95 px-2.5 py-2.5 shadow-sm shadow-slate-200/60">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0 max-w-full self-start">
             <StoreSelector />
           </div>
           <button
-            className="min-h-10 shrink-0 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-950 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="min-h-10 shrink-0 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-extrabold leading-none tracking-wide text-slate-950 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             type="button"
             onClick={handleSignalTestClick}
           >

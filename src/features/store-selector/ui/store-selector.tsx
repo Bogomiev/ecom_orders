@@ -64,7 +64,7 @@ function StorePickerButton({
     >
       <LocationIcon />
       <span className="flex min-w-0 items-center">
-        <span className="block truncate text-base font-bold leading-none text-slate-950 sm:text-lg">
+        <span className="block truncate text-xs font-extrabold leading-none tracking-wide text-slate-950">
           {disabled
             ? "Магазин не выбран"
             : selectedStore

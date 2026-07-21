@@ -7,12 +7,12 @@ import { parseMoscowDateTime } from "@/shared/lib/date-time";
 const CONFIRMATION_DEADLINE_MINUTES = 5;
 
 const SITE_BADGE_CLASS_BY_SITE: Record<string, string> = {
-  Wildberries: "bg-pink-50 text-pink-600",
+  "Wildberries": "bg-pink-50 text-pink-600",
   "ЯндексGO": "bg-orange-50 text-orange-700",
   "Яндекс Маркет": "bg-orange-50 text-orange-700",
   "Яндекс Еда": "bg-orange-50 text-orange-700",
   "Сайт": "bg-blue-50 text-blue-600",
-  Ozon: "bg-cyan-50 text-cyan-700",
+  "Ozon": "bg-cyan-50 text-cyan-700",
   "Ручной": "bg-slate-50 text-slate-700",
   "Самовывоз": "bg-emerald-50 text-emerald-600",
   "Купер": "bg-emerald-50 text-emerald-600"
