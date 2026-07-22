@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Order, OrderControlledItem, OrderItem, OrdersResponse } from "@/entities/order";
 import type { ProductsResponse } from "@/entities/product";
+import { getStoredCurrentSeller } from "@/entities/seller";
 import {
   PageNotificationStack,
   type PageNotification
@@ -438,12 +439,23 @@ export function OrdersList({
   );
 
   const handleConfirmOrder = useCallback(async (order: Order) => {
+    const currentSeller = getStoredCurrentSeller();
+
+    if (currentSeller === null) {
+      showOrderNotification(
+        "Не выбран продавец!",
+        "Нажмите на кнопку выбора продавца и отсканируйте штрихкод на бедже.",
+        "error"
+      );
+      return;
+    }
+
     setConfirmingOrderId(order.id);
 
     try {
       const result = await confirmOrder({
         orderId: order.uid_1c,
-        seller: "Давыдова ЮВ"
+        seller: currentSeller.userId
       });
 
       if (result.status === 200) {

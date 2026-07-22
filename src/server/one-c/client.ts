@@ -14,8 +14,9 @@ export async function fetchOneCJson<T>(
 ): Promise<T> {
   const headers = new Headers(init.headers);
   headers.set("Accept", "application/json");
+  const requestUrl = `${ONE_C_API_URL.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`;
 
-  const response = await fetch(`${ONE_C_API_URL}${path}`, {
+  const response = await fetch(requestUrl, {
     ...init,
     headers,
     signal: init.signal ?? AbortSignal.timeout(15_000)
@@ -23,7 +24,7 @@ export async function fetchOneCJson<T>(
 
   if (!response.ok) {
     throw new Error(
-      `1C request ${path} failed with status ${response.status}`
+      `1C request ${requestUrl} failed with status ${response.status}`
     );
   }
 

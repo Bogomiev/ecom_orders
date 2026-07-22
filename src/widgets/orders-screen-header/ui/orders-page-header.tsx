@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { StoreSelector } from "@/features/store-selector";
+import { SellerSelector } from "@/features/seller-selector";
 import { playNotificationSound } from "@/shared/lib/notification-sound";
 import {
   PageNotificationStack,
@@ -115,8 +116,9 @@ export function OrdersPageHeader({ ordersCount }: OrdersPageHeaderProps) {
     <>
       <header className="w-full rounded-[1.75rem] border border-white/90 bg-slate-50/95 px-2.5 py-2.5 shadow-sm shadow-slate-200/60">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0 max-w-full self-start">
+          <div className="flex min-w-0 max-w-full flex-wrap gap-2 self-start">
             <StoreSelector />
+            <SellerSelector />
           </div>
           <button
             className="min-h-10 shrink-0 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-extrabold leading-none tracking-wide text-slate-950 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"

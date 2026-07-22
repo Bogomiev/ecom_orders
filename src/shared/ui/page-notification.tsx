@@ -1,4 +1,4 @@
-export type PageNotificationTone = "info" | "success" | "warning";
+export type PageNotificationTone = "error" | "info" | "success" | "warning";
 
 export type PageNotification = {
   id: number;
@@ -13,6 +13,7 @@ type PageNotificationStackProps = {
 };
 
 const toneClassByTone: Record<PageNotificationTone, string> = {
+  error: "border-red-200/80 bg-red-50/95 text-red-950",
   info: "border-sky-200/80 bg-sky-50/95 text-sky-950",
   success: "border-emerald-200/80 bg-emerald-50/95 text-emerald-950",
   warning: "border-amber-200/80 bg-amber-50/95 text-amber-950"
@@ -33,7 +34,7 @@ function PageNotificationItem({
     >
       <div className="flex items-start gap-3">
         <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-white/70 text-sm font-black">
-          !
+          {notification.tone === "error" ? "×" : "!"}
         </div>
         <div className="min-w-0 flex-1">
           <div className="text-sm font-extrabold leading-5">
