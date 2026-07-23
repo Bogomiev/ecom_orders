@@ -13,6 +13,34 @@ import {
 const SCANNER_MAX_KEY_INTERVAL_MS = 80;
 const SCANNER_MIN_BARCODE_LENGTH = 6;
 const WEIGHT_QUANTITY_OVERAGE_PERCENT = 15;
+const EAN_13_PATTERN = /^\d{13}$/;
+
+type ParsedScannedCode = {
+  isMark: boolean;
+  lookupBarcodes: string[];
+};
+
+function parseScannedCode(value: string): ParsedScannedCode {
+  if (EAN_13_PATTERN.test(value)) {
+    return { isMark: false, lookupBarcodes: [value] };
+  }
+
+  const normalizedValue = value
+    .replace(/^\]d2/, "")
+    .replace(/^\u001d+/, "");
+  const parenthesizedGtin = normalizedValue.match(/\(01\)(\d{14})/);
+  const rawGtin = normalizedValue.match(/^01(\d{14})/);
+  const gtin = parenthesizedGtin?.[1] ?? rawGtin?.[1];
+
+  if (gtin === undefined) {
+    return { isMark: false, lookupBarcodes: [value] };
+  }
+
+  return {
+    isMark: true,
+    lookupBarcodes: gtin.startsWith("0") ? [gtin, gtin.slice(1)] : [gtin]
+  };
+}
 
 function isPrintableScannerKey(event: KeyboardEvent) {
   return (
@@ -239,7 +267,10 @@ export function OrderControlDetailsPanel({
       return;
     }
 
-    const barcodeMatch = productsByBarcode.get(barcode);
+    const parsedCode = parseScannedCode(barcode);
+    const barcodeMatch = parsedCode.lookupBarcodes
+      .map((lookupBarcode) => productsByBarcode.get(lookupBarcode))
+      .find((match) => match !== undefined);
 
     if (barcodeMatch === undefined) {
       onNotify(`Штрихкод ${barcode} не найден в справочнике товаров`, "error");
@@ -258,6 +289,11 @@ export function OrderControlDetailsPanel({
         </>,
         "error"
       );
+      return;
+    }
+
+    if (orderItem.marking_product && !parsedCode.isMark) {
+      onNotify("Просканируйте марку товара", "warning");
       return;
     }
 
