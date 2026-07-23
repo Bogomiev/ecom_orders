@@ -143,6 +143,37 @@ function isSameOrdersResponse(
   );
 }
 
+function mergeOrderWithLocalControl(serverOrder: Order, localOrder: Order) {
+  const localItemsByProductId = new Map(
+    localOrder.items.map((item) => [item.product_id, item])
+  );
+  const serverProductIds = new Set(
+    serverOrder.items.map((item) => item.product_id)
+  );
+
+  return {
+    ...serverOrder,
+    items: serverOrder.items.map((serverItem) => {
+      const localItem = localItemsByProductId.get(serverItem.product_id);
+
+      if (localItem === undefined) {
+        return serverItem;
+      }
+
+      return {
+        ...serverItem,
+        product_name: localItem.product_name,
+        marking_product: localItem.marking_product,
+        quantity_fact: localItem.quantity_fact,
+        is_weight: localItem.is_weight
+      };
+    }),
+    controlledItems: localOrder.controlledItems.filter((item) =>
+      serverProductIds.has(item.product_id)
+    )
+  };
+}
+
 export function OrdersList({
   layout = "grid",
   onOrdersCountChange
@@ -221,12 +252,28 @@ export function OrdersList({
           return;
         }
 
+        const mergedControlledOrders = new Map<string, Order>();
         const dataWithLocalControl = {
           ...data,
-          items: data.items.map(
-            (order) => controlledOrdersRef.current.get(order.id) ?? order
-          )
+          items: data.items.map((order) => {
+            const localOrder = controlledOrdersRef.current.get(order.id);
+
+            if (localOrder === undefined) {
+              return order;
+            }
+
+            const mergedOrder = mergeOrderWithLocalControl(order, localOrder);
+            mergedControlledOrders.set(order.id, mergedOrder);
+            return mergedOrder;
+          })
         };
+
+        controlledOrdersRef.current = mergedControlledOrders;
+        setControlOrder((currentOrder) =>
+          currentOrder === null
+            ? null
+            : mergedControlledOrders.get(currentOrder.id) ?? currentOrder
+        );
 
         setState((currentState) => ({
           data: isSameOrdersResponse(currentState.data, dataWithLocalControl)
