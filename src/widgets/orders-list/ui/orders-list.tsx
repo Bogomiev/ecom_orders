@@ -2,7 +2,15 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Order, OrderControlledItem, OrderItem, OrdersResponse } from "@/entities/order";
+import {
+  clearStoredOrderControl,
+  restoreOrderControl,
+  saveOrderControl,
+  type Order,
+  type OrderControlledItem,
+  type OrderItem,
+  type OrdersResponse
+} from "@/entities/order";
 import type { ProductsResponse } from "@/entities/product";
 import { getStoredCurrentSeller } from "@/entities/seller";
 import {
@@ -325,6 +333,7 @@ export function OrdersList({
   }, [onOrdersCountChange, ordersCount]);
 
   function updateControlledOrder(nextOrder: Order) {
+    saveOrderControl(nextOrder);
     controlledOrdersRef.current.set(nextOrder.id, nextOrder);
     setControlOrder(nextOrder);
     setState((currentState) => {
@@ -393,7 +402,7 @@ export function OrdersList({
         return;
       }
 
-      const enrichedOrder = enrichOrder(order, products);
+      const enrichedOrder = restoreOrderControl(enrichOrder(order, products));
       controlledOrdersRef.current.set(enrichedOrder.id, enrichedOrder);
       setControlProducts(products);
       setControlOrder(enrichedOrder);
@@ -531,6 +540,7 @@ export function OrdersList({
           "Заказ успешно собран",
           "success"
         );
+        clearStoredOrderControl(order);
         setControlOrder(null);
       } else {
         showOrderNotification(

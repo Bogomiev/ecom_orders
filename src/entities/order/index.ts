@@ -10,3 +10,8 @@ export type {
   OrderItem,
   OrdersResponse
 } from "./model/types";
+export {
+  clearStoredOrderControl,
+  restoreOrderControl,
+  saveOrderControl
+} from "./model/control-storage";
