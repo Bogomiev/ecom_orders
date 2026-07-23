@@ -5,6 +5,7 @@ import type { Order } from "@/entities/order";
 import { parseMoscowDateTime } from "@/shared/lib/date-time";
 
 const CONFIRMATION_DEADLINE_MINUTES = 5;
+const ASSEMBLY_DEADLINE_MINUTES = 10;
 
 const SITE_BADGE_CLASS_BY_SITE: Record<string, string> = {
   "Wildberries": "bg-pink-50 text-pink-600",
@@ -69,7 +70,10 @@ function getActionDeadline(order: Order) {
         parseMoscowDateTime(order.order_created_at),
         CONFIRMATION_DEADLINE_MINUTES
       )
-    : parseMoscowDateTime(order.confirmation_date);
+    : addMinutes(
+        parseMoscowDateTime(order.confirmation_date),
+        ASSEMBLY_DEADLINE_MINUTES
+      );
 }
 
 function getTone(deadline: Date, now: Date): CardTone {
