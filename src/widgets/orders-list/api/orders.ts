@@ -1,4 +1,6 @@
 import type {
+  CompleteOrderRequest,
+  CompleteOrderResponse,
   ConfirmOrderRequest,
   ConfirmOrderResponse,
   OrdersResponse
@@ -11,6 +13,11 @@ export const ORDERS_REFRESH_INTERVAL_SECONDS = 5;
 
 export type ConfirmOrderResult = {
   data: ConfirmOrderResponse;
+  status: number;
+};
+
+export type CompleteOrderResult = {
+  data: CompleteOrderResponse;
   status: number;
 };
 
@@ -70,6 +77,24 @@ export async function confirmOrder(
 
   return {
     data: (await response.json()) as ConfirmOrderResponse,
+    status: response.status
+  };
+}
+
+export async function completeOrder(
+  body: CompleteOrderRequest
+): Promise<CompleteOrderResult> {
+  const response = await fetch(`${ORDERS_SERVICE_PATH}/complete`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+
+  return {
+    data: (await response.json()) as CompleteOrderResponse,
     status: response.status
   };
 }

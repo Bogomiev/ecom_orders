@@ -12,7 +12,9 @@ const SHOW_PROCESSING_RESULTS = false;
 
 type OrderControlProps = {
   isOpen: boolean;
+  isCompleting: boolean;
   onClose: () => void;
+  onComplete: (order: Order) => void;
   onOrderChange: (order: Order) => void;
   order: Order | null;
   products: Product[];
@@ -20,7 +22,9 @@ type OrderControlProps = {
 
 export function OrderControl({
   isOpen,
+  isCompleting,
   onClose,
+  onComplete,
   onOrderChange,
   order,
   products
@@ -164,11 +168,12 @@ export function OrderControl({
 
         <div className="flex justify-end border-t border-slate-200 bg-white px-5 py-4">
           <button
-            className="rounded-xl bg-violet-600 px-5 py-2.5 text-base font-bold text-white shadow-sm transition hover:bg-violet-700 focus:bg-violet-700 focus:outline-none"
+            className="rounded-xl bg-violet-600 px-5 py-2.5 text-base font-bold text-white shadow-sm transition hover:bg-violet-700 focus:bg-violet-700 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={isCompleting}
             type="button"
-            onClick={requestClose}
+            onClick={() => onComplete(activeOrder)}
           >
-            Завершить контроль
+            {isCompleting ? "Сборка заказа..." : "Собрать заказ"}
           </button>
         </div>
       </div>

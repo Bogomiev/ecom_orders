@@ -52,6 +52,29 @@ export type ConfirmOrderResponse = {
   };
 };
 
+export type CompleteOrderControlledItem = {
+  product_id: string;
+  product_name: string;
+  quantity: number;
+  mark: string;
+};
+
+export type CompleteOrderRequest = {
+  orderId: string;
+  seller: string;
+  orderControlledItem: CompleteOrderControlledItem[];
+};
+
+export type CompleteOrderResponse = {
+  code: number;
+  mess: string;
+  data: {
+    order: string;
+    status: string;
+    seller: string;
+  };
+};
+
 export type OrdersResponse = {
   page: number;
   perPage: number;

@@ -1,5 +1,8 @@
 export type {
   DateTime,
+  CompleteOrderControlledItem,
+  CompleteOrderRequest,
+  CompleteOrderResponse,
   ConfirmOrderRequest,
   ConfirmOrderResponse,
   Order,

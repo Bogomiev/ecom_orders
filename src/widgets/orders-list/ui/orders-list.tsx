@@ -17,6 +17,7 @@ import {
 } from "@/entities/store";
 import {
   enrichOrder,
+  completeOrder,
   confirmOrder,
   fetchProducts,
   fetchOrders,
@@ -147,6 +148,7 @@ export function OrdersList({
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [openingOrderId, setOpeningOrderId] = useState<string | null>(null);
   const [confirmingOrderId, setConfirmingOrderId] = useState<string | null>(null);
+  const [completingOrderId, setCompletingOrderId] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<PageNotification[]>([]);
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
   const [visibleOrdersLimit, setVisibleOrdersLimit] = useState(ORDERS_BATCH_SIZE);
@@ -460,13 +462,13 @@ export function OrdersList({
 
       if (result.status === 200) {
         showOrderNotification(
-          "Заказ подтверждён",
+          "Управление заказами",
           "Заказ успешно подтвержден",
           "success"
         );
       } else {
         showOrderNotification(
-          "Ошибка подтверждения",
+          "Управление заказами",
           `При подтверждении заказа произошла ошибка: ${result.data.mess}, статус заказа: ${result.data.data.status}`,
           "warning"
         );
@@ -483,6 +485,73 @@ export function OrdersList({
       );
     } finally {
       setConfirmingOrderId(null);
+    }
+  }, [showOrderNotification]);
+
+  const handleCompleteOrder = useCallback(async (order: Order) => {
+    if (order.items.every((item) => item.quantity_fact === 0)) {
+      showOrderNotification(
+        "Управление заказами",
+        "Не отсканирован ни один товар!",
+        "warning"
+      );
+      return;
+    }
+
+    const currentSeller = getStoredCurrentSeller();
+
+    if (currentSeller === null) {
+      showOrderNotification(
+        "Не выбран продавец!",
+        "Нажмите на кнопку выбора продавца и отсканируйте штрихкод на бедже.",
+        "error"
+      );
+      return;
+    }
+
+    setCompletingOrderId(order.id);
+
+    try {
+      const result = await completeOrder({
+        orderId: order.uid_1c,
+        seller: currentSeller.userId,
+        orderControlledItem: order.controlledItems.map(
+          ({ product_id, product_name, quantity, mark }) => ({
+            product_id,
+            product_name,
+            quantity,
+            mark
+          })
+        )
+      });
+
+      if (result.status === 200) {
+        showOrderNotification(
+          "Управление заказами",
+          "Заказ успешно собран",
+          "success"
+        );
+        setControlOrder(null);
+      } else {
+        showOrderNotification(
+          "Управление заказами",
+          `При сборке заказа произошла ошибка: ${result.data.mess}, статус заказа: ${result.data.data.status}`,
+          "warning"
+        );
+      }
+
+      if (result.status === 200 || result.status === 400) {
+        controlledOrdersRef.current.delete(order.id);
+        setOrdersRefreshKey((current) => current + 1);
+      }
+    } catch {
+      showOrderNotification(
+        "Ошибка завершения контроля",
+        "При сборке заказа произошла ошибка: не удалось получить ответ сервера, статус заказа: неизвестен",
+        "warning"
+      );
+    } finally {
+      setCompletingOrderId(null);
     }
   }, [showOrderNotification]);
 
@@ -551,9 +620,11 @@ export function OrdersList({
 
       <OrderControl
         isOpen={controlOrder !== null}
+        isCompleting={completingOrderId === controlOrder?.id}
         order={controlOrder}
         products={controlProducts}
         onOrderChange={updateControlledOrder}
+        onComplete={handleCompleteOrder}
         onClose={() => setControlOrder(null)}
       />
       <PageNotificationStack
