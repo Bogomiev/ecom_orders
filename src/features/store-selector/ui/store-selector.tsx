@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import type { Store, StoresResponse } from "@/entities/store";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { Store } from "@/entities/store";
 import {
   getAccessTokenFromLocation,
   getStoreUidForAccessToken,
@@ -9,8 +9,9 @@ import {
   setStoreUidForAccessToken,
   toStoreSelectionSnapshot
 } from "@/entities/store";
+import { getStores } from "@/entities/store/api/get-stores";
+import { Dialog } from "@/shared/ui/dialog";
 
-const STORES_SERVICE_PATH = "/api/entities/stores";
 const LEGACY_STORAGE_KEY = "ecom-orders-selected-store-id";
 const PIN_LENGTH = 4;
 
@@ -32,7 +33,7 @@ function LocationIcon({ selected = false }: { selected?: boolean }) {
   return (
     <svg
       aria-hidden="true"
-      className={`h-5 w-5 shrink-0 ${selected ? "text-blue-600" : "text-slate-800"}`}
+      className={`h-5 w-5 shrink-0 ${selected ? "text-blue-600" : "app-text"}`}
       fill="none"
       stroke="currentColor"
       strokeLinecap="round"
@@ -43,6 +44,26 @@ function LocationIcon({ selected = false }: { selected?: boolean }) {
       <path d="M12 21s7-5.1 7-11a7 7 0 0 0-14 0c0 5.9 7 11 7 11Z" />
       <circle cx="12" cy="10" r="2.5" />
     </svg>
+  );
+}
+
+function StoreBuildingIcon() {
+  return (
+    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-indigo-50 text-indigo-500">
+      <svg
+        aria-hidden="true"
+        className="h-5 w-5"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+        viewBox="0 0 24 24"
+      >
+        <path d="M5 21V7l7-4v18M12 8h7v13M3 21h18" />
+        <path d="M8 9h1M8 13h1M8 17h1M15 12h1M15 16h1" />
+      </svg>
+    </span>
   );
 }
 
@@ -57,21 +78,34 @@ function StorePickerButton({
 }) {
   return (
     <button
-      className="flex min-h-10 w-fit max-w-full items-center justify-start gap-2.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-left shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none"
+      className="flex min-h-12 w-[23rem] max-w-full items-center justify-start gap-2.5 rounded-lg border app-border app-surface px-2.5 py-1.5 text-left shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none"
       disabled={disabled}
       type="button"
       onClick={onOpen}
     >
-      <LocationIcon />
-      <span className="flex min-w-0 items-center">
-        <span className="block truncate text-xs font-extrabold leading-none tracking-wide text-slate-950">
-          {disabled
-            ? "Магазин не выбран"
-            : selectedStore
-            ? `${selectedStore.name}, ${selectedStore.address} · 08:00–22:00`
-            : "Магазин не выбран"}
+      <StoreBuildingIcon />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[13px] font-extrabold leading-tight app-text">
+          {disabled || selectedStore === null ? "Магазин не выбран" : selectedStore.name}
         </span>
+        {selectedStore ? (
+          <span className="mt-0.5 block truncate text-[10px] leading-tight app-muted">
+            {selectedStore.address}
+          </span>
+        ) : null}
       </span>
+      <svg
+        aria-hidden="true"
+        className="h-5 w-5 shrink-0 app-muted"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+        viewBox="0 0 24 24"
+      >
+        <path d="m8 10 4 4 4-4" />
+      </svg>
     </button>
   );
 }
@@ -86,7 +120,7 @@ function PinDots({ pin, hasError }: { pin: string; hasError: boolean }) {
               ? hasError
                 ? "border-red-500 bg-red-500"
                 : "border-blue-500 bg-blue-500"
-              : "border-slate-300 bg-white"
+              : "border-slate-300 app-surface"
           }`}
           key={index}
         />
@@ -96,13 +130,11 @@ function PinDots({ pin, hasError }: { pin: string; hasError: boolean }) {
 }
 
 function StoreSelectorModal({
-  isOpen,
   onClose,
   onSelect,
   selectedStore,
   state
 }: {
-  isOpen: boolean;
   onClose: () => void;
   onSelect: (store: StoreSelection) => void;
   selectedStore: StoreSelection;
@@ -123,19 +155,6 @@ function StoreSelectorModal({
     );
   }, [searchQuery, state.stores]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
   function enterDigit(digit: string) {
     const nextPin = pin.length === PIN_LENGTH ? digit : `${pin}${digit}`;
     setPin(nextPin);
@@ -149,21 +168,19 @@ function StoreSelectorModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-3 backdrop-blur-[1px]" onMouseDown={onClose}>
-      <section
-        aria-modal="true"
-        className="flex max-h-[96vh] w-full max-w-xl flex-col overflow-hidden rounded-[2rem] bg-white px-5 py-6 shadow-2xl sm:px-8"
-        role="dialog"
-        onMouseDown={(event) => event.stopPropagation()}
-      >
-        <h2 className="text-center text-2xl font-extrabold text-slate-950">Смена точки</h2>
-        <p className="mt-3 text-center text-base text-slate-500">
+    <Dialog
+      ariaLabelledBy="store-selector-title"
+      className="flex max-h-[96vh] w-full max-w-xl flex-col overflow-hidden rounded-[2rem] app-surface px-5 py-6 shadow-2xl sm:px-8"
+      onClose={onClose}
+    >
+        <h2 id="store-selector-title" className="text-center text-2xl font-extrabold app-text">Смена точки</h2>
+        <p className="mt-3 text-center text-base app-muted">
           Выберите магазин или введите PIN для подтверждения
         </p>
 
         <input
           autoFocus
-          className="mt-5 h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-950 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+          className="mt-5 h-11 w-full rounded-xl border app-border app-surface-muted px-4 text-sm app-text outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
           placeholder="Поиск магазина по названию или коду"
           type="search"
           value={searchQuery}
@@ -174,7 +191,7 @@ function StoreSelectorModal({
           {state.error ? (
             <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{state.error}</div>
           ) : state.isLoading ? (
-            <div className="px-4 py-6 text-center text-sm text-slate-500">Загружаем магазины...</div>
+            <div className="px-4 py-6 text-center text-sm app-muted">Загружаем магазины...</div>
           ) : (
             filteredStores.map((store) => {
               const isSelected = selectedStore?.id === store.id;
@@ -184,7 +201,7 @@ function StoreSelectorModal({
                   className={`flex min-h-12 w-full items-center gap-3 rounded-xl border px-4 py-2 text-left transition ${
                     isSelected
                       ? "border-blue-300 bg-blue-50 text-blue-600"
-                      : "border-slate-200 bg-slate-50/70 text-slate-950 hover:border-blue-200 hover:bg-blue-50/50"
+                      : "app-border app-surface-muted app-text hover:border-blue-200 hover:bg-blue-50/50"
                   }`}
                   key={store.id}
                   type="button"
@@ -193,17 +210,17 @@ function StoreSelectorModal({
                   <LocationIcon selected={isSelected} />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-base font-bold">{store.name}</span>
-                    <span className="mt-0.5 block truncate text-xs font-normal text-slate-500">
+                    <span className="mt-0.5 block truncate text-xs font-normal app-muted">
                       {store.address}
                     </span>
                   </span>
-                  <span className="text-xs font-medium text-slate-400">{store.code}</span>
+                  <span className="text-xs font-medium app-muted">{store.code}</span>
                 </button>
               );
             })
           )}
           {!state.isLoading && !state.error && filteredStores.length === 0 ? (
-            <div className="px-4 py-5 text-center text-sm text-slate-500">Магазины не найдены</div>
+            <div className="px-4 py-5 text-center text-sm app-muted">Магазины не найдены</div>
           ) : null}
         </div>
 
@@ -217,7 +234,7 @@ function StoreSelectorModal({
         <div className="mt-5 grid grid-cols-3 gap-2.5">
           {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((digit) => (
             <button
-              className="h-12 rounded-xl border border-slate-200 bg-slate-50 text-xl font-bold text-slate-950 transition hover:bg-slate-100 active:bg-blue-50"
+              className="h-12 rounded-xl border app-border app-surface-muted text-xl font-bold app-text transition hover:bg-slate-100 active:bg-blue-50"
               key={digit}
               type="button"
               onClick={() => enterDigit(digit)}
@@ -225,19 +242,18 @@ function StoreSelectorModal({
               {digit}
             </button>
           ))}
-          <button className="h-12 rounded-xl border border-slate-200 bg-slate-50 text-sm font-bold text-slate-500 hover:bg-slate-100" type="button" onClick={onClose}>
+          <button className="h-12 rounded-xl border app-border app-surface-muted text-sm font-bold app-muted hover:bg-slate-100" type="button" onClick={onClose}>
             Отмена
           </button>
-          <button className="h-12 rounded-xl border border-slate-200 bg-slate-50 text-xl font-bold text-slate-950 hover:bg-slate-100" type="button" onClick={() => enterDigit("0")}>
+          <button className="h-12 rounded-xl border app-border app-surface-muted text-xl font-bold app-text hover:bg-slate-100" type="button" onClick={() => enterDigit("0")}>
             0
           </button>
-          <button aria-label="Удалить последнюю цифру" className="h-12 rounded-xl border border-slate-200 bg-slate-50 text-lg font-bold text-slate-500 hover:bg-slate-100" type="button" onClick={() => { setPin((currentPin) => currentPin.slice(0, -1)); setPinHasError(false); }}>
+          <button aria-label="Удалить последнюю цифру" className="h-12 rounded-xl border app-border app-surface-muted text-lg font-bold app-muted hover:bg-slate-100" type="button" onClick={() => { setPin((currentPin) => currentPin.slice(0, -1)); setPinHasError(false); }}>
             ⌫
           </button>
         </div>
 
-      </section>
-    </div>
+    </Dialog>
   );
 }
 
@@ -254,9 +270,7 @@ export function StoreSelector() {
       try {
         const token = getAccessTokenFromLocation();
         setAccessToken(token);
-        const response = await fetch(STORES_SERVICE_PATH, { cache: "no-store", signal: controller.signal });
-        if (!response.ok) throw new Error(`Stores request failed with status ${response.status}`);
-        const data = (await response.json()) as StoresResponse;
+        const data = await getStores(controller.signal);
         setState({ error: null, isLoading: false, stores: data.items });
 
         if (token === null) {
@@ -296,6 +310,7 @@ export function StoreSelector() {
     () => state.stores.find((store) => store.id === selectedStoreId) ?? null,
     [selectedStoreId, state.stores]
   );
+  const handleClose = useCallback(() => setIsOpen(false), []);
 
   function handleSelect(store: StoreSelection) {
     if (accessToken === null || accessToken === undefined || store === null) return;
@@ -314,13 +329,14 @@ export function StoreSelector() {
         selectedStore={selectedStore}
         onOpen={() => setIsOpen(true)}
       />
-      <StoreSelectorModal
-        isOpen={isOpen}
-        selectedStore={selectedStore}
-        state={state}
-        onClose={() => setIsOpen(false)}
-        onSelect={handleSelect}
-      />
+      {isOpen ? (
+        <StoreSelectorModal
+          selectedStore={selectedStore}
+          state={state}
+          onClose={handleClose}
+          onSelect={handleSelect}
+        />
+      ) : null}
     </>
   );
 }

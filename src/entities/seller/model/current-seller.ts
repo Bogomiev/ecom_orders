@@ -2,6 +2,7 @@ import type { Seller } from "./types";
 
 export const CURRENT_SELLER_STORAGE_KEY = "ecom-orders-current-seller";
 export const CURRENT_SELLER_TTL_HOURS = 12;
+export const CURRENT_SELLER_CHANGE_EVENT = "ecom-orders-current-seller-change";
 
 type StoredSeller = {
   seller: Seller;
@@ -53,9 +54,11 @@ export function setStoredCurrentSeller(seller: Seller) {
     selectedAt: new Date().toISOString()
   };
   window.localStorage.setItem(CURRENT_SELLER_STORAGE_KEY, JSON.stringify(value));
+  window.dispatchEvent(new Event(CURRENT_SELLER_CHANGE_EVENT));
 }
 
 export function clearStoredCurrentSeller() {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(CURRENT_SELLER_STORAGE_KEY);
+  window.dispatchEvent(new Event(CURRENT_SELLER_CHANGE_EVENT));
 }

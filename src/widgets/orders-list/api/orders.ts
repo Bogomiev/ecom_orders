@@ -5,7 +5,13 @@ import type {
   ConfirmOrderResponse,
   OrdersResponse
 } from "@/entities/order";
+import {
+  OrderActionResponseSchema,
+  OrdersResponseSchema
+} from "@/entities/order";
 import type { Product, ProductsResponse } from "@/entities/product";
+import { ProductsResponseSchema } from "@/entities/product";
+import { fetchJson } from "@/shared/api/fetch-json";
 
 export const ORDERS_SERVICE_PATH = "/api/orders";
 export const PRODUCTS_SERVICE_PATH = "/api/entities/product";
@@ -47,7 +53,7 @@ export function enrichOrder(
 }
 
 export async function fetchOrders(signal?: AbortSignal): Promise<OrdersResponse> {
-  const ordersResponse = await fetch(ORDERS_SERVICE_PATH, {
+  const { data } = await fetchJson(ORDERS_SERVICE_PATH, OrdersResponseSchema, {
     cache: "no-store",
     method: "GET",
     headers: {
@@ -56,17 +62,14 @@ export async function fetchOrders(signal?: AbortSignal): Promise<OrdersResponse>
     signal
   });
 
-  if (!ordersResponse.ok) {
-    throw new Error(`Orders request failed with status ${ordersResponse.status}`);
-  }
-
-  return ordersResponse.json() as Promise<OrdersResponse>;
+  return data;
 }
 
 export async function confirmOrder(
   body: ConfirmOrderRequest
 ): Promise<ConfirmOrderResult> {
-  const response = await fetch(`${ORDERS_SERVICE_PATH}/confirm`, {
+  const response = await fetchJson(`${ORDERS_SERVICE_PATH}/confirm`, OrderActionResponseSchema, {
+    acceptErrorResponse: true,
     method: "POST",
     headers: {
       Accept: "application/json",
@@ -76,7 +79,7 @@ export async function confirmOrder(
   });
 
   return {
-    data: (await response.json()) as ConfirmOrderResponse,
+    data: response.data,
     status: response.status
   };
 }
@@ -84,7 +87,8 @@ export async function confirmOrder(
 export async function completeOrder(
   body: CompleteOrderRequest
 ): Promise<CompleteOrderResult> {
-  const response = await fetch(`${ORDERS_SERVICE_PATH}/complete`, {
+  const response = await fetchJson(`${ORDERS_SERVICE_PATH}/complete`, OrderActionResponseSchema, {
+    acceptErrorResponse: true,
     method: "POST",
     headers: {
       Accept: "application/json",
@@ -94,7 +98,7 @@ export async function completeOrder(
   });
 
   return {
-    data: (await response.json()) as CompleteOrderResponse,
+    data: response.data,
     status: response.status
   };
 }
@@ -102,7 +106,7 @@ export async function completeOrder(
 export async function fetchProducts(
   signal?: AbortSignal
 ): Promise<ProductsResponse> {
-  const response = await fetch(PRODUCTS_SERVICE_PATH, {
+  const { data } = await fetchJson(PRODUCTS_SERVICE_PATH, ProductsResponseSchema, {
     method: "GET",
     headers: {
       Accept: "application/json"
@@ -110,9 +114,5 @@ export async function fetchProducts(
     signal
   });
 
-  if (!response.ok) {
-    throw new Error(`Products request failed with status ${response.status}`);
-  }
-
-  return response.json() as Promise<ProductsResponse>;
+  return data;
 }

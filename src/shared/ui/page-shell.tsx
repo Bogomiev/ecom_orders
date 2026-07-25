@@ -7,7 +7,7 @@ type PageShellProps = {
 
 export function PageShell({ children }: PageShellProps) {
   return (
-    <main className="min-h-screen w-full px-4 pb-8 pt-3">
+    <main className="app-shell min-h-screen w-full pb-7">
       {children}
       <NotificationPermissionPrompt />
     </main>

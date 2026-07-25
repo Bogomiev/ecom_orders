@@ -41,10 +41,10 @@ export function NotificationPermissionPrompt() {
       role="dialog"
     >
       <section className="w-full max-w-[42rem] rounded-[1.75rem] bg-white/95 px-4 py-6 text-center shadow-2xl shadow-slate-950/20 sm:px-8 lg:px-10">
-        <h2 className="text-2xl font-extrabold leading-tight text-slate-950 sm:text-3xl lg:text-4xl">
+        <h2 className="text-2xl font-extrabold leading-tight app-text sm:text-3xl lg:text-4xl">
           Разрешить звук в этой вкладке
         </h2>
-        <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-slate-500 sm:text-xl">
+        <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed app-muted sm:text-xl">
           Системные уведомления уже доступны. Осталось один раз разблокировать
           звук, чтобы тревога проигрывалась автоматически.
         </p>

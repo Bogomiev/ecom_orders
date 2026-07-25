@@ -1,99 +1,27 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import { StoreSelector } from "@/features/store-selector";
 import { SellerSelector } from "@/features/seller-selector";
 import { playNotificationSound } from "@/shared/lib/notification-sound";
-import {
-  PageNotificationStack,
-  type PageNotification
-} from "@/shared/ui/page-notification";
+import { PageNotificationStack } from "@/shared/ui/page-notification";
+import { usePageNotifications } from "@/shared/lib/use-page-notifications";
 import { showSystemNotification } from "@/shared/lib/system-notification";
+import { useClock } from "@/shared/lib/use-clock";
+import { useTheme } from "@/shared/lib/use-theme";
+import { useActiveOrdersNotification } from "../model/use-active-orders-notification";
 
 const NOTIFICATION_TITLE = "Икорный: сборка";
 const TEST_NOTIFICATION_BODY = "Проверка уведомлений для экрана сборки.";
-const ACTIVE_ORDERS_NOTIFICATION_INTERVAL_MS = 60_000;
-const TOAST_VISIBLE_MS = 8000;
 
 type OrdersPageHeaderProps = {
   ordersCount: number;
 };
 
-function getOrderCountLabel(ordersCount: number) {
-  const lastTwoDigits = Math.abs(ordersCount) % 100;
-  const lastDigit = Math.abs(ordersCount) % 10;
-
-  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) {
-    return `${ordersCount} заказов`;
-  }
-
-  if (lastDigit === 1) {
-    return `${ordersCount} заказ`;
-  }
-
-  if (lastDigit >= 2 && lastDigit <= 4) {
-    return `${ordersCount} заказа`;
-  }
-
-  return `${ordersCount} заказов`;
-}
-
 export function OrdersPageHeader({ ordersCount }: OrdersPageHeaderProps) {
-  const [notifications, setNotifications] = useState<PageNotification[]>([]);
-  const ordersCountRef = useRef(ordersCount);
-
-  useEffect(() => {
-    ordersCountRef.current = ordersCount;
-  }, [ordersCount]);
-
-  useEffect(() => {
-    function notifyAboutActiveOrders() {
-      const activeOrdersCount = ordersCountRef.current;
-
-      if (activeOrdersCount === 0) {
-        return;
-      }
-
-      const body = `В очереди сборки остается ${getOrderCountLabel(activeOrdersCount)}`;
-
-      playNotificationSound();
-      void showSystemNotification(NOTIFICATION_TITLE, {
-        body,
-        tag: "assembly-active-orders"
-      });
-      setNotifications((currentNotifications) => [
-        ...currentNotifications,
-        {
-          body,
-          id: Date.now(),
-          title: NOTIFICATION_TITLE,
-          tone: "warning"
-        }
-      ]);
-    }
-
-    const intervalId = window.setInterval(
-      notifyAboutActiveOrders,
-      ACTIVE_ORDERS_NOTIFICATION_INTERVAL_MS
-    );
-
-    return () => window.clearInterval(intervalId);
-  }, []);
-
-  useEffect(() => {
-    if (notifications.length === 0) return;
-
-    const latestNotificationId = notifications.at(-1)?.id;
-    const timeoutId = window.setTimeout(() => {
-      setNotifications((currentNotifications) =>
-        currentNotifications.filter(
-          (notification) => notification.id !== latestNotificationId
-        )
-      );
-    }, TOAST_VISIBLE_MS);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [notifications]);
+  const { dismiss, notifications, notify } = usePageNotifications(8000);
+  const { isDark, toggleTheme } = useTheme();
+  const currentTime = useClock();
+  useActiveOrdersNotification(ordersCount, notify);
 
   function handleSignalTestClick() {
     playNotificationSound();
@@ -101,41 +29,59 @@ export function OrdersPageHeader({ ordersCount }: OrdersPageHeaderProps) {
       body: TEST_NOTIFICATION_BODY,
       tag: "assembly-notification-test"
     });
-    setNotifications((currentNotifications) => [
-      ...currentNotifications,
-      {
-        body: TEST_NOTIFICATION_BODY,
-        id: Date.now(),
-        title: NOTIFICATION_TITLE,
-        tone: "info"
-      }
-    ]);
+    notify({
+      body: TEST_NOTIFICATION_BODY,
+      title: NOTIFICATION_TITLE,
+      tone: "info"
+    });
   }
 
   return (
     <>
-      <header className="w-full rounded-[1.75rem] border border-white/90 bg-slate-50/95 px-2.5 py-2.5 shadow-sm shadow-slate-200/60">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex min-w-0 max-w-full flex-wrap gap-2 self-start">
+      <header className="top-header flex min-h-[4.5rem] items-center justify-between gap-4 border-b app-border app-surface px-3 py-2">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <div className="brand-mark grid h-8 w-8 shrink-0 place-items-center rounded-lg text-base font-black text-white">Р</div>
+          <div className="flex min-w-0 max-w-full flex-wrap gap-2">
             <StoreSelector />
             <SellerSelector />
           </div>
+        </div>
+        <div className="header-actions flex items-center gap-2.5">
+          <span className="header-clock min-w-[4.5rem] text-sm font-extrabold tabular-nums">{currentTime}</span>
           <button
-            className="min-h-10 shrink-0 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-extrabold leading-none tracking-wide text-slate-950 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            aria-label="Проверить звук"
+            className="header-icon-button grid h-9 w-9 place-items-center rounded-lg border app-border app-surface-muted"
             type="button"
             onClick={handleSignalTestClick}
           >
-            Тест сигнала и уведомлений
+            <svg aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24">
+              <path d="M11 5 6.5 9H3v6h3.5l4.5 4V5Z" />
+              <path d="M15 9a4 4 0 0 1 0 6M17.5 6.5a7.5 7.5 0 0 1 0 11" />
+            </svg>
+          </button>
+          <button
+            aria-label={isDark ? "Включить светлую тему" : "Включить тёмную тему"}
+            className="header-icon-button grid h-9 w-9 place-items-center rounded-lg border app-border app-surface-muted"
+            type="button"
+            onClick={toggleTheme}
+          >
+            {isDark ? (
+              <svg aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+              </svg>
+            ) : (
+              <svg aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="8" />
+                <path d="M12 4a8 8 0 0 0 0 16V4Z" fill="currentColor" stroke="none" />
+              </svg>
+            )}
           </button>
         </div>
       </header>
       <PageNotificationStack
         notifications={notifications}
-        onClose={(id) =>
-          setNotifications((currentNotifications) =>
-            currentNotifications.filter((notification) => notification.id !== id)
-          )
-        }
+        onClose={dismiss}
       />
     </>
   );

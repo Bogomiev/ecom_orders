@@ -2,7 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Order, OrderItem } from "@/entities/order";
-import type { BarcodeInfo, Product } from "@/entities/product";
+import type { Product } from "@/entities/product";
+import {
+  applyBarcodeToOrder,
+  createBarcodeIndex,
+  type ScanOrderErrorCode
+} from "../../model/scan-order";
 import {
   BARCODE_SCANNER_CAPTURE_EVENT,
   formatMoney,
@@ -12,35 +17,6 @@ import {
 
 const SCANNER_MAX_KEY_INTERVAL_MS = 80;
 const SCANNER_MIN_BARCODE_LENGTH = 6;
-const WEIGHT_QUANTITY_OVERAGE_PERCENT = 15;
-const EAN_13_PATTERN = /^\d{13}$/;
-
-type ParsedScannedCode = {
-  isMark: boolean;
-  lookupBarcodes: string[];
-};
-
-function parseScannedCode(value: string): ParsedScannedCode {
-  if (EAN_13_PATTERN.test(value)) {
-    return { isMark: false, lookupBarcodes: [value] };
-  }
-
-  const normalizedValue = value
-    .replace(/^\]d2/, "")
-    .replace(/^\u001d+/, "");
-  const parenthesizedGtin = normalizedValue.match(/\(01\)(\d{14})/);
-  const rawGtin = normalizedValue.match(/^01(\d{14})/);
-  const gtin = parenthesizedGtin?.[1] ?? rawGtin?.[1];
-
-  if (gtin === undefined) {
-    return { isMark: false, lookupBarcodes: [value] };
-  }
-
-  return {
-    isMark: true,
-    lookupBarcodes: gtin.startsWith("0") ? [gtin, gtin.slice(1)] : [gtin]
-  };
-}
 
 function isPrintableScannerKey(event: KeyboardEvent) {
   return (
@@ -70,11 +46,6 @@ type OrderControlDetailsPanelProps = {
   onNotify: (message: ReactNode, tone: ScanNotification["tone"]) => void;
   order: Order;
   products: Product[];
-};
-
-type BarcodeIndexEntry = {
-  barcodeInfo: BarcodeInfo;
-  product: Product;
 };
 
 function HonestSignIcon() {
@@ -125,20 +96,10 @@ export function OrderControlDetailsPanel({
   });
   const submitBarcodeSearchRef = useRef<(value: string) => void>(() => undefined);
   const [barcodeSearch, setBarcodeSearch] = useState("");
-  const productsByBarcode = useMemo(() => {
-    const index = new Map<string, BarcodeIndexEntry>();
-
-    products.forEach((product) => {
-      product.barcodes.forEach((barcodeInfo) => {
-        index.set(barcodeInfo.barcode, {
-          barcodeInfo,
-          product
-        });
-      });
-    });
-
-    return index;
-  }, [products]);
+  const productsByBarcode = useMemo(
+    () => createBarcodeIndex(products),
+    [products]
+  );
   const total = lines.reduce((sum, line) => sum + line.amount, 0);
 
   useEffect(() => {
@@ -267,100 +228,52 @@ export function OrderControlDetailsPanel({
       return;
     }
 
-    const parsedCode = parseScannedCode(barcode);
-    const barcodeMatch = parsedCode.lookupBarcodes
-      .map((lookupBarcode) => productsByBarcode.get(lookupBarcode))
-      .find((match) => match !== undefined);
+    const result = applyBarcodeToOrder(order, productsByBarcode, barcode);
 
-    if (barcodeMatch === undefined) {
-      onNotify(`Штрихкод ${barcode} не найден в справочнике товаров`, "error");
+    if (result.status === "success") {
+      onOrderChange(result.order);
       return;
     }
 
-    const { barcodeInfo, product } = barcodeMatch;
-    const orderItem = order.items.find((item) => item.product_id === product.uid);
+    notifyAboutScanError(result.code, barcode, result.product?.name);
+  }
 
-    if (orderItem === undefined) {
+  function notifyAboutScanError(
+    code: ScanOrderErrorCode,
+    barcode: string,
+    productName?: string
+  ) {
+    if (code === "barcode-not-found") {
+      onNotify(`Штрихкод ${barcode} не найден в справочнике товаров`, "error");
+    } else if (code === "product-not-in-order") {
       onNotify(
         <>
-          Товар{" "}
-          <strong className="font-black text-blue-950">{product.name}</strong>{" "}
+          Товар <strong className="font-black text-blue-950">{productName}</strong>{" "}
           отсутствует в заказе
         </>,
         "error"
       );
-      return;
-    }
-
-    if (orderItem.marking_product && !parsedCode.isMark) {
+    } else if (code === "mark-required") {
       onNotify("Просканируйте марку товара", "warning");
-      return;
-    }
-
-    const shouldAddControlledItem = orderItem.marking_product;
-    const isAlreadyControlled =
-      shouldAddControlledItem &&
-      order.controlledItems.some(
-        (controlledItem) => controlledItem.mark === barcode
-      );
-
-    if (isAlreadyControlled) {
+    } else if (code === "mark-already-scanned") {
       onNotify(
         <>
-          Просканированный штриход товара{" "}
-          <strong className="font-black text-blue-950">{product.name}</strong>{" "}
+          Просканированный штрихкод товара{" "}
+          <strong className="font-black text-blue-950">{productName}</strong>{" "}
           уже добавлен в заказ
         </>,
         "warning"
       );
-      return;
-    }
-
-    const quantityToAdd = barcodeInfo?.ratio ?? 1;
-    const nextQuantityFact = orderItem.quantity_fact + quantityToAdd;
-    const allowedWeightQuantity =
-      orderItem.quantity * (1 + WEIGHT_QUANTITY_OVERAGE_PERCENT / 100);
-    const isQuantityExceeded = orderItem.is_weight
-      ? nextQuantityFact > allowedWeightQuantity
-      : nextQuantityFact > orderItem.quantity;
-
-    if (isQuantityExceeded) {
+    } else {
       onNotify(
         <>
           Количество товара{" "}
-          <strong className="font-black text-blue-950">{product.name}</strong>{" "}
+          <strong className="font-black text-blue-950">{productName}</strong>{" "}
           превышает количество в заказе
         </>,
         "warning"
       );
-      return;
     }
-
-    const nextOrder: Order = {
-      ...order,
-      items: order.items.map((item) =>
-        item.product_id === product.uid
-          ? {
-              ...item,
-              quantity_fact: nextQuantityFact
-            }
-          : item
-      ),
-      controlledItems: shouldAddControlledItem
-        ? [
-            ...order.controlledItems,
-            {
-              product_id: product.uid,
-              product_name: product.name,
-              quantity: quantityToAdd,
-              mark: barcode,
-              result: true
-            }
-          ]
-        : order.controlledItems
-    };
-
-    onOrderChange(nextOrder);
   }
 
   function submitBarcodeSearch(value: string) {
@@ -376,25 +289,25 @@ export function OrderControlDetailsPanel({
   });
 
   return (
-    <section className="flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-200/80">
-      <div className="border-b border-slate-200 px-4 py-3">
+    <section className="flex min-h-0 flex-col rounded-2xl border app-border app-surface shadow-sm shadow-slate-200/80">
+      <div className="border-b app-border px-4 py-3">
         <div className="flex flex-wrap items-center gap-2">
-          <h3 className="text-base font-bold text-slate-950">
+          <h3 className="text-base font-bold app-text">
             Заказ № {order.number}
           </h3>
           <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
             {order.status}
           </span>
         </div>
-        <div className="mt-1 text-sm text-slate-500">
+        <div className="mt-1 text-sm app-muted">
           {order.source} • {order.shipment_store_name} • {order.delivery_time}
         </div>
       </div>
 
-      <div className="border-b border-slate-200 px-4 py-3">
+      <div className="border-b app-border px-4 py-3">
         <input
           ref={barcodeSearchInputRef}
-          className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 outline-none ring-2 ring-slate-100 transition focus:border-violet-500 focus:ring-violet-100"
+          className="h-10 w-full rounded-xl border border-slate-300 app-surface px-3 text-sm font-medium app-text outline-none ring-2 ring-slate-100 transition focus:border-violet-500 focus:ring-violet-100"
           placeholder="Найти товар по штрихкоду"
           type="search"
           value={barcodeSearch}
@@ -417,26 +330,26 @@ export function OrderControlDetailsPanel({
             <col className="w-[13%]" />
             <col className="w-[17%]" />
           </colgroup>
-          <thead className="sticky top-0 bg-slate-50 text-slate-500">
+          <thead className="sticky top-0 app-surface-muted app-muted">
             <tr>
-              <th className="border-b border-slate-200 px-3 py-2 font-semibold" rowSpan={2}>
+              <th className="border-b app-border px-3 py-2 font-semibold" rowSpan={2}>
                 Номенклатура
               </th>
-              <th className="border-b border-slate-200 px-2 py-2 text-right font-semibold" rowSpan={2}>
+              <th className="border-b app-border px-2 py-2 text-right font-semibold" rowSpan={2}>
                 Цена
               </th>
               <th className="px-2 py-2 text-center font-semibold" colSpan={2}>
                 Количество
               </th>
-              <th className="border-b border-slate-200 px-2 py-2 text-right font-semibold" rowSpan={2}>
+              <th className="border-b app-border px-2 py-2 text-right font-semibold" rowSpan={2}>
                 Сумма
               </th>
             </tr>
             <tr>
-              <th className="border-b border-slate-200 px-2 py-1 text-right text-xs font-semibold">
+              <th className="border-b app-border px-2 py-1 text-right text-xs font-semibold">
                 Заказ
               </th>
-              <th className="border-b border-slate-200 px-2 py-1 text-right text-xs font-semibold">
+              <th className="border-b app-border px-2 py-1 text-right text-xs font-semibold">
                 Факт
               </th>
             </tr>
@@ -447,7 +360,7 @@ export function OrderControlDetailsPanel({
                 className={index === 0 ? "bg-violet-50" : "odd:bg-white even:bg-slate-50/60"}
                 key={line.product_id}
               >
-                <td className="border-b border-slate-100 px-3 py-2 font-medium text-slate-900">
+                <td className="border-b border-slate-100 px-3 py-2 font-medium app-text">
                   <div className="flex items-start gap-2">
                     {line.marking_product ? <HonestSignIcon /> : null}
                     <span className="line-clamp-2 min-w-0 break-words leading-5">
@@ -455,22 +368,22 @@ export function OrderControlDetailsPanel({
                     </span>
                   </div>
                 </td>
-                <td className="border-b border-slate-100 px-2 py-2 text-right tabular-nums text-slate-600">
+                <td className="border-b border-slate-100 px-2 py-2 text-right tabular-nums app-muted">
                   {formatNumber(line.price)}
                 </td>
-                <td className="border-b border-slate-100 px-2 py-2 text-right tabular-nums text-slate-600">
+                <td className="border-b border-slate-100 px-2 py-2 text-right tabular-nums app-muted">
                   {formatNumber(line.quantity)}
                 </td>
                 <td
                   className={`border-b border-slate-100 px-2 py-2 text-right font-bold tabular-nums ${
                     line.is_weight && line.quantity_fact > line.quantity
                       ? "text-red-600"
-                      : "text-slate-700"
+                      : "app-text"
                   }`}
                 >
                   {formatNumber(line.quantity_fact)}
                 </td>
-                <td className="border-b border-slate-100 px-2 py-2 text-right tabular-nums text-slate-600">
+                <td className="border-b border-slate-100 px-2 py-2 text-right tabular-nums app-muted">
                   {formatMoney(line.amount)}
                 </td>
               </tr>
@@ -479,9 +392,9 @@ export function OrderControlDetailsPanel({
         </table>
       </div>
 
-      <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3">
-        <div className="text-sm text-slate-500">Итого по заказу</div>
-        <div className="text-lg font-bold tabular-nums text-slate-950">
+      <div className="flex items-center justify-between border-t app-border px-4 py-3">
+        <div className="text-sm app-muted">Итого по заказу</div>
+        <div className="text-lg font-bold tabular-nums app-text">
           {formatMoney(total)} ₽
         </div>
       </div>

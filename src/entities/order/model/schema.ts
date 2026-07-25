@@ -1,0 +1,67 @@
+import { z } from "zod";
+
+export const OrderControlledItemSchema = z.object({
+  product_id: z.string(),
+  product_name: z.string(),
+  quantity: z.number(),
+  mark: z.string(),
+  result: z.boolean()
+});
+
+export const OrderItemSchema = z.object({
+  product_id: z.string(),
+  product_name: z.string(),
+  marking_product: z.boolean(),
+  quantity: z.number(),
+  price: z.number(),
+  amount: z.number(),
+  quantity_fact: z.number(),
+  is_weight: z.boolean()
+});
+
+export const OrderSchema = z.object({
+  id: z.string(),
+  uid_1c: z.string(),
+  number: z.string(),
+  source: z.string(),
+  status: z.string(),
+  extended_status: z.string(),
+  order_created_at: z.string(),
+  confirmation_date: z.string(),
+  delivery_date: z.string(),
+  delivery_time: z.string(),
+  order_sum: z.number(),
+  shipment_store_name: z.string(),
+  store_id: z.string(),
+  items: z.array(OrderItemSchema),
+  controlledItems: z.array(OrderControlledItemSchema)
+});
+
+export const OrdersResponseSchema = z.object({
+  page: z.number(),
+  perPage: z.number(),
+  totalPages: z.number(),
+  totalItems: z.number(),
+  items: z.array(OrderSchema)
+});
+
+export const ConfirmOrderRequestSchema = z.object({
+  orderId: z.string().min(1),
+  seller: z.string().min(1)
+});
+
+export const CompleteOrderRequestSchema = ConfirmOrderRequestSchema.extend({
+  orderControlledItem: z.array(
+    OrderControlledItemSchema.omit({ result: true })
+  )
+});
+
+export const OrderActionResponseSchema = z.object({
+  code: z.number(),
+  mess: z.string(),
+  data: z.object({
+    order: z.string(),
+    status: z.string(),
+    seller: z.string()
+  })
+});

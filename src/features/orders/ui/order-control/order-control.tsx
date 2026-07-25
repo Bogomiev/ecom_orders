@@ -3,12 +3,9 @@
 import { useEffect, useState, type ReactNode } from "react";
 import type { Order } from "@/entities/order";
 import type { Product } from "@/entities/product";
+import { Dialog } from "@/shared/ui/dialog";
 import { OrderControlDetailsPanel } from "./order-control-details-panel";
 import type { ScanNotification } from "./order-control-shared";
-import { OrderProcessingResultsPanel } from "./order-processing-results-panel";
-
-// Временно отключено. Установите true, чтобы вернуть правый блок результатов.
-const SHOW_PROCESSING_RESULTS = false;
 
 type OrderControlProps = {
   isOpen: boolean;
@@ -46,42 +43,12 @@ export function OrderControl({
     };
   }, [notification]);
 
-  useEffect(() => {
-    if (!isOpen || order === null) {
-      return;
-    }
-
-    const currentOrder = order;
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key !== "Escape") {
-        return;
-      }
-
-      if (currentOrder.items.some((item) => item.quantity_fact > 0)) {
-        setIsCloseConfirmationOpen(true);
-        return;
-      }
-
-      onClose();
-    }
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isOpen, onClose, order]);
-
   if (!isOpen || order === null) {
     return null;
   }
 
   const activeOrder = order;
   const lines = activeOrder.items;
-  const hasMarkingProducts = lines.some((line) => line.marking_product);
-  const showProcessingResults =
-    SHOW_PROCESSING_RESULTS && hasMarkingProducts;
 
   function showNotification(message: ReactNode, tone: ScanNotification["tone"]) {
     setNotification({
@@ -110,24 +77,18 @@ export function OrderControl({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center bg-slate-950/35 p-4"
-      role="presentation"
+    <Dialog
+      ariaLabelledBy="order-control-title"
+      className="relative mx-auto flex h-[88vh] w-full max-w-[46rem] flex-col overflow-hidden rounded-3xl app-surface-muted shadow-2xl"
+      onClose={requestClose}
     >
-      <div
-        aria-modal="true"
-        className={`mx-auto flex h-[88vh] w-full flex-col overflow-hidden rounded-3xl bg-slate-50 shadow-2xl ${
-          showProcessingResults ? "max-w-[92rem]" : "max-w-[46rem]"
-        }`}
-        role="dialog"
-      >
-        <div className="flex flex-col gap-3 border-b border-slate-200 bg-white px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
-          <h2 className="text-xl font-bold text-slate-950">
+        <div className="flex flex-col gap-3 border-b app-border app-surface px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+          <h2 id="order-control-title" className="text-xl font-bold app-text">
             Контроль сборки заказа
           </h2>
           <button
             aria-label="Закрыть"
-            className="flex h-9 w-9 items-center justify-center self-start rounded-lg border border-transparent text-2xl leading-none font-medium text-slate-500 transition hover:bg-slate-200 hover:text-slate-900 focus:bg-slate-200 focus:outline-none"
+            className="flex h-9 w-9 items-center justify-center self-start rounded-lg border border-transparent text-2xl leading-none font-medium app-muted transition hover:bg-slate-200 hover:text-slate-900 focus:bg-slate-200 focus:outline-none"
             type="button"
             onClick={requestClose}
           >
@@ -135,11 +96,7 @@ export function OrderControl({
           </button>
         </div>
 
-        <div
-          className={`grid min-h-0 flex-1 gap-4 p-4 ${
-            showProcessingResults ? "lg:grid-cols-2" : "lg:grid-cols-1"
-          }`}
-        >
+        <div className="grid min-h-0 flex-1 gap-4 p-4 lg:grid-cols-1">
           <OrderControlDetailsPanel
             key={activeOrder.id}
             lines={lines}
@@ -148,9 +105,6 @@ export function OrderControl({
             onOrderChange={onOrderChange}
             onNotify={showNotification}
           />
-          {showProcessingResults ? (
-            <OrderProcessingResultsPanel lines={activeOrder.controlledItems} />
-          ) : null}
         </div>
 
         {notification !== null ? (
@@ -166,7 +120,7 @@ export function OrderControl({
           </div>
         ) : null}
 
-        <div className="flex justify-end border-t border-slate-200 bg-white px-5 py-4">
+        <div className="flex justify-end border-t app-border app-surface px-5 py-4">
           <button
             className="rounded-xl bg-violet-600 px-5 py-2.5 text-base font-bold text-white shadow-sm transition hover:bg-violet-700 focus:bg-violet-700 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
             disabled={isCompleting}
@@ -176,15 +130,13 @@ export function OrderControl({
             {isCompleting ? "Сборка заказа..." : "Собрать заказ"}
           </button>
         </div>
-      </div>
-
       {isCloseConfirmationOpen ? (
         <div
           aria-modal="true"
           className="absolute inset-0 z-20 flex items-center justify-center bg-slate-950/35 p-4"
           role="dialog"
         >
-          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
+          <div className="w-full max-w-md rounded-2xl app-surface p-5 shadow-2xl">
             <div className="flex items-start gap-3">
               <div
                 aria-hidden="true"
@@ -193,10 +145,10 @@ export function OrderControl({
                 !
               </div>
               <div className="min-w-0">
-                <h3 className="text-base font-bold text-slate-950">
+                <h3 className="text-base font-bold app-text">
                   Контроль не завершен полностью!
                 </h3>
-                <p className="mt-1 text-sm text-slate-600">
+                <p className="mt-1 text-sm app-muted">
                   Закрыть форму?
                 </p>
               </div>
@@ -204,7 +156,7 @@ export function OrderControl({
 
             <div className="mt-5 flex justify-end gap-2">
               <button
-                className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-800 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                className="rounded-xl border border-slate-300 app-surface px-4 py-2 text-sm font-bold app-text transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-500"
                 type="button"
                 onClick={cancelClose}
               >
@@ -221,6 +173,6 @@ export function OrderControl({
           </div>
         </div>
       ) : null}
-    </div>
+    </Dialog>
   );
 }

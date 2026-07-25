@@ -1,16 +1,5 @@
-export type Store = {
-  id: string;
-  code: string;
-  name: string;
-  uid_1c: string;
-  address: string;
-  pin: string;
-};
+import type { z } from "zod";
+import type { StoreSchema, StoresResponseSchema } from "./schema";
 
-export type StoresResponse = {
-  page: number;
-  perPage: number;
-  totalPages: number;
-  totalItems: number;
-  items: Store[];
-};
+export type Store = z.infer<typeof StoreSchema>;
+export type StoresResponse = z.infer<typeof StoresResponseSchema>;

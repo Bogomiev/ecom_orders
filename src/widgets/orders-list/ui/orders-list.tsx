@@ -3,62 +3,30 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  clearStoredOrderControl,
   restoreOrderControl,
   saveOrderControl,
-  type Order,
-  type OrderControlledItem,
-  type OrderItem,
-  type OrdersResponse
+  type Order
 } from "@/entities/order";
 import type { ProductsResponse } from "@/entities/product";
-import { getStoredCurrentSeller } from "@/entities/seller";
+import { useCurrentSeller } from "@/entities/seller";
+import { PageNotificationStack, type PageNotification } from "@/shared/ui/page-notification";
+import { usePageNotifications } from "@/shared/lib/use-page-notifications";
 import {
-  PageNotificationStack,
-  type PageNotification
-} from "@/shared/ui/page-notification";
-import {
-  getStoredStoreSelection,
-  getAccessTokenFromLocation,
-  STORE_SELECTION_CHANGE_EVENT,
-  type StoreSelectionSnapshot
+  useHasAccessToken,
+  useSelectedStore
 } from "@/entities/store";
-import {
-  enrichOrder,
-  completeOrder,
-  confirmOrder,
-  fetchProducts,
-  fetchOrders,
-  ORDERS_REFRESH_INTERVAL_SECONDS
-} from "../api/orders";
+import { enrichOrder } from "../api/orders";
 import { OrderCard } from "./order-card";
 import { OrderCardMini } from "./order-card-mini";
-
-type OrdersState = {
-  data: OrdersResponse | null;
-  error: string | null;
-  isLoading: boolean;
-  lastUpdatedAt: Date | null;
-};
-
-type ProductsCache = {
-  loadedAt: number;
-  products: ProductsResponse;
-};
+import { useProductsCache } from "../model/use-products-cache";
+import { useOrders } from "../model/use-orders";
+import { useOrderActions } from "../model/use-order-actions";
 
 type OrdersListProps = {
   layout?: "grid" | "list";
   onOrdersCountChange?: (ordersCount: number) => void;
 };
 
-const initialState: OrdersState = {
-  data: null,
-  error: null,
-  isLoading: true,
-  lastUpdatedAt: null
-};
-
-const PRODUCTS_CACHE_TTL_MS = 15 * 60 * 1000;
 const ORDERS_BATCH_SIZE = 20;
 
 const OrderControl = dynamic(
@@ -68,255 +36,36 @@ const OrderControl = dynamic(
   }
 );
 
-function isSameOrderItem(currentItem: OrderItem, nextItem: OrderItem) {
-  return (
-    currentItem.product_id === nextItem.product_id &&
-    currentItem.product_name === nextItem.product_name &&
-    currentItem.marking_product === nextItem.marking_product &&
-    currentItem.quantity === nextItem.quantity &&
-    currentItem.price === nextItem.price &&
-    currentItem.amount === nextItem.amount &&
-    currentItem.quantity_fact === nextItem.quantity_fact &&
-    currentItem.is_weight === nextItem.is_weight
-  );
-}
-
-function isSameControlledItem(
-  currentItem: OrderControlledItem,
-  nextItem: OrderControlledItem
-) {
-  return (
-    currentItem.product_id === nextItem.product_id &&
-    currentItem.product_name === nextItem.product_name &&
-    currentItem.quantity === nextItem.quantity &&
-    currentItem.mark === nextItem.mark &&
-    currentItem.result === nextItem.result
-  );
-}
-
-function areSameArrays<T>(
-  currentItems: T[],
-  nextItems: T[],
-  isSameItem: (currentItem: T, nextItem: T) => boolean
-) {
-  return (
-    currentItems.length === nextItems.length &&
-    currentItems.every((currentItem, index) =>
-      isSameItem(currentItem, nextItems[index])
-    )
-  );
-}
-
-function isSameOrder(currentOrder: Order, nextOrder: Order) {
-  return (
-    currentOrder.id === nextOrder.id &&
-    currentOrder.number === nextOrder.number &&
-    currentOrder.source === nextOrder.source &&
-    currentOrder.status === nextOrder.status &&
-    currentOrder.extended_status === nextOrder.extended_status &&
-    currentOrder.order_created_at === nextOrder.order_created_at &&
-    currentOrder.confirmation_date === nextOrder.confirmation_date &&
-    currentOrder.delivery_date === nextOrder.delivery_date &&
-    currentOrder.delivery_time === nextOrder.delivery_time &&
-    currentOrder.order_sum === nextOrder.order_sum &&
-    currentOrder.shipment_store_name === nextOrder.shipment_store_name &&
-    areSameArrays(currentOrder.items, nextOrder.items, isSameOrderItem) &&
-    areSameArrays(
-      currentOrder.controlledItems,
-      nextOrder.controlledItems,
-      isSameControlledItem
-    )
-  );
-}
-
-function isSameOrdersResponse(
-  currentData: OrdersResponse | null,
-  nextData: OrdersResponse
-) {
-  return (
-    currentData !== null &&
-    currentData.page === nextData.page &&
-    currentData.perPage === nextData.perPage &&
-    currentData.totalPages === nextData.totalPages &&
-    currentData.totalItems === nextData.totalItems &&
-    areSameArrays(currentData.items, nextData.items, isSameOrder)
-  );
-}
-
-function mergeOrderWithLocalControl(serverOrder: Order, localOrder: Order) {
-  const localItemsByProductId = new Map(
-    localOrder.items.map((item) => [item.product_id, item])
-  );
-  const serverProductIds = new Set(
-    serverOrder.items.map((item) => item.product_id)
-  );
-
-  return {
-    ...serverOrder,
-    items: serverOrder.items.map((serverItem) => {
-      const localItem = localItemsByProductId.get(serverItem.product_id);
-
-      if (localItem === undefined) {
-        return serverItem;
-      }
-
-      return {
-        ...serverItem,
-        product_name: localItem.product_name,
-        marking_product: localItem.marking_product,
-        quantity_fact: localItem.quantity_fact,
-        is_weight: localItem.is_weight
-      };
-    }),
-    controlledItems: localOrder.controlledItems.filter((item) =>
-      serverProductIds.has(item.product_id)
-    )
-  };
-}
-
 export function OrdersList({
   layout = "grid",
   onOrdersCountChange
 }: OrdersListProps = {}) {
-  const [state, setState] = useState<OrdersState>(initialState);
-  const [selectedStore, setSelectedStore] = useState<StoreSelectionSnapshot>(null);
+  const selectedStore = useSelectedStore();
+  const currentSeller = useCurrentSeller();
   const [controlOrder, setControlOrder] = useState<Order | null>(null);
-  const [hasAccessToken, setHasAccessToken] = useState(false);
+  const hasAccessToken = useHasAccessToken();
   const [controlProducts, setControlProducts] = useState<ProductsResponse>([]);
   const [controlLoadError, setControlLoadError] = useState<string | null>(null);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [openingOrderId, setOpeningOrderId] = useState<string | null>(null);
-  const [confirmingOrderId, setConfirmingOrderId] = useState<string | null>(null);
-  const [completingOrderId, setCompletingOrderId] = useState<string | null>(null);
-  const [notifications, setNotifications] = useState<PageNotification[]>([]);
+  const { dismiss, notifications, notify } = usePageNotifications();
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
   const [visibleOrdersLimit, setVisibleOrdersLimit] = useState(ORDERS_BATCH_SIZE);
-  const isRequestInFlightRef = useRef(false);
   const isMountedRef = useRef(true);
   const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
   const controlledOrdersRef = useRef(new Map<string, Order>());
-  const productsCacheRef = useRef<ProductsCache | null>(null);
-  const productsRequestInFlightRef = useRef<Promise<ProductsResponse> | null>(null);
-
-  useEffect(() => {
-    setHasAccessToken(getAccessTokenFromLocation() !== null);
-  }, []);
+  const getProductsForControl = useProductsCache();
+  const { setState, state } = useOrders({
+    controlledOrdersRef,
+    refreshKey: ordersRefreshKey,
+    setControlOrder
+  });
 
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
     };
   }, []);
-
-  useEffect(() => {
-    setSelectedStore(getStoredStoreSelection());
-
-    function handleStoreSelectionChange(event: Event) {
-      setSelectedStore(
-        event instanceof CustomEvent
-          ? (event.detail as StoreSelectionSnapshot)
-          : getStoredStoreSelection()
-      );
-    }
-
-    window.addEventListener(
-      STORE_SELECTION_CHANGE_EVENT,
-      handleStoreSelectionChange
-    );
-
-    return () => {
-      window.removeEventListener(
-        STORE_SELECTION_CHANGE_EVENT,
-        handleStoreSelectionChange
-      );
-    };
-  }, []);
-
-  useEffect(() => {
-    let isMounted = true;
-    let activeController: AbortController | null = null;
-
-    async function loadOrders() {
-      if (isRequestInFlightRef.current) {
-        return;
-      }
-
-      const controller = new AbortController();
-      activeController = controller;
-      isRequestInFlightRef.current = true;
-
-      try {
-        const data = await fetchOrders(controller.signal);
-
-        if (!isMounted) {
-          return;
-        }
-
-        const mergedControlledOrders = new Map<string, Order>();
-        const dataWithLocalControl = {
-          ...data,
-          items: data.items.map((order) => {
-            const localOrder = controlledOrdersRef.current.get(order.id);
-
-            if (localOrder === undefined) {
-              return order;
-            }
-
-            const mergedOrder = mergeOrderWithLocalControl(order, localOrder);
-            mergedControlledOrders.set(order.id, mergedOrder);
-            return mergedOrder;
-          })
-        };
-
-        controlledOrdersRef.current = mergedControlledOrders;
-        setControlOrder((currentOrder) =>
-          currentOrder === null
-            ? null
-            : mergedControlledOrders.get(currentOrder.id) ?? currentOrder
-        );
-
-        setState((currentState) => ({
-          data: isSameOrdersResponse(currentState.data, dataWithLocalControl)
-            ? currentState.data
-            : dataWithLocalControl,
-          error: null,
-          isLoading: false,
-          lastUpdatedAt: new Date()
-        }));
-      } catch (error) {
-        if (!isMounted || controller.signal.aborted) {
-          return;
-        }
-
-        setState((currentState) => ({
-          ...currentState,
-          error:
-            error instanceof Error ? error.message : "Не удалось загрузить заказы",
-          isLoading: false
-        }));
-      } finally {
-        if (activeController === controller) {
-          activeController = null;
-          isRequestInFlightRef.current = false;
-        }
-      }
-    }
-
-    loadOrders();
-
-    const intervalId = window.setInterval(
-      loadOrders,
-      ORDERS_REFRESH_INTERVAL_SECONDS * 1000
-    );
-
-    return () => {
-      isMounted = false;
-      activeController?.abort();
-      activeController = null;
-      isRequestInFlightRef.current = false;
-      window.clearInterval(intervalId);
-    };
-  }, [ordersRefreshKey]);
 
   const filteredOrders = useMemo(() => {
     const orders = state.data?.items ?? [];
@@ -337,7 +86,7 @@ export function OrdersList({
   const hasMoreOrders = visibleOrders.length < filteredOrders.length;
   const ordersGridClassName =
     layout === "list"
-      ? "-mx-1.5 grid gap-1.5"
+      ? "grid gap-2.5"
       : "grid gap-4 md:grid-cols-2 xl:grid-cols-4";
 
   const loadNextOrders = useCallback(() => {
@@ -400,44 +149,6 @@ export function OrdersList({
     });
   }
 
-  const getProductsForControl = useCallback(async () => {
-    const cachedProducts = productsCacheRef.current;
-    const currentTimestamp = Date.now();
-
-    if (
-      cachedProducts !== null &&
-      currentTimestamp - cachedProducts.loadedAt < PRODUCTS_CACHE_TTL_MS
-    ) {
-      productsCacheRef.current = {
-        ...cachedProducts,
-        loadedAt: currentTimestamp
-      };
-
-      return cachedProducts.products;
-    }
-
-    if (productsRequestInFlightRef.current !== null) {
-      return productsRequestInFlightRef.current;
-    }
-
-    const productsRequest = fetchProducts();
-    productsRequestInFlightRef.current = productsRequest;
-
-    try {
-      const products = await productsRequest;
-      productsCacheRef.current = {
-        loadedAt: Date.now(),
-        products
-      };
-
-      return products;
-    } finally {
-      if (productsRequestInFlightRef.current === productsRequest) {
-        productsRequestInFlightRef.current = null;
-      }
-    }
-  }, []);
-
   const openOrderControl = useCallback(async (order: Order) => {
     setControlLoadError(null);
     setOpeningOrderId(order.id);
@@ -483,137 +194,36 @@ export function OrdersList({
         setOpeningOrderId(null);
       }
     }
-  }, [getProductsForControl]);
+  }, [getProductsForControl, setState]);
 
   const showOrderNotification = useCallback(
     (title: string, body: string, tone: PageNotification["tone"]) => {
-      const id = Date.now();
-      setNotifications((current) => [...current, { id, title, body, tone }]);
-      window.setTimeout(() => {
-        setNotifications((current) => current.filter((item) => item.id !== id));
-      }, 5000);
+      notify({ title, body, tone });
     },
+    [notify]
+  );
+  const refreshOrders = useCallback(
+    () => setOrdersRefreshKey((current) => current + 1),
     []
   );
-
-  const handleConfirmOrder = useCallback(async (order: Order) => {
-    const currentSeller = getStoredCurrentSeller();
-
-    if (currentSeller === null) {
-      showOrderNotification(
-        "Не выбран продавец!",
-        "Нажмите на кнопку выбора продавца и отсканируйте штрихкод на бедже.",
-        "error"
-      );
-      return;
-    }
-
-    setConfirmingOrderId(order.id);
-
-    try {
-      const result = await confirmOrder({
-        orderId: order.uid_1c,
-        seller: currentSeller.userId
-      });
-
-      if (result.status === 200) {
-        showOrderNotification(
-          "Управление заказами",
-          "Заказ успешно подтвержден",
-          "success"
-        );
-      } else {
-        showOrderNotification(
-          "Управление заказами",
-          `При подтверждении заказа произошла ошибка: ${result.data.mess}, статус заказа: ${result.data.data.status}`,
-          "warning"
-        );
-      }
-
-      if (result.status === 200 || result.status === 400) {
-        setOrdersRefreshKey((current) => current + 1);
-      }
-    } catch {
-      showOrderNotification(
-        "Ошибка подтверждения",
-        "При подтверждении заказа произошла ошибка: не удалось получить ответ сервера, статус заказа: неизвестен",
-        "warning"
-      );
-    } finally {
-      setConfirmingOrderId(null);
-    }
-  }, [showOrderNotification]);
-
-  const handleCompleteOrder = useCallback(async (order: Order) => {
-    if (order.items.every((item) => item.quantity_fact === 0)) {
-      showOrderNotification(
-        "Управление заказами",
-        "Не отсканирован ни один товар!",
-        "warning"
-      );
-      return;
-    }
-
-    const currentSeller = getStoredCurrentSeller();
-
-    if (currentSeller === null) {
-      showOrderNotification(
-        "Не выбран продавец!",
-        "Нажмите на кнопку выбора продавца и отсканируйте штрихкод на бедже.",
-        "error"
-      );
-      return;
-    }
-
-    setCompletingOrderId(order.id);
-
-    try {
-      const result = await completeOrder({
-        orderId: order.uid_1c,
-        seller: currentSeller.userId,
-        orderControlledItem: order.controlledItems.map(
-          ({ product_id, product_name, quantity, mark }) => ({
-            product_id,
-            product_name,
-            quantity,
-            mark
-          })
-        )
-      });
-
-      if (result.status === 200) {
-        showOrderNotification(
-          "Управление заказами",
-          "Заказ успешно собран",
-          "success"
-        );
-        clearStoredOrderControl(order);
-        setControlOrder(null);
-      } else {
-        showOrderNotification(
-          "Управление заказами",
-          `При сборке заказа произошла ошибка: ${result.data.mess}, статус заказа: ${result.data.data.status}`,
-          "warning"
-        );
-      }
-
-      if (result.status === 200 || result.status === 400) {
-        controlledOrdersRef.current.delete(order.id);
-        setOrdersRefreshKey((current) => current + 1);
-      }
-    } catch {
-      showOrderNotification(
-        "Ошибка завершения контроля",
-        "При сборке заказа произошла ошибка: не удалось получить ответ сервера, статус заказа: неизвестен",
-        "warning"
-      );
-    } finally {
-      setCompletingOrderId(null);
-    }
-  }, [showOrderNotification]);
+  const handleCompleteSuccess = useCallback((order: Order) => {
+    controlledOrdersRef.current.delete(order.id);
+    setControlOrder(null);
+  }, []);
+  const {
+    complete: handleCompleteOrder,
+    completingOrderId,
+    confirm: handleConfirmOrder,
+    confirmingOrderId
+  } = useOrderActions({
+    currentSeller,
+    notify: showOrderNotification,
+    onCompleteSuccess: handleCompleteSuccess,
+    refresh: refreshOrders
+  });
 
   return (
-    <section className="-mt-2 space-y-3">
+    <section className="space-y-3">
       {state.error ? (
         <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
           {state.error}
@@ -627,13 +237,13 @@ export function OrdersList({
       ) : null}
 
       {state.isLoading ? (
-        <div className="rounded-lg border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-600">
+        <div className="rounded-lg border app-border app-surface px-4 py-8 text-center text-sm app-muted">
           Загружаем заказы...
         </div>
       ) : null}
 
       {!state.isLoading && filteredOrders.length === 0 ? (
-        <div className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-center text-sm text-slate-600">
+        <div className="rounded-lg border app-border app-surface px-4 py-2 text-center text-sm app-muted">
           Заказов пока нет
         </div>
       ) : null}
@@ -686,9 +296,7 @@ export function OrdersList({
       />
       <PageNotificationStack
         notifications={notifications}
-        onClose={(id) =>
-          setNotifications((current) => current.filter((item) => item.id !== id))
-        }
+        onClose={dismiss}
       />
     </section>
   );

@@ -1,17 +1,10 @@
-export type BarcodeInfo = {
-  barcode: string;
-  unit: string;
-  ratio: number;
-  isBase: boolean;
-};
+import type { z } from "zod";
+import type {
+  BarcodeInfoSchema,
+  ProductSchema,
+  ProductsResponseSchema
+} from "./schema";
 
-export type Product = {
-  uid: string;
-  code: string;
-  name: string;
-  markingType: string;
-  isWeight: boolean;
-  barcodes: BarcodeInfo[];
-};
-
-export type ProductsResponse = Product[];
+export type BarcodeInfo = z.infer<typeof BarcodeInfoSchema>;
+export type Product = z.infer<typeof ProductSchema>;
+export type ProductsResponse = z.infer<typeof ProductsResponseSchema>;

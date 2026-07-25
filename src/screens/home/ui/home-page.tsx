@@ -15,13 +15,16 @@ export function HomePage() {
 
   return (
     <PageShell>
-      <div className="space-y-3">
+      <div>
         <OrdersPageHeader ordersCount={ordersCount} />
 
-        <div className="grid min-h-[calc(100vh-1.5rem)] gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        <div className="dashboard-grid grid items-start md:grid-cols-2 xl:grid-cols-5">
         <WidgetPanel
+          accent="blue"
           className="md:col-span-2 xl:col-span-1"
           count={ordersCount}
+          description="Обработка и сборка"
+          icon="cart"
           title="Интернет-заказы"
         >
           <OrdersList

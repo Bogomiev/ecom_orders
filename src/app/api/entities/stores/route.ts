@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import type { StoresResponse } from "@/entities/store";
+import { StoresResponseSchema } from "@/entities/store";
 import { fetchOneCJson } from "@/server/one-c/client";
 
 export const revalidate = 900;
 
 export async function GET() {
   try {
-    const stores = await fetchOneCJson<StoresResponse>("/GetStores", {
+    const stores = await fetchOneCJson("/GetStores", StoresResponseSchema, {
       next: { revalidate }
     });
 

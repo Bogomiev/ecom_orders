@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import type { SellersResponse } from "@/entities/seller";
+import { SellersResponseSchema } from "@/entities/seller";
 import { fetchOneCJson } from "@/server/one-c/client";
 
 export const dynamic = "force-dynamic";
@@ -16,8 +16,9 @@ export async function GET(request: Request) {
 
   try {
     const searchParams = new URLSearchParams({ sellerBarcode });
-    const sellers = await fetchOneCJson<SellersResponse>(
+    const sellers = await fetchOneCJson(
       `Seller?${searchParams.toString()}`,
+      SellersResponseSchema,
       { cache: "no-store" }
     );
     return NextResponse.json(sellers);

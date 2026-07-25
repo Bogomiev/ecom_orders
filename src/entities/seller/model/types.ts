@@ -1,11 +1,5 @@
-export type Seller = {
-  id: string;
-  name: string;
-  userId: string;
-};
+import type { z } from "zod";
+import type { SellerSchema, SellersResponseSchema } from "./schema";
 
-export type SellersResponse = {
-  code: number;
-  mess: string;
-  data: Seller[];
-};
+export type Seller = z.infer<typeof SellerSchema>;
+export type SellersResponse = z.infer<typeof SellersResponseSchema>;

@@ -1,7 +1,7 @@
 export type PageNotificationTone = "error" | "info" | "success" | "warning";
 
 export type PageNotification = {
-  id: number;
+  id: string;
   body: string;
   title: string;
   tone?: PageNotificationTone;
@@ -9,7 +9,7 @@ export type PageNotification = {
 
 type PageNotificationStackProps = {
   notifications: PageNotification[];
-  onClose: (id: number) => void;
+  onClose: (id: string) => void;
 };
 
 const toneClassByTone: Record<PageNotificationTone, string> = {
@@ -24,7 +24,7 @@ function PageNotificationItem({
   onClose
 }: {
   notification: PageNotification;
-  onClose: (id: number) => void;
+  onClose: (id: string) => void;
 }) {
   const toneClass = toneClassByTone[notification.tone ?? "info"];
 
