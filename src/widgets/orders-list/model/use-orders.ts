@@ -33,12 +33,14 @@ type UseOrdersOptions = {
   controlledOrdersRef: RefObject<Map<string, Order>>;
   refreshKey: number;
   setControlOrder: Dispatch<SetStateAction<Order | null>>;
+  storeId?: string;
 };
 
 export function useOrders({
   controlledOrdersRef,
   refreshKey,
-  setControlOrder
+  setControlOrder,
+  storeId
 }: UseOrdersOptions) {
   const [state, setState] = useState<OrdersState>(initialState);
   const isRequestInFlightRef = useRef(false);
@@ -54,7 +56,7 @@ export function useOrders({
       isRequestInFlightRef.current = true;
 
       try {
-        const data = await fetchOrders(controller.signal);
+        const data = await fetchOrders(storeId, controller.signal);
         if (!isMounted) return;
 
         const mergedControlledOrders = new Map<string, Order>();
@@ -112,7 +114,7 @@ export function useOrders({
       isRequestInFlightRef.current = false;
       window.clearInterval(interval);
     };
-  }, [controlledOrdersRef, refreshKey, setControlOrder]);
+  }, [controlledOrdersRef, refreshKey, setControlOrder, storeId]);
 
   return { setState, state };
 }

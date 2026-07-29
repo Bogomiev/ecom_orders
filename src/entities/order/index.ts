@@ -26,7 +26,8 @@ export {
   formatOrderTime,
   getMarketplaceLabel,
   getOrderStatusLabel,
-  getOrderTone
+  getOrderTone,
+  isOrderAwaitingConfirmation
 } from "./lib/presentation";
 export type { OrderTone } from "./lib/presentation";
 export {

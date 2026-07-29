@@ -14,8 +14,9 @@ type ProductsCache = {
 export function useProductsCache() {
   const cacheRef = useRef<ProductsCache | null>(null);
   const requestRef = useRef<Promise<ProductsResponse> | null>(null);
+  const refreshRequestRef = useRef<Promise<ProductsResponse> | null>(null);
 
-  return useCallback(async () => {
+  const getProducts = useCallback(async () => {
     const cached = cacheRef.current;
 
     if (
@@ -42,4 +43,31 @@ export function useProductsCache() {
       }
     }
   }, []);
+
+  const refreshProducts = useCallback(async () => {
+    if (refreshRequestRef.current !== null) {
+      return refreshRequestRef.current;
+    }
+
+    const request = fetchProducts(undefined, true);
+    refreshRequestRef.current = request;
+
+    try {
+      const products = await request;
+      cacheRef.current = { loadedAt: Date.now(), products };
+      return products;
+    } finally {
+      if (refreshRequestRef.current === request) {
+        refreshRequestRef.current = null;
+      }
+    }
+  }, []);
+
+  const retryProducts = useCallback(async () => {
+    const products = await fetchProducts();
+    cacheRef.current = { loadedAt: Date.now(), products };
+    return products;
+  }, []);
+
+  return { getProducts, refreshProducts, retryProducts };
 }

@@ -7,9 +7,13 @@ import { fetchOneCJson } from "@/server/one-c/client";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const data = await fetchOneCJson("/GetOrders", OneCOrdersResponseSchema, {
+    const storeId = new URL(request.url).searchParams.get("store")?.trim();
+    const searchParams = storeId
+      ? `?${new URLSearchParams({ store: storeId })}`
+      : "";
+    const data = await fetchOneCJson(`/GetOrders${searchParams}`, OneCOrdersResponseSchema, {
       cache: "no-store"
     });
     const orders = normalizeOneCOrders(data);

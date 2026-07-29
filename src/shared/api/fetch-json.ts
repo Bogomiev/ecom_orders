@@ -29,7 +29,7 @@ export async function fetchJson<T>(
   const data: unknown = await response.json();
 
   if (!response.ok && !acceptErrorResponse) {
-    throw new HttpError(`Request failed with status ${response.status}`, response.status);
+    throw new HttpError(`Отсутствует связь с сервером. Статус: ${response.status}`, response.status);
   }
 
   return {

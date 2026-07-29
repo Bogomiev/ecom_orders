@@ -49,6 +49,10 @@ export function OrderControl({
 
   const activeOrder = order;
   const lines = activeOrder.items;
+  const completedLines = lines.filter(
+    (line) => line.quantity_fact === line.quantity
+  ).length;
+  const progress = lines.length === 0 ? 0 : completedLines / lines.length * 100;
 
   function showNotification(message: ReactNode, tone: ScanNotification["tone"]) {
     setNotification({
@@ -79,16 +83,29 @@ export function OrderControl({
   return (
     <Dialog
       ariaLabelledBy="order-control-title"
-      className="relative mx-auto flex h-[88vh] w-full max-w-[46rem] flex-col overflow-hidden rounded-3xl app-surface-muted shadow-2xl"
+      className="relative mx-auto flex h-[min(650px,calc(100vh-32px))] w-[min(700px,calc(100vw-32px))] flex-col overflow-hidden rounded-2xl app-surface shadow-2xl [zoom:.83]"
       onClose={requestClose}
     >
-        <div className="flex flex-col gap-3 border-b app-border app-surface px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
-          <h2 id="order-control-title" className="text-xl font-bold app-text">
-            Контроль сборки заказа
-          </h2>
+        <div className="flex items-center justify-between border-b app-border px-5 py-3.5">
+          <div className="flex min-w-0 items-center gap-3">
+            <div aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+                <path strokeLinejoin="round" d="m12 3 7 4-7 4-7-4 7-4Z" />
+                <path strokeLinejoin="round" d="m5 7 7 4 7-4v9l-7 5-7-5V7Z" />
+              </svg>
+            </div>
+            <div className="min-w-0">
+              <h2 id="order-control-title" className="text-lg font-bold leading-6 app-text">
+                Сборка заказа
+              </h2>
+              <p className="truncate text-xs leading-4 app-muted">
+                {activeOrder.source} · заказ #{activeOrder.number}
+              </p>
+            </div>
+          </div>
           <button
             aria-label="Закрыть"
-            className="flex h-9 w-9 items-center justify-center self-start rounded-lg border border-transparent text-2xl leading-none font-medium app-muted transition hover:bg-slate-200 hover:text-slate-900 focus:bg-slate-200 focus:outline-none"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border app-border app-surface-muted text-lg leading-none font-medium app-muted transition hover:bg-slate-200 hover:text-slate-900 focus:outline-none"
             type="button"
             onClick={requestClose}
           >
@@ -96,7 +113,7 @@ export function OrderControl({
           </button>
         </div>
 
-        <div className="grid min-h-0 flex-1 gap-4 p-4 lg:grid-cols-1">
+        <div className="flex min-h-0 flex-1">
           <OrderControlDetailsPanel
             key={activeOrder.id}
             lines={lines}
@@ -120,14 +137,26 @@ export function OrderControl({
           </div>
         ) : null}
 
-        <div className="flex justify-end border-t app-border app-surface px-5 py-4">
+        <div className="flex items-center gap-4 border-t app-border app-surface-muted px-5 py-3">
+          <div className="min-w-0 flex-1">
+            <div className="mb-1.5 flex items-center justify-between text-xs font-bold">
+              <span className="app-text">Собрано позиций</span>
+              <span className="tabular-nums app-muted">{completedLines} / {lines.length}</span>
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-slate-200">
+              <div
+                className="h-full rounded-full bg-emerald-600 transition-[width]"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
           <button
-            className="rounded-xl bg-violet-600 px-5 py-2.5 text-base font-bold text-white shadow-sm transition hover:bg-violet-700 focus:bg-violet-700 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+            className="min-w-44 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700 focus:bg-emerald-700 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
             disabled={isCompleting}
             type="button"
             onClick={() => onComplete(activeOrder)}
           >
-            {isCompleting ? "Сборка заказа..." : "Собрать заказ"}
+            {isCompleting ? "Завершение..." : "Завершить сборку"}
           </button>
         </div>
       {isCloseConfirmationOpen ? (

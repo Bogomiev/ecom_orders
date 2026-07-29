@@ -5,6 +5,7 @@ export const ONE_C_API_URL =
 type OneCFetchInit = RequestInit & {
   next?: {
     revalidate?: number;
+    tags?: string[];
   };
 };
 

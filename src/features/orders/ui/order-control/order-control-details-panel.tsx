@@ -52,7 +52,7 @@ function HonestSignIcon() {
   return (
     <svg
       aria-label="Маркируемый товар — Честный ЗНАК"
-      className="h-6 w-6 shrink-0"
+      className="h-5 w-5 shrink-0"
       role="img"
       viewBox="0 0 48 48"
     >
@@ -96,8 +96,15 @@ export function OrderControlDetailsPanel({
   });
   const submitBarcodeSearchRef = useRef<(value: string) => void>(() => undefined);
   const [barcodeSearch, setBarcodeSearch] = useState("");
+  const [productIdPendingClear, setProductIdPendingClear] = useState<string | null>(
+    null
+  );
   const productsByBarcode = useMemo(
     () => createBarcodeIndex(products),
+    [products]
+  );
+  const productCodesById = useMemo(
+    () => new Map(products.map((product) => [product.uid, product.code])),
     [products]
   );
   const total = lines.reduce((sum, line) => sum + line.amount, 0);
@@ -284,31 +291,51 @@ export function OrderControlDetailsPanel({
     barcodeSearchInputRef.current?.select();
   }
 
+  function changeQuantityFact(productId: string, change: -1 | 1) {
+    onOrderChange({
+      ...order,
+      items: order.items.map((item) =>
+        item.product_id === productId
+          ? {
+              ...item,
+              quantity_fact: Math.min(
+                item.quantity,
+                Math.max(0, item.quantity_fact + change)
+              )
+            }
+          : item
+      )
+    });
+  }
+
+  function clearMarkedLine() {
+    if (productIdPendingClear === null) return;
+
+    onOrderChange({
+      ...order,
+      items: order.items.map((item) =>
+        item.product_id === productIdPendingClear
+          ? { ...item, quantity_fact: 0 }
+          : item
+      ),
+      controlledItems: order.controlledItems.filter(
+        (item) => item.product_id !== productIdPendingClear
+      )
+    });
+    setProductIdPendingClear(null);
+  }
+
   useEffect(() => {
     submitBarcodeSearchRef.current = submitBarcodeSearch;
   });
 
   return (
-    <section className="flex min-h-0 flex-col rounded-2xl border app-border app-surface shadow-sm shadow-slate-200/80">
-      <div className="border-b app-border px-4 py-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 className="text-base font-bold app-text">
-            Заказ № {order.number}
-          </h3>
-          <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-            {order.status}
-          </span>
-        </div>
-        <div className="mt-1 text-sm app-muted">
-          {order.source} • {order.shipment_store_name} • {order.delivery_time}
-        </div>
-      </div>
-
-      <div className="border-b app-border px-4 py-3">
+    <section className="flex min-h-0 flex-1 flex-col">
+      <div className="flex gap-2.5 border-b app-border px-5 py-3">
         <input
           ref={barcodeSearchInputRef}
-          className="h-10 w-full rounded-xl border border-slate-300 app-surface px-3 text-sm font-medium app-text outline-none ring-2 ring-slate-100 transition focus:border-violet-500 focus:ring-violet-100"
-          placeholder="Найти товар по штрихкоду"
+          className="h-10 min-w-0 flex-1 rounded-lg border border-slate-300 app-surface px-3.5 text-sm font-medium app-text outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          placeholder="Отсканируйте или введите штрихкод…"
           type="search"
           value={barcodeSearch}
           onChange={(event) => setBarcodeSearch(event.target.value)}
@@ -319,85 +346,132 @@ export function OrderControlDetailsPanel({
             }
           }}
         />
+        <button
+          className="h-10 min-w-32 rounded-lg bg-emerald-600 px-5 text-sm font-bold text-white transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+          type="button"
+          onClick={() => submitBarcodeSearch(barcodeSearch)}
+        >
+          Добавить
+        </button>
+      </div>
+
+      <div className="flex items-center justify-between border-b app-border px-5 py-2.5 text-xs">
+        <span className="app-muted">Итого по заказу</span>
+        <strong className="font-bold tabular-nums app-text">
+          {formatMoney(total)} ₽
+        </strong>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
-        <table className="w-full table-fixed border-collapse text-left text-sm">
-          <colgroup>
-            <col className="w-[42%]" />
-            <col className="w-[15%]" />
-            <col className="w-[13%]" />
-            <col className="w-[13%]" />
-            <col className="w-[17%]" />
-          </colgroup>
-          <thead className="sticky top-0 app-surface-muted app-muted">
+        <table className="w-full table-fixed border-collapse text-left">
+          <colgroup><col /><col className="w-20" /><col className="w-40" /></colgroup>
+          <thead className="sticky top-0 z-[1] app-surface">
             <tr>
-              <th className="border-b app-border px-3 py-2 font-semibold" rowSpan={2}>
-                Номенклатура
-              </th>
-              <th className="border-b app-border px-2 py-2 text-right font-semibold" rowSpan={2}>
-                Цена
-              </th>
-              <th className="px-2 py-2 text-center font-semibold" colSpan={2}>
-                Количество
-              </th>
-              <th className="border-b app-border px-2 py-2 text-right font-semibold" rowSpan={2}>
-                Сумма
-              </th>
-            </tr>
-            <tr>
-              <th className="border-b app-border px-2 py-1 text-right text-xs font-semibold">
-                Заказ
-              </th>
-              <th className="border-b app-border px-2 py-1 text-right text-xs font-semibold">
-                Факт
-              </th>
+              <th className="border-b app-border px-5 py-2.5 text-[11px] font-bold uppercase tracking-wide app-muted">Товар</th>
+              <th className="border-b app-border px-3 py-2.5 text-right text-[11px] font-bold uppercase tracking-wide app-muted">План</th>
+              <th className="border-b app-border px-5 py-2.5 text-right text-[11px] font-bold uppercase tracking-wide app-muted">Факт</th>
             </tr>
           </thead>
           <tbody>
-            {lines.map((line, index) => (
-              <tr
-                className={index === 0 ? "bg-violet-50" : "odd:bg-white even:bg-slate-50/60"}
-                key={line.product_id}
-              >
-                <td className="border-b border-slate-100 px-3 py-2 font-medium app-text">
-                  <div className="flex items-start gap-2">
-                    {line.marking_product ? <HonestSignIcon /> : null}
-                    <span className="line-clamp-2 min-w-0 break-words leading-5">
-                      {line.product_name}
-                    </span>
-                  </div>
-                </td>
-                <td className="border-b border-slate-100 px-2 py-2 text-right tabular-nums app-muted">
-                  {formatNumber(line.price)}
-                </td>
-                <td className="border-b border-slate-100 px-2 py-2 text-right tabular-nums app-muted">
-                  {formatNumber(line.quantity)}
-                </td>
-                <td
-                  className={`border-b border-slate-100 px-2 py-2 text-right font-bold tabular-nums ${
-                    line.is_weight && line.quantity_fact > line.quantity
-                      ? "text-red-600"
-                      : "app-text"
-                  }`}
-                >
-                  {formatNumber(line.quantity_fact)}
-                </td>
-                <td className="border-b border-slate-100 px-2 py-2 text-right tabular-nums app-muted">
-                  {formatMoney(line.amount)}
-                </td>
-              </tr>
-            ))}
+            {lines.map((line) => {
+              const isComplete = line.quantity_fact === line.quantity;
+              const isUntouched = line.quantity_fact === 0;
+              const factTone = isComplete
+                ? "bg-[#e3f3e9] text-[#00963e]"
+                : isUntouched
+                  ? "app-surface-muted app-muted"
+                  : "bg-red-100 text-red-600";
+
+              return (
+                <tr key={line.product_id}>
+                  <td className="border-b app-border px-5 py-2.5">
+                    <div className="flex items-start gap-2.5">
+                      {line.marking_product ? <HonestSignIcon /> : null}
+                      <div className="min-w-0">
+                        <div className="break-words text-[13px] font-bold leading-[18px] app-text">
+                          {line.product_name}
+                        </div>
+                        <div className="mt-0.5 text-[11px] leading-4 app-muted">
+                          Код {productCodesById.get(line.product_id) ?? line.product_id} · Цена {formatMoney(line.price)} ₽ · Сумма {formatMoney(line.amount)} ₽
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="border-b app-border px-3 py-2.5 text-right text-sm font-bold tabular-nums app-text">
+                    {formatNumber(line.quantity)}
+                  </td>
+                  <td className="border-b app-border px-5 py-2.5 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        aria-label={
+                          line.marking_product
+                            ? `Очистить строку ${line.product_name}`
+                            : `Уменьшить количество ${line.product_name}`
+                        }
+                        className="flex h-8 w-8 items-center justify-center rounded-md border-2 border-slate-300 bg-white text-base font-bold text-slate-600 shadow-sm transition hover:border-slate-400 hover:bg-slate-50 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={line.quantity_fact === 0}
+                        type="button"
+                        onClick={() => {
+                          if (line.marking_product) {
+                            setProductIdPendingClear(line.product_id);
+                          } else {
+                            changeQuantityFact(line.product_id, -1);
+                          }
+                        }}
+                      >
+                        {line.marking_product ? "×" : "−"}
+                      </button>
+                      <span className={`inline-flex min-w-10 justify-center rounded-md px-2.5 py-1.5 text-sm font-bold tabular-nums ${factTone}`}>
+                        {formatNumber(line.quantity_fact)}
+                      </span>
+                      <button
+                        aria-label={`Увеличить количество ${line.product_name}`}
+                        className="flex h-8 w-8 items-center justify-center rounded-md border-2 border-slate-300 bg-white text-base font-bold text-slate-600 shadow-sm transition hover:border-slate-400 hover:bg-slate-50 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={
+                          line.marking_product ||
+                          line.quantity_fact >= line.quantity
+                        }
+                        type="button"
+                        onClick={() => changeQuantityFact(line.product_id, 1)}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
 
-      <div className="flex items-center justify-between border-t app-border px-4 py-3">
-        <div className="text-sm app-muted">Итого по заказу</div>
-        <div className="text-lg font-bold tabular-nums app-text">
-          {formatMoney(total)} ₽
+      {productIdPendingClear !== null ? (
+        <div
+          aria-modal="true"
+          className="absolute inset-0 z-20 flex items-center justify-center bg-slate-950/35 p-4"
+          role="dialog"
+        >
+          <div className="w-full max-w-xs rounded-xl app-surface p-4 shadow-2xl">
+            <h3 className="text-sm font-bold app-text">Очистить строку?</h3>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                className="rounded-lg border app-border px-4 py-2 text-xs font-bold app-text"
+                type="button"
+                onClick={() => setProductIdPendingClear(null)}
+              >
+                Нет
+              </button>
+              <button
+                className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white"
+                type="button"
+                onClick={clearMarkedLine}
+              >
+                Да
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      ) : null}
     </section>
   );
 }

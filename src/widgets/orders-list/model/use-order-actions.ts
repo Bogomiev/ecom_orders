@@ -5,9 +5,10 @@ import {
   clearStoredOrderControl,
   type Order
 } from "@/entities/order";
-import type { Seller } from "@/entities/seller";
+import { getStoredCurrentSeller } from "@/entities/seller";
 import type { PageNotificationTone } from "@/shared/ui/page-notification";
 import { completeOrder, confirmOrder } from "../api/orders";
+import { getCompleteOrderItems } from "./complete-order-items";
 
 type Notify = (
   title: string,
@@ -16,14 +17,24 @@ type Notify = (
 ) => void;
 
 type Options = {
-  currentSeller: Seller | null;
   notify: Notify;
   onCompleteSuccess: (order: Order) => void;
   refresh: () => void;
 };
 
+export function requireCurrentSeller(notify: Notify) {
+  const currentSeller = getStoredCurrentSeller();
+  if (currentSeller !== null) return currentSeller;
+
+  notify(
+    "Не выбран продавец!",
+    "Нажмите на кнопку выбора продавца и отсканируйте штрихкод на бейдже.",
+    "error"
+  );
+  return null;
+}
+
 export function useOrderActions({
-  currentSeller,
   notify,
   onCompleteSuccess,
   refresh
@@ -31,15 +42,10 @@ export function useOrderActions({
   const [confirmingOrderId, setConfirmingOrderId] = useState<string | null>(null);
   const [completingOrderId, setCompletingOrderId] = useState<string | null>(null);
 
-  const requireSeller = useCallback(() => {
-    if (currentSeller !== null) return currentSeller;
-    notify(
-      "Не выбран продавец!",
-      "Нажмите на кнопку выбора продавца и отсканируйте штрихкод на бейдже.",
-      "error"
-    );
-    return null;
-  }, [currentSeller, notify]);
+  const requireSeller = useCallback(
+    () => requireCurrentSeller(notify),
+    [notify]
+  );
 
   const confirm = useCallback(async (order: Order) => {
     const seller = requireSeller();
@@ -83,14 +89,7 @@ export function useOrderActions({
       const result = await completeOrder({
         orderId: order.uid_1c,
         seller: seller.userId,
-        orderControlledItem: order.controlledItems.map(
-          ({ product_id, product_name, quantity, mark }) => ({
-            product_id,
-            product_name,
-            quantity,
-            mark
-          })
-        )
+        orderControlledItem: getCompleteOrderItems(order)
       });
       notify(
         "Управление заказами",

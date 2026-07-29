@@ -4,6 +4,7 @@ import { memo, useMemo, type MouseEvent } from "react";
 import {
   formatOrderTime,
   getOrderTone,
+  isOrderAwaitingConfirmation,
   type Order
 } from "@/entities/order";
 import {
@@ -30,7 +31,7 @@ function OrderCardComponent({
   order
 }: OrderCardProps) {
   const tone = getOrderTone(order);
-  const isConfirmation = order.extended_status === "Ожидает подтверждения";
+  const isConfirmation = isOrderAwaitingConfirmation(order);
   const assembleBefore = useMemo(
     () => formatOrderTime(order.order_created_at),
     [order.order_created_at]
@@ -69,7 +70,11 @@ function OrderCardComponent({
           type="button"
           onClick={handlePrimaryAction}
         >
-          {isOpening || isConfirming ? "..." : "Собрать"}
+          {isOpening || isConfirming
+            ? "..."
+            : isConfirmation
+              ? "Подтвердить заказ"
+              : "Собрать"}
         </button>
       </div>
     </article>

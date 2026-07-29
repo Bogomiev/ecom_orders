@@ -9,7 +9,7 @@ import {
   OrderActionResponseSchema,
   OrdersResponseSchema
 } from "@/entities/order";
-import type { Product, ProductsResponse } from "@/entities/product";
+import type { ProductsResponse } from "@/entities/product";
 import { ProductsResponseSchema } from "@/entities/product";
 import { fetchJson } from "@/shared/api/fetch-json";
 
@@ -27,33 +27,14 @@ export type CompleteOrderResult = {
   status: number;
 };
 
-export function enrichOrder(
-  order: OrdersResponse["items"][number],
-  products: ProductsResponse
-) {
-  const productsById = new Map<string, Product>(
-    products.map((product) => [product.uid, product])
-  );
-
-  return {
-    ...order,
-    items: order.items.map((item) => {
-      const product = productsById.get(item.product_id);
-
-      return {
-        ...item,
-        product_name: product?.name ?? item.product_id,
-        marking_product:
-          product !== undefined &&
-          product.markingType !== "БезОсобенностейУчета",
-        is_weight: product?.isWeight ?? false
-      };
-    })
-  };
-}
-
-export async function fetchOrders(signal?: AbortSignal): Promise<OrdersResponse> {
-  const { data } = await fetchJson(ORDERS_SERVICE_PATH, OrdersResponseSchema, {
+export async function fetchOrders(
+  storeId?: string,
+  signal?: AbortSignal
+): Promise<OrdersResponse> {
+  const path = storeId
+    ? `${ORDERS_SERVICE_PATH}?${new URLSearchParams({ store: storeId })}`
+    : ORDERS_SERVICE_PATH;
+  const { data } = await fetchJson(path, OrdersResponseSchema, {
     cache: "no-store",
     method: "GET",
     headers: {
@@ -104,9 +85,14 @@ export async function completeOrder(
 }
 
 export async function fetchProducts(
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  refresh = false
 ): Promise<ProductsResponse> {
-  const { data } = await fetchJson(PRODUCTS_SERVICE_PATH, ProductsResponseSchema, {
+  const path = refresh
+    ? `${PRODUCTS_SERVICE_PATH}?refresh=1`
+    : PRODUCTS_SERVICE_PATH;
+  const { data } = await fetchJson(path, ProductsResponseSchema, {
+    cache: refresh ? "no-store" : "default",
     method: "GET",
     headers: {
       Accept: "application/json"

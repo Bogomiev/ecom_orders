@@ -1,7 +1,14 @@
 import type { Order } from "../model/types";
-import { parseMoscowDateTime } from "@/shared/lib/date-time";
+import { parseMoscowDateTime } from "../../../shared/lib/date-time";
 
 export type OrderTone = "blue" | "green" | "red" | "yellow";
+
+export function isOrderAwaitingConfirmation(order: Order) {
+  const status = order.extended_status
+    .trim()
+    .toLocaleLowerCase("ru-RU");
+  return status === "ожидает подтверждения";
+}
 
 export function getOrderTone(order: Order): OrderTone {
   const status = `${order.status} ${order.extended_status}`.toLowerCase();

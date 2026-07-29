@@ -8,19 +8,24 @@ import {
   type Order
 } from "@/entities/order";
 import type { ProductsResponse } from "@/entities/product";
-import { useCurrentSeller } from "@/entities/seller";
 import { PageNotificationStack, type PageNotification } from "@/shared/ui/page-notification";
 import { usePageNotifications } from "@/shared/lib/use-page-notifications";
 import {
   useHasAccessToken,
   useSelectedStore
 } from "@/entities/store";
-import { enrichOrder } from "../api/orders";
 import { OrderCard } from "./order-card";
 import { OrderCardMini } from "./order-card-mini";
 import { useProductsCache } from "../model/use-products-cache";
 import { useOrders } from "../model/use-orders";
-import { useOrderActions } from "../model/use-order-actions";
+import {
+  requireCurrentSeller,
+  useOrderActions
+} from "../model/use-order-actions";
+import {
+  enrichOrder,
+  getMissingOrderProductIds
+} from "../model/order-products";
 
 type OrdersListProps = {
   layout?: "grid" | "list";
@@ -41,7 +46,6 @@ export function OrdersList({
   onOrdersCountChange
 }: OrdersListProps = {}) {
   const selectedStore = useSelectedStore();
-  const currentSeller = useCurrentSeller();
   const [controlOrder, setControlOrder] = useState<Order | null>(null);
   const hasAccessToken = useHasAccessToken();
   const [controlProducts, setControlProducts] = useState<ProductsResponse>([]);
@@ -54,18 +58,26 @@ export function OrdersList({
   const isMountedRef = useRef(true);
   const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
   const controlledOrdersRef = useRef(new Map<string, Order>());
-  const getProductsForControl = useProductsCache();
+  const { getProducts, refreshProducts, retryProducts } = useProductsCache();
   const { setState, state } = useOrders({
     controlledOrdersRef,
     refreshKey: ordersRefreshKey,
-    setControlOrder
+    setControlOrder,
+    storeId: selectedStore?.id
   });
 
   useEffect(() => {
+    isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
     };
   }, []);
+
+  useEffect(() => {
+    void getProducts().catch(() => {
+      // Ошибка фоновой загрузки будет показана, если пользователь откроет контроль.
+    });
+  }, [getProducts]);
 
   const filteredOrders = useMemo(() => {
     const orders = state.data?.items ?? [];
@@ -154,7 +166,15 @@ export function OrdersList({
     setOpeningOrderId(order.id);
 
     try {
-      const products = await getProductsForControl();
+      let products = await getProducts();
+
+      if (getMissingOrderProductIds(order, products).length > 0) {
+        try {
+          products = await refreshProducts();
+        } catch {
+          products = await retryProducts();
+        }
+      }
 
       if (!isMountedRef.current) {
         return;
@@ -194,7 +214,7 @@ export function OrdersList({
         setOpeningOrderId(null);
       }
     }
-  }, [getProductsForControl, setState]);
+  }, [getProducts, refreshProducts, retryProducts, setState]);
 
   const showOrderNotification = useCallback(
     (title: string, body: string, tone: PageNotification["tone"]) => {
@@ -216,11 +236,17 @@ export function OrdersList({
     confirm: handleConfirmOrder,
     confirmingOrderId
   } = useOrderActions({
-    currentSeller,
     notify: showOrderNotification,
     onCompleteSuccess: handleCompleteSuccess,
     refresh: refreshOrders
   });
+  const handleStartControl = useCallback(
+    (order: Order) => {
+      if (requireCurrentSeller(showOrderNotification) === null) return;
+      void openOrderControl(order);
+    },
+    [openOrderControl, showOrderNotification]
+  );
 
   return (
     <section className="space-y-3">
@@ -260,7 +286,7 @@ export function OrdersList({
                   order={order}
                   onCollapse={() => setExpandedOrderId(null)}
                   onConfirm={handleConfirmOrder}
-                  onStartControl={openOrderControl}
+                  onStartControl={handleStartControl}
                 />
               ) : (
                 <OrderCardMini

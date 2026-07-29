@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   if (!parsedBody.success) {
     return NextResponse.json(
       {
-        code: 0,
+        code: 1,
         mess: "Некорректные параметры завершения заказа",
         data: { order: "", status: "Неизвестен", seller: "" }
       } satisfies CompleteOrderResponse,
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       {
-        code: 0,
+        code: 1,
         mess: "Не удалось завершить контроль заказа в 1С",
         data: { order: "", status: "Неизвестен", seller: "" }
       } satisfies CompleteOrderResponse,
