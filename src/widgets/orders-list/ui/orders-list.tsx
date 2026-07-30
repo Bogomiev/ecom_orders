@@ -232,6 +232,10 @@ export function OrdersList({
     setControlOrder(null);
   }, []);
   const {
+    cancel: handleCancelOrder,
+    cancellingOrderId,
+    clearCancellingOrder,
+    clearCompletingOrder,
     clearConfirmingOrder,
     complete: handleCompleteOrder,
     completingOrderId,
@@ -257,6 +261,28 @@ export function OrdersList({
   }, [
     clearConfirmingOrder,
     confirmingOrderId,
+    state.data
+  ]);
+  useEffect(() => {
+    if (state.data === null) return;
+
+    if (
+      cancellingOrderId !== null &&
+      !state.data.items.some((order) => order.id === cancellingOrderId)
+    ) {
+      clearCancellingOrder();
+    }
+    if (
+      completingOrderId !== null &&
+      !state.data.items.some((order) => order.id === completingOrderId)
+    ) {
+      clearCompletingOrder();
+    }
+  }, [
+    cancellingOrderId,
+    clearCancellingOrder,
+    clearCompletingOrder,
+    completingOrderId,
     state.data
   ]);
   const handleStartControl = useCallback(
@@ -300,9 +326,12 @@ export function OrdersList({
               expandedOrderId === order.id ? (
                 <OrderCard
                   key={order.id}
+                  isCancelling={cancellingOrderId === order.id}
+                  isCompleting={completingOrderId === order.id}
                   isConfirming={confirmingOrderId === order.id}
                   isOpening={openingOrderId === order.id}
                   order={order}
+                  onCancel={handleCancelOrder}
                   onCollapse={() => setExpandedOrderId(null)}
                   onConfirm={handleConfirmOrder}
                   onStartControl={handleStartControl}

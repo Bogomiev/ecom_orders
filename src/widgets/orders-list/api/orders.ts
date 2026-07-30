@@ -1,4 +1,6 @@
 import type {
+  CancelOrderRequest,
+  CancelOrderResponse,
   CompleteOrderRequest,
   CompleteOrderResponse,
   ConfirmOrderRequest,
@@ -6,6 +8,7 @@ import type {
   OrdersResponse
 } from "@/entities/order";
 import {
+  CancelOrderResponseSchema,
   OrderActionResponseSchema,
   OrdersResponseSchema
 } from "@/entities/order";
@@ -19,6 +22,11 @@ export const ORDERS_REFRESH_INTERVAL_SECONDS = 5;
 
 export type ConfirmOrderResult = {
   data: ConfirmOrderResponse;
+  status: number;
+};
+
+export type CancelOrderResult = {
+  data: CancelOrderResponse;
   status: number;
 };
 
@@ -58,6 +66,29 @@ export async function confirmOrder(
     },
     body: JSON.stringify(body)
   });
+
+  return {
+    data: response.data,
+    status: response.status
+  };
+}
+
+export async function cancelOrder(
+  body: CancelOrderRequest
+): Promise<CancelOrderResult> {
+  const response = await fetchJson(
+    `${ORDERS_SERVICE_PATH}/cancel`,
+    CancelOrderResponseSchema,
+    {
+      acceptErrorResponse: true,
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(body)
+    }
+  );
 
   return {
     data: response.data,

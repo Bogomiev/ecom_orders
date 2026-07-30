@@ -14,18 +14,24 @@ import {
 } from "./order-card-parts";
 
 type OrderCardProps = {
+  isCancelling?: boolean;
+  isCompleting?: boolean;
   isConfirming?: boolean;
   isOpening?: boolean;
   onCollapse: () => void;
+  onCancel: (order: Order) => void;
   onConfirm: (order: Order) => void;
   onStartControl: (order: Order) => void;
   order: Order;
 };
 
 function OrderCardComponent({
+  isCancelling = false,
+  isCompleting = false,
   isConfirming = false,
   isOpening = false,
   onCollapse,
+  onCancel,
   onConfirm,
   onStartControl,
   order
@@ -42,6 +48,13 @@ function OrderCardComponent({
     if (isConfirmation) onConfirm(order);
     else onStartControl(order);
   }
+
+  function handleCancel(event: MouseEvent<HTMLButtonElement>) {
+    event.stopPropagation();
+    onCancel(order);
+  }
+
+  const isActionPending = isCancelling || isCompleting || isConfirming || isOpening;
 
   return (
     <article
@@ -63,19 +76,19 @@ function OrderCardComponent({
       <div className="order-card-actions mt-3 grid grid-cols-2 gap-2 border-t pt-3">
         <button
           className="order-cancel-button min-h-[2.125rem] rounded-lg border border-slate-300 app-surface text-xs font-extrabold disabled:cursor-wait disabled:opacity-60"
-          disabled={isConfirming}
+          disabled={isActionPending}
           type="button"
-          onClick={(event) => event.stopPropagation()}
+          onClick={handleCancel}
         >
-          Отмена
+          {isCancelling ? "..." : "Отмена"}
         </button>
         <button
           className="order-primary-button min-h-[2.125rem] rounded-lg bg-emerald-600 text-xs font-extrabold text-white"
-          disabled={isOpening || isConfirming}
+          disabled={isActionPending}
           type="button"
           onClick={handlePrimaryAction}
         >
-          {isOpening || isConfirming
+          {isOpening || isConfirming || isCompleting
             ? "..."
             : isConfirmation
               ? "Подтвердить заказ"

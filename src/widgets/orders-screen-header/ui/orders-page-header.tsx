@@ -41,7 +41,7 @@ export function OrdersPageHeader({ ordersCount }: OrdersPageHeaderProps) {
       <header className="top-header flex min-h-[4.5rem] items-center justify-between gap-4 border-b app-border app-surface px-3 py-2">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <div className="brand-mark grid h-8 w-8 shrink-0 place-items-center rounded-lg text-base font-black text-white">Р</div>
-          <div className="flex min-w-0 max-w-full flex-wrap gap-2">
+          <div className="flex min-w-0 flex-1 flex-wrap gap-2">
             <StoreSelector />
             <SellerSelector />
           </div>

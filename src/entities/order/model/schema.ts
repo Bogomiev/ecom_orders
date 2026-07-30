@@ -50,13 +50,18 @@ export const ConfirmOrderRequestSchema = z.object({
   seller: z.string().min(1)
 });
 
+export const CancelOrderRequestSchema = z.object({
+  orderId: z.string().min(1),
+  seller: z.string().min(1)
+});
+
 export const CompleteOrderRequestSchema = ConfirmOrderRequestSchema.extend({
   orderControlledItem: z.array(
     OrderControlledItemSchema.omit({ result: true })
   )
 });
 
-export const OrderActionResponseSchema = z.object({
+const orderActionResponseShape = {
   code: z.number(),
   mess: z.string(),
   data: z.object({
@@ -64,4 +69,7 @@ export const OrderActionResponseSchema = z.object({
     status: z.string(),
     seller: z.string()
   })
-});
+};
+
+export const OrderActionResponseSchema = z.object(orderActionResponseShape);
+export const CancelOrderResponseSchema = z.object(orderActionResponseShape);

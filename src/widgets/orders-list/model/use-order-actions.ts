@@ -7,7 +7,7 @@ import {
 } from "@/entities/order";
 import { getStoredCurrentSeller } from "@/entities/seller";
 import type { PageNotificationTone } from "@/shared/ui/page-notification";
-import { completeOrder, confirmOrder } from "../api/orders";
+import { cancelOrder, completeOrder, confirmOrder } from "../api/orders";
 import { getCompleteOrderItems } from "./complete-order-items";
 
 type Notify = (
@@ -40,9 +40,18 @@ export function useOrderActions({
   refresh
 }: Options) {
   const [confirmingOrderId, setConfirmingOrderId] = useState<string | null>(null);
+  const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
   const [completingOrderId, setCompletingOrderId] = useState<string | null>(null);
+  const clearCancellingOrder = useCallback(
+    () => setCancellingOrderId(null),
+    []
+  );
   const clearConfirmingOrder = useCallback(
     () => setConfirmingOrderId(null),
+    []
+  );
+  const clearCompletingOrder = useCallback(
+    () => setCompletingOrderId(null),
     []
   );
 
@@ -86,6 +95,41 @@ export function useOrderActions({
     }
   }, [clearConfirmingOrder, notify, refresh, requireSeller]);
 
+  const cancel = useCallback(async (order: Order) => {
+    const seller = requireSeller();
+    if (seller === null) return;
+    setCancellingOrderId(order.id);
+    let isWaitingForRefresh = false;
+
+    try {
+      const result = await cancelOrder({
+        orderId: order.uid_1c,
+        seller: seller.userId
+      });
+      notify(
+        "Управление заказами",
+        result.status === 200
+          ? "Заказ успешно отменен"
+          : `При отмене заказа произошла ошибка: ${result.data.mess}, статус заказа: ${result.data.data.status}`,
+        result.status === 200 ? "success" : "warning"
+      );
+      if (result.status === 200 || result.status === 400) {
+        isWaitingForRefresh = true;
+        refresh();
+      }
+    } catch {
+      notify(
+        "Ошибка отмены",
+        "Не удалось получить ответ сервера, статус заказа: неизвестен",
+        "warning"
+      );
+    } finally {
+      if (!isWaitingForRefresh) {
+        clearCancellingOrder();
+      }
+    }
+  }, [clearCancellingOrder, notify, refresh, requireSeller]);
+
   const complete = useCallback(async (order: Order) => {
     if (order.items.every((item) => item.quantity_fact === 0)) {
       notify("Управление заказами", "Не отсканирован ни один товар!", "warning");
@@ -94,6 +138,7 @@ export function useOrderActions({
     const seller = requireSeller();
     if (seller === null) return;
     setCompletingOrderId(order.id);
+    let isWaitingForRefresh = false;
 
     try {
       const result = await completeOrder({
@@ -111,8 +156,11 @@ export function useOrderActions({
       if (result.status === 200) {
         clearStoredOrderControl(order);
         onCompleteSuccess(order);
+        isWaitingForRefresh = true;
+        refresh();
+      } else if (result.status === 400) {
+        refresh();
       }
-      if (result.status === 200 || result.status === 400) refresh();
     } catch {
       notify(
         "Ошибка завершения контроля",
@@ -120,11 +168,17 @@ export function useOrderActions({
         "warning"
       );
     } finally {
-      setCompletingOrderId(null);
+      if (!isWaitingForRefresh) {
+        clearCompletingOrder();
+      }
     }
-  }, [notify, onCompleteSuccess, refresh, requireSeller]);
+  }, [clearCompletingOrder, notify, onCompleteSuccess, refresh, requireSeller]);
 
   return {
+    cancel,
+    cancellingOrderId,
+    clearCancellingOrder,
+    clearCompletingOrder,
     clearConfirmingOrder,
     complete,
     completingOrderId,

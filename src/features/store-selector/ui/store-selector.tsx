@@ -78,7 +78,7 @@ function StorePickerButton({
 }) {
   return (
     <button
-      className="flex min-h-12 w-[23rem] max-w-full items-center justify-start gap-2.5 rounded-lg border app-border app-surface px-2.5 py-1.5 text-left shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none"
+      className="flex min-h-12 w-full min-w-0 items-center justify-start gap-2.5 rounded-lg border app-border app-surface px-2.5 py-1.5 text-left shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none sm:w-[23rem]"
       disabled={disabled}
       type="button"
       onClick={onOpen}

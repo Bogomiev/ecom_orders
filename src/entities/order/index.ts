@@ -1,4 +1,6 @@
 export type {
+  CancelOrderRequest,
+  CancelOrderResponse,
   DateTime,
   CompleteOrderControlledItem,
   CompleteOrderRequest,
@@ -16,6 +18,8 @@ export {
   saveOrderControl
 } from "./model/control-storage";
 export {
+  CancelOrderRequestSchema,
+  CancelOrderResponseSchema,
   CompleteOrderRequestSchema,
   ConfirmOrderRequestSchema,
   OrderActionResponseSchema,
