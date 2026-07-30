@@ -5,12 +5,16 @@ import type { Store } from "@/entities/store";
 import {
   getAccessTokenFromLocation,
   getStoreUidForAccessToken,
+  removeStoreUidForAccessToken,
   setStoredStoreSelection,
   setStoreUidForAccessToken,
   toStoreSelectionSnapshot
 } from "@/entities/store";
 import { getStores } from "@/entities/store/api/get-stores";
+import { accessTokenIsValid } from "@/entities/store/api/access-token-is-valid";
+import { usePageNotifications } from "@/shared/lib/use-page-notifications";
 import { Dialog } from "@/shared/ui/dialog";
+import { PageNotificationStack } from "@/shared/ui/page-notification";
 
 const LEGACY_STORAGE_KEY = "ecom-orders-selected-store-id";
 const PIN_LENGTH = 4;
@@ -69,10 +73,12 @@ function StoreBuildingIcon() {
 
 function StorePickerButton({
   disabled,
+  statusText,
   selectedStore,
   onOpen
 }: {
   disabled: boolean;
+  statusText?: string;
   selectedStore: StoreSelection;
   onOpen: () => void;
 }) {
@@ -86,9 +92,12 @@ function StorePickerButton({
       <StoreBuildingIcon />
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[13px] font-extrabold leading-tight app-text">
-          {disabled || selectedStore === null ? "Магазин не выбран" : selectedStore.name}
+          {statusText ??
+            (disabled || selectedStore === null
+              ? "Магазин не выбран"
+              : selectedStore.name)}
         </span>
-        {selectedStore ? (
+        {selectedStore && !statusText ? (
           <span className="mt-0.5 block truncate text-[10px] leading-tight app-muted">
             {selectedStore.address}
           </span>
@@ -262,6 +271,9 @@ export function StoreSelector() {
   const [state, setState] = useState<StoresState>(initialStoresState);
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
   const [accessToken, setAccessToken] = useState<string | null | undefined>(undefined);
+  const [isCheckingAccessToken, setIsCheckingAccessToken] = useState(false);
+  const [isAccessTokenInvalid, setIsAccessTokenInvalid] = useState(false);
+  const { dismiss, notifications, notify } = usePageNotifications();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -270,14 +282,34 @@ export function StoreSelector() {
       try {
         const token = getAccessTokenFromLocation();
         setAccessToken(token);
-        const data = await getStores(controller.signal);
-        setState({ error: null, isLoading: false, stores: data.items });
 
         if (token === null) {
           setSelectedStoreId(null);
           setStoredStoreSelection(null);
+          setState({ error: null, isLoading: false, stores: [] });
           return;
         }
+
+        setIsCheckingAccessToken(true);
+        const isValid = await accessTokenIsValid(token, controller.signal);
+        setIsCheckingAccessToken(false);
+        if (!isValid) {
+          removeStoreUidForAccessToken(token);
+          setSelectedStoreId(null);
+          setStoredStoreSelection(null);
+          setIsAccessTokenInvalid(true);
+          setState({ error: null, isLoading: false, stores: [] });
+          notify({
+            body: "Укажите действительный токен доступа в адресной строке.",
+            title: "Токен доступа недействителен",
+            tone: "error"
+          });
+          return;
+        }
+
+        setIsAccessTokenInvalid(false);
+        const data = await getStores(controller.signal);
+        setState({ error: null, isLoading: false, stores: data.items });
 
         const mappedStoreUid = getStoreUidForAccessToken(token);
         const mappedStore = data.items.find(
@@ -294,6 +326,7 @@ export function StoreSelector() {
         }
       } catch (error) {
         if (controller.signal.aborted) return;
+        setIsCheckingAccessToken(false);
         setState((currentState) => ({
           ...currentState,
           error: error instanceof Error ? error.message : "Не удалось загрузить магазины",
@@ -304,7 +337,7 @@ export function StoreSelector() {
 
     loadStores();
     return () => controller.abort();
-  }, []);
+  }, [notify]);
 
   const selectedStore = useMemo(
     () => state.stores.find((store) => store.id === selectedStoreId) ?? null,
@@ -325,10 +358,17 @@ export function StoreSelector() {
   return (
     <>
       <StorePickerButton
-        disabled={accessToken === null || accessToken === undefined}
+        disabled={
+          accessToken === null ||
+          accessToken === undefined ||
+          isCheckingAccessToken ||
+          isAccessTokenInvalid
+        }
+        statusText={isCheckingAccessToken ? "Проверка токена..." : undefined}
         selectedStore={selectedStore}
         onOpen={() => setIsOpen(true)}
       />
+      <PageNotificationStack notifications={notifications} onClose={dismiss} />
       {isOpen ? (
         <StoreSelectorModal
           selectedStore={selectedStore}

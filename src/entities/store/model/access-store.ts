@@ -68,3 +68,35 @@ export function setStoreUidForAccessToken(token: string, uid: string) {
     JSON.stringify(accessStores)
   );
 }
+
+export function removeStoreUidForAccessToken(token: string) {
+  if (typeof window === "undefined") return;
+
+  const rawValue = window.localStorage.getItem(ACCESS_STORES_STORAGE_KEY);
+  if (!rawValue) return;
+
+  try {
+    const accessStores = JSON.parse(rawValue) as unknown;
+    if (
+      typeof accessStores !== "object" ||
+      accessStores === null ||
+      Array.isArray(accessStores)
+    ) {
+      return;
+    }
+
+    const nextAccessStores = { ...(accessStores as AccessStores) };
+    delete nextAccessStores[token];
+
+    if (Object.keys(nextAccessStores).length === 0) {
+      window.localStorage.removeItem(ACCESS_STORES_STORAGE_KEY);
+    } else {
+      window.localStorage.setItem(
+        ACCESS_STORES_STORAGE_KEY,
+        JSON.stringify(nextAccessStores)
+      );
+    }
+  } catch {
+    // An unreadable value cannot contain a usable token mapping.
+  }
+}

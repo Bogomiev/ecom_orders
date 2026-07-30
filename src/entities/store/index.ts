@@ -13,5 +13,6 @@ export {
   ACCESS_STORES_STORAGE_KEY,
   getAccessTokenFromLocation,
   getStoreUidForAccessToken,
+  removeStoreUidForAccessToken,
   setStoreUidForAccessToken
 } from "./model/access-store";
