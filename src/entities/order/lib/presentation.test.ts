@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { Order } from "../model/types";
-import { isOrderAwaitingConfirmation } from "./presentation";
+import {
+  getOrderStatusLabel,
+  getOrderTone,
+  isOrderAwaitingConfirmation
+} from "./presentation";
 
 const order = {
   id: "order",
@@ -45,5 +49,28 @@ describe("isOrderAwaitingConfirmation", () => {
 
   it("не считает другой расширенный статус ожидающим подтверждения", () => {
     expect(isOrderAwaitingConfirmation(order)).toBe(false);
+  });
+});
+
+describe("getOrderTone", () => {
+  it("показывает подтвержденный заказ, ожидающий сборку, как заказ в сборке", () => {
+    const tone = getOrderTone({
+      ...order,
+      status: "Подтвержден",
+      extended_status: "Ожидает сборку"
+    });
+
+    expect(tone).toBe("yellow");
+    expect(getOrderStatusLabel(tone)).toBe("В сборке");
+  });
+
+  it("оставляет ожидающий подтверждения заказ новым", () => {
+    const tone = getOrderTone({
+      ...order,
+      extended_status: "Ожидает подтверждения"
+    });
+
+    expect(tone).toBe("blue");
+    expect(getOrderStatusLabel(tone)).toBe("Новый");
   });
 });

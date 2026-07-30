@@ -13,8 +13,9 @@ export function isOrderAwaitingConfirmation(order: Order) {
 export function getOrderTone(order: Order): OrderTone {
   const status = `${order.status} ${order.extended_status}`.toLowerCase();
   if (status.includes("нет товар") || status.includes("отмен") || status.includes("ошиб")) return "red";
+  if (isOrderAwaitingConfirmation(order)) return "blue";
   if (status.includes("сбор") || status.includes("ожида")) {
-    return status.includes("подтверж") ? "blue" : "yellow";
+    return "yellow";
   }
   if (status.includes("готов") || status.includes("выполн") || status.includes("заверш")) return "green";
   return "blue";

@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  isOrderAwaitingConfirmation,
   restoreOrderControl,
   saveOrderControl,
   type Order
@@ -231,6 +232,7 @@ export function OrdersList({
     setControlOrder(null);
   }, []);
   const {
+    clearConfirmingOrder,
     complete: handleCompleteOrder,
     completingOrderId,
     confirm: handleConfirmOrder,
@@ -240,6 +242,23 @@ export function OrdersList({
     onCompleteSuccess: handleCompleteSuccess,
     refresh: refreshOrders
   });
+  useEffect(() => {
+    if (confirmingOrderId === null || state.data === null) return;
+
+    const confirmingOrder = state.data.items.find(
+      (order) => order.id === confirmingOrderId
+    );
+    if (
+      confirmingOrder === undefined ||
+      !isOrderAwaitingConfirmation(confirmingOrder)
+    ) {
+      clearConfirmingOrder();
+    }
+  }, [
+    clearConfirmingOrder,
+    confirmingOrderId,
+    state.data
+  ]);
   const handleStartControl = useCallback(
     (order: Order) => {
       if (requireCurrentSeller(showOrderNotification) === null) return;

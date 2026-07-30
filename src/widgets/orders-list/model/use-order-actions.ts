@@ -41,6 +41,10 @@ export function useOrderActions({
 }: Options) {
   const [confirmingOrderId, setConfirmingOrderId] = useState<string | null>(null);
   const [completingOrderId, setCompletingOrderId] = useState<string | null>(null);
+  const clearConfirmingOrder = useCallback(
+    () => setConfirmingOrderId(null),
+    []
+  );
 
   const requireSeller = useCallback(
     () => requireCurrentSeller(notify),
@@ -51,6 +55,7 @@ export function useOrderActions({
     const seller = requireSeller();
     if (seller === null) return;
     setConfirmingOrderId(order.id);
+    let isWaitingForRefresh = false;
 
     try {
       const result = await confirmOrder({
@@ -64,7 +69,10 @@ export function useOrderActions({
           : `При подтверждении заказа произошла ошибка: ${result.data.mess}, статус заказа: ${result.data.data.status}`,
         result.status === 200 ? "success" : "warning"
       );
-      if (result.status === 200 || result.status === 400) refresh();
+      if (result.status === 200 || result.status === 400) {
+        isWaitingForRefresh = true;
+        refresh();
+      }
     } catch {
       notify(
         "Ошибка подтверждения",
@@ -72,9 +80,11 @@ export function useOrderActions({
         "warning"
       );
     } finally {
-      setConfirmingOrderId(null);
+      if (!isWaitingForRefresh) {
+        clearConfirmingOrder();
+      }
     }
-  }, [notify, refresh, requireSeller]);
+  }, [clearConfirmingOrder, notify, refresh, requireSeller]);
 
   const complete = useCallback(async (order: Order) => {
     if (order.items.every((item) => item.quantity_fact === 0)) {
@@ -114,5 +124,11 @@ export function useOrderActions({
     }
   }, [notify, onCompleteSuccess, refresh, requireSeller]);
 
-  return { complete, completingOrderId, confirm, confirmingOrderId };
+  return {
+    clearConfirmingOrder,
+    complete,
+    completingOrderId,
+    confirm,
+    confirmingOrderId
+  };
 }

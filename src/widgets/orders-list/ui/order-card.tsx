@@ -61,7 +61,12 @@ function OrderCardComponent({
       <OrderMeta assembleBefore={assembleBefore} className="mt-2" order={order} />
 
       <div className="order-card-actions mt-3 grid grid-cols-2 gap-2 border-t pt-3">
-        <button className="order-cancel-button min-h-[2.125rem] rounded-lg border border-slate-300 app-surface text-xs font-extrabold" type="button" onClick={(event) => event.stopPropagation()}>
+        <button
+          className="order-cancel-button min-h-[2.125rem] rounded-lg border border-slate-300 app-surface text-xs font-extrabold disabled:cursor-wait disabled:opacity-60"
+          disabled={isConfirming}
+          type="button"
+          onClick={(event) => event.stopPropagation()}
+        >
           Отмена
         </button>
         <button
