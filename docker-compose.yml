@@ -8,7 +8,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
-      ONE_C_API_URL: ${ONE_C_API_URL:-http://1c.ikorniysrv.ru:85/eshop/hs/PAPI/v1}
+      ONE_C_API_URL: ${ONE_C_API_URL:-http://dev.1c.ikorniysrv.ru:85/eshop/hs/PAPI/v1}
     expose:
       - "3000"
     networks:

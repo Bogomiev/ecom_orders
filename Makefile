@@ -122,7 +122,7 @@ ask-domain:
 	sed -i "/^DOMAIN=/d;/^EMAIL=/d" $(ENV_FILE); \
 	echo "DOMAIN=$$DOMAIN" >> $(ENV_FILE); \
 	echo "EMAIL=$$EMAIL" >> $(ENV_FILE); \
-	grep -q '^ONE_C_API_URL=' $(ENV_FILE) || echo "ONE_C_API_URL=http://1c.ikorniysrv.ru:85/eshop/hs/PAPI/v1" >> $(ENV_FILE); \
+	grep -q '^ONE_C_API_URL=' $(ENV_FILE) || echo "ONE_C_API_URL=http://dev.1c.ikorniysrv.ru:85/eshop/hs/PAPI/v1" >> $(ENV_FILE); \
 	for f in $(TEMPLATES)/http.conf.template $(TEMPLATES)/https.conf.template; do \
 		if [ -f "$$f" ]; then sed -i "s/example\.com/$$DOMAIN/g" "$$f"; fi; \
 	done; \

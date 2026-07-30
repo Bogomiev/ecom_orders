@@ -1,6 +1,6 @@
 export const ONE_C_API_URL =
   process.env.ONE_C_API_URL ??
-  "http://1c.ikorniysrv.ru:85/eshop/hs/PAPI/v1";
+  "http://dev.1c.ikorniysrv.ru:85/eshop/hs/PAPI/v1";
 
 type OneCFetchInit = RequestInit & {
   next?: {
