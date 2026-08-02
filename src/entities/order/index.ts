@@ -10,7 +10,9 @@ export type {
   Order,
   OrderControlledItem,
   OrderItem,
-  OrdersResponse
+  OrdersResponse,
+  GiveOrderToCourierRequest,
+  GiveOrderToCourierResponse
 } from "./model/types";
 export {
   clearStoredOrderControl,
@@ -23,7 +25,9 @@ export {
   CompleteOrderRequestSchema,
   ConfirmOrderRequestSchema,
   OrderActionResponseSchema,
-  OrdersResponseSchema
+  OrdersResponseSchema,
+  GiveOrderToCourierRequestSchema,
+  GiveOrderToCourierResponseSchema
 } from "./model/schema";
 export {
   formatOrderMoney,
@@ -31,7 +35,9 @@ export {
   getMarketplaceLabel,
   getOrderStatusLabel,
   getOrderTone,
-  isOrderAwaitingConfirmation
+  isOrderAwaitingConfirmation,
+  isOrderReady,
+  isOrderUnavailableForOpening
 } from "./lib/presentation";
 export type { OrderTone } from "./lib/presentation";
 export {

@@ -7,7 +7,12 @@ import {
 } from "@/entities/order";
 import { getStoredCurrentSeller } from "@/entities/seller";
 import type { PageNotificationTone } from "@/shared/ui/page-notification";
-import { cancelOrder, completeOrder, confirmOrder } from "../api/orders";
+import {
+  cancelOrder,
+  completeOrder,
+  confirmOrder,
+  giveOrderToCourier as requestGiveOrderToCourier
+} from "../api/orders";
 import { getCompleteOrderItems } from "./complete-order-items";
 
 type Notify = (
@@ -42,6 +47,7 @@ export function useOrderActions({
   const [confirmingOrderId, setConfirmingOrderId] = useState<string | null>(null);
   const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
   const [completingOrderId, setCompletingOrderId] = useState<string | null>(null);
+  const [givingOrderToCourierId, setGivingOrderToCourierId] = useState<string | null>(null);
   const clearCancellingOrder = useCallback(
     () => setCancellingOrderId(null),
     []
@@ -52,6 +58,10 @@ export function useOrderActions({
   );
   const clearCompletingOrder = useCallback(
     () => setCompletingOrderId(null),
+    []
+  );
+  const clearGivingOrderToCourier = useCallback(
+    () => setGivingOrderToCourierId(null),
     []
   );
 
@@ -130,6 +140,39 @@ export function useOrderActions({
     }
   }, [clearCancellingOrder, notify, refresh, requireSeller]);
 
+  const giveOrderToCourier = useCallback(async (order: Order) => {
+    const seller = requireSeller();
+    if (seller === null) return;
+    setGivingOrderToCourierId(order.id);
+    let isWaitingForRefresh = false;
+
+    try {
+      const result = await requestGiveOrderToCourier({
+        orderId: order.uid_1c,
+        seller: seller.userId
+      });
+      notify(
+        "Управление заказами",
+        result.status === 200
+          ? "Заказ успешно передан курьеру"
+          : `При выдаче заказа курьеру произошла ошибка: ${result.data.mess}, статус заказа: ${result.data.data.status}`,
+        result.status === 200 ? "success" : "warning"
+      );
+      isWaitingForRefresh = true;
+      refresh();
+    } catch {
+      notify(
+        "Ошибка выдачи заказа курьеру",
+        "Не удалось получить ответ сервера, статус заказа: неизвестен",
+        "warning"
+      );
+    } finally {
+      if (!isWaitingForRefresh) {
+        clearGivingOrderToCourier();
+      }
+    }
+  }, [clearGivingOrderToCourier, notify, refresh, requireSeller]);
+
   const complete = useCallback(async (order: Order) => {
     if (order.items.every((item) => item.quantity_fact === 0)) {
       notify("Управление заказами", "Не отсканирован ни один товар!", "warning");
@@ -180,9 +223,12 @@ export function useOrderActions({
     clearCancellingOrder,
     clearCompletingOrder,
     clearConfirmingOrder,
+    clearGivingOrderToCourier,
     complete,
     completingOrderId,
     confirm,
-    confirmingOrderId
+    confirmingOrderId,
+    giveOrderToCourier,
+    givingOrderToCourierId
   };
 }

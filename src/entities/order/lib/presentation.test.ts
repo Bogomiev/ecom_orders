@@ -3,7 +3,9 @@ import type { Order } from "../model/types";
 import {
   getOrderStatusLabel,
   getOrderTone,
-  isOrderAwaitingConfirmation
+  isOrderAwaitingConfirmation,
+  isOrderReady,
+  isOrderUnavailableForOpening
 } from "./presentation";
 
 const order = {
@@ -61,7 +63,11 @@ describe("getOrderTone", () => {
     });
 
     expect(tone).toBe("yellow");
-    expect(getOrderStatusLabel(tone)).toBe("В сборке");
+    expect(getOrderStatusLabel({
+      ...order,
+      status: "Подтвержден",
+      extended_status: "Ожидает сборку"
+    })).toBe("В сборке");
   });
 
   it("оставляет ожидающий подтверждения заказ новым", () => {
@@ -71,6 +77,27 @@ describe("getOrderTone", () => {
     });
 
     expect(tone).toBe("blue");
-    expect(getOrderStatusLabel(tone)).toBe("Новый");
+    expect(getOrderStatusLabel({
+      ...order,
+      extended_status: "Ожидает подтверждения"
+    })).toBe("Новый");
   });
+});
+
+describe("новые расширенные статусы", () => {
+  it("определяет готовый заказ независимо от регистра и пробелов", () => {
+    expect(isOrderReady({
+      ...order,
+      extended_status: "  ГОТОВ "
+    })).toBe(true);
+  });
+
+  it.each(["Отменен", "Передан курьеру"])(
+    "не разрешает открывать заказ со статусом %s",
+    (extendedStatus) => {
+      const unavailableOrder = { ...order, extended_status: extendedStatus };
+      expect(isOrderUnavailableForOpening(unavailableOrder)).toBe(true);
+      expect(getOrderStatusLabel(unavailableOrder)).toBe(extendedStatus);
+    }
+  );
 });

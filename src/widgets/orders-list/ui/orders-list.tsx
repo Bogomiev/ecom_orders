@@ -4,6 +4,8 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   isOrderAwaitingConfirmation,
+  isOrderReady,
+  isOrderUnavailableForOpening,
   restoreOrderControl,
   saveOrderControl,
   type Order
@@ -237,10 +239,13 @@ export function OrdersList({
     clearCancellingOrder,
     clearCompletingOrder,
     clearConfirmingOrder,
+    clearGivingOrderToCourier,
     complete: handleCompleteOrder,
     completingOrderId,
     confirm: handleConfirmOrder,
-    confirmingOrderId
+    confirmingOrderId,
+    giveOrderToCourier: handleGiveOrderToCourier,
+    givingOrderToCourierId
   } = useOrderActions({
     notify: showOrderNotification,
     onCompleteSuccess: handleCompleteSuccess,
@@ -261,6 +266,20 @@ export function OrdersList({
   }, [
     clearConfirmingOrder,
     confirmingOrderId,
+    state.data
+  ]);
+  useEffect(() => {
+    if (givingOrderToCourierId === null || state.data === null) return;
+
+    const order = state.data.items.find(
+      (currentOrder) => currentOrder.id === givingOrderToCourierId
+    );
+    if (order === undefined || !isOrderReady(order)) {
+      clearGivingOrderToCourier();
+    }
+  }, [
+    clearGivingOrderToCourier,
+    givingOrderToCourierId,
     state.data
   ]);
   useEffect(() => {
@@ -323,18 +342,21 @@ export function OrdersList({
         <>
           <div className={ordersGridClassName}>
             {visibleOrders.map((order) =>
-              expandedOrderId === order.id ? (
+              expandedOrderId === order.id &&
+              !isOrderUnavailableForOpening(order) ? (
                 <OrderCard
                   key={order.id}
                   isCancelling={cancellingOrderId === order.id}
                   isCompleting={completingOrderId === order.id}
                   isConfirming={confirmingOrderId === order.id}
                   isOpening={openingOrderId === order.id}
+                  isGivingOrderToCourier={givingOrderToCourierId === order.id}
                   order={order}
                   onCancel={handleCancelOrder}
                   onCollapse={() => setExpandedOrderId(null)}
                   onConfirm={handleConfirmOrder}
                   onStartControl={handleStartControl}
+                  onGiveToCourier={handleGiveOrderToCourier}
                 />
               ) : (
                 <OrderCardMini
@@ -342,7 +364,9 @@ export function OrdersList({
                   disabled={!hasAccessToken}
                   order={order}
                   onOpen={(selectedOrder) =>
-                    hasAccessToken && setExpandedOrderId(selectedOrder.id)
+                    hasAccessToken &&
+                    !isOrderUnavailableForOpening(selectedOrder) &&
+                    setExpandedOrderId(selectedOrder.id)
                   }
                 />
               )

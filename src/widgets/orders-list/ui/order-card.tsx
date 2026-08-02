@@ -5,6 +5,7 @@ import {
   formatOrderTime,
   getOrderTone,
   isOrderAwaitingConfirmation,
+  isOrderReady,
   type Order
 } from "@/entities/order";
 import {
@@ -18,10 +19,12 @@ type OrderCardProps = {
   isCompleting?: boolean;
   isConfirming?: boolean;
   isOpening?: boolean;
+  isGivingOrderToCourier?: boolean;
   onCollapse: () => void;
   onCancel: (order: Order) => void;
   onConfirm: (order: Order) => void;
   onStartControl: (order: Order) => void;
+  onGiveToCourier: (order: Order) => void;
   order: Order;
 };
 
@@ -30,14 +33,17 @@ function OrderCardComponent({
   isCompleting = false,
   isConfirming = false,
   isOpening = false,
+  isGivingOrderToCourier = false,
   onCollapse,
   onCancel,
   onConfirm,
   onStartControl,
+  onGiveToCourier,
   order
 }: OrderCardProps) {
   const tone = getOrderTone(order);
   const isConfirmation = isOrderAwaitingConfirmation(order);
+  const isReady = isOrderReady(order);
   const assembleBefore = useMemo(
     () => formatOrderTime(order.order_created_at),
     [order.order_created_at]
@@ -45,7 +51,8 @@ function OrderCardComponent({
 
   function handlePrimaryAction(event: MouseEvent<HTMLButtonElement>) {
     event.stopPropagation();
-    if (isConfirmation) onConfirm(order);
+    if (isReady) onGiveToCourier(order);
+    else if (isConfirmation) onConfirm(order);
     else onStartControl(order);
   }
 
@@ -54,7 +61,7 @@ function OrderCardComponent({
     onCancel(order);
   }
 
-  const isActionPending = isCancelling || isCompleting || isConfirming || isOpening;
+  const isActionPending = isCancelling || isCompleting || isConfirming || isOpening || isGivingOrderToCourier;
 
   return (
     <article
@@ -70,7 +77,7 @@ function OrderCardComponent({
       }}
     >
       <OrderCardHeader order={order} />
-      <OrderStatusBadge tone={tone} />
+      <OrderStatusBadge order={order} tone={tone} />
       <OrderMeta assembleBefore={assembleBefore} className="mt-2" order={order} />
 
       <div className="order-card-actions mt-3 grid grid-cols-2 gap-2 border-t pt-3">
@@ -88,9 +95,11 @@ function OrderCardComponent({
           type="button"
           onClick={handlePrimaryAction}
         >
-          {isOpening || isConfirming || isCompleting
+          {isOpening || isConfirming || isCompleting || isGivingOrderToCourier
             ? "..."
-            : isConfirmation
+            : isReady
+              ? "Выдать"
+              : isConfirmation
               ? "Подтвердить заказ"
               : "Собрать"}
         </button>

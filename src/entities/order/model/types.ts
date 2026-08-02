@@ -8,7 +8,9 @@ import type {
   OrderControlledItemSchema,
   OrderItemSchema,
   OrderSchema,
-  OrdersResponseSchema
+  OrdersResponseSchema,
+  GiveOrderToCourierRequestSchema,
+  GiveOrderToCourierResponseSchema
 } from "./schema";
 
 export type DateTime = string;
@@ -21,6 +23,8 @@ export type CompleteOrderRequest = z.infer<typeof CompleteOrderRequestSchema>;
 export type CompleteOrderControlledItem =
   CompleteOrderRequest["orderControlledItem"][number];
 export type ConfirmOrderResponse = z.infer<typeof OrderActionResponseSchema>;
+export type GiveOrderToCourierRequest = z.infer<typeof GiveOrderToCourierRequestSchema>;
+export type GiveOrderToCourierResponse = z.infer<typeof GiveOrderToCourierResponseSchema>;
 export type CancelOrderResponse = z.infer<typeof CancelOrderResponseSchema>;
 export type CompleteOrderResponse = z.infer<typeof OrderActionResponseSchema>;
 export type OrdersResponse = z.infer<typeof OrdersResponseSchema>;

@@ -5,12 +5,15 @@ import type {
   CompleteOrderResponse,
   ConfirmOrderRequest,
   ConfirmOrderResponse,
-  OrdersResponse
+  OrdersResponse,
+  GiveOrderToCourierRequest,
+  GiveOrderToCourierResponse
 } from "@/entities/order";
 import {
   CancelOrderResponseSchema,
   OrderActionResponseSchema,
-  OrdersResponseSchema
+  OrdersResponseSchema,
+  GiveOrderToCourierResponseSchema
 } from "@/entities/order";
 import type { ProductsResponse } from "@/entities/product";
 import { ProductsResponseSchema } from "@/entities/product";
@@ -32,6 +35,11 @@ export type CancelOrderResult = {
 
 export type CompleteOrderResult = {
   data: CompleteOrderResponse;
+  status: number;
+};
+
+export type GiveOrderToCourierResult = {
+  data: GiveOrderToCourierResponse;
   status: number;
 };
 
@@ -66,6 +74,29 @@ export async function confirmOrder(
     },
     body: JSON.stringify(body)
   });
+
+  return {
+    data: response.data,
+    status: response.status
+  };
+}
+
+export async function giveOrderToCourier(
+  body: GiveOrderToCourierRequest
+): Promise<GiveOrderToCourierResult> {
+  const response = await fetchJson(
+    `${ORDERS_SERVICE_PATH}/give-to-courier`,
+    GiveOrderToCourierResponseSchema,
+    {
+      acceptErrorResponse: true,
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(body)
+    }
+  );
 
   return {
     data: response.data,

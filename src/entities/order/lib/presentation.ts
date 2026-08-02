@@ -3,11 +3,21 @@ import { parseMoscowDateTime } from "../../../shared/lib/date-time";
 
 export type OrderTone = "blue" | "green" | "red" | "yellow";
 
+function getExtendedStatus(order: Order) {
+  return order.extended_status.trim().toLocaleLowerCase("ru-RU");
+}
+
 export function isOrderAwaitingConfirmation(order: Order) {
-  const status = order.extended_status
-    .trim()
-    .toLocaleLowerCase("ru-RU");
-  return status === "ожидает подтверждения";
+  return getExtendedStatus(order) === "ожидает подтверждения";
+}
+
+export function isOrderReady(order: Order) {
+  return getExtendedStatus(order) === "готов";
+}
+
+export function isOrderUnavailableForOpening(order: Order) {
+  const status = getExtendedStatus(order);
+  return status === "отменен" || status === "передан курьеру";
 }
 
 export function getOrderTone(order: Order): OrderTone {
@@ -21,7 +31,13 @@ export function getOrderTone(order: Order): OrderTone {
   return "blue";
 }
 
-export function getOrderStatusLabel(tone: OrderTone) {
+export function getOrderStatusLabel(order: Order) {
+  const status = getExtendedStatus(order);
+  if (status === "готов") return "Готов";
+  if (status === "отменен") return "Отменен";
+  if (status === "передан курьеру") return "Передан курьеру";
+
+  const tone = getOrderTone(order);
   return {
     blue: "Новый",
     green: "Готов",

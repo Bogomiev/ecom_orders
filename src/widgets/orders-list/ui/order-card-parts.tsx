@@ -23,11 +23,11 @@ export function OrderCardHeader({ order }: { order: Order }) {
   );
 }
 
-export function OrderStatusBadge({ tone }: { tone: OrderTone }) {
+export function OrderStatusBadge({ order, tone }: { order: Order; tone: OrderTone }) {
   return (
     <span className={`order-status-pill mt-2 inline-flex min-h-7 items-center gap-2 rounded-full px-3 text-xs font-extrabold order-status-${tone}`}>
       <span className="status-dot h-2 w-2 rounded-full" />
-      {getOrderStatusLabel(tone)}
+      {getOrderStatusLabel(order)}
     </span>
   );
 }

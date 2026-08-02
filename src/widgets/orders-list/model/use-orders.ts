@@ -46,6 +46,16 @@ export function useOrders({
   const isRequestInFlightRef = useRef(false);
 
   useEffect(() => {
+    if (!storeId) {
+      setState((current) => ({
+        ...current,
+        data: null,
+        error: null,
+        isLoading: false
+      }));
+      return;
+    }
+
     let isMounted = true;
     let activeController: AbortController | null = null;
 
