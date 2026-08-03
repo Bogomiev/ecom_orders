@@ -33,7 +33,7 @@ export function useActiveOrdersNotification(
   useEffect(() => {
     const interval = window.setInterval(() => {
       if (countRef.current === 0) return;
-      const body = `В очереди сборки остается ${getOrderCountLabel(countRef.current)}`;
+      const body = `Требует подтверждения или сборки ${getOrderCountLabel(countRef.current)}`;
       playNotificationSound();
       void showSystemNotification(NOTIFICATION_TITLE, {
         body,

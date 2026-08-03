@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   isOrderAwaitingConfirmation,
   isOrderReady,
+  isOrderRequiringAttention,
   isOrderUnavailableForOpening,
   restoreOrderControl,
   saveOrderControl,
@@ -32,6 +33,7 @@ import {
 
 type OrdersListProps = {
   layout?: "grid" | "list";
+  onNotificationOrdersCountChange?: (ordersCount: number) => void;
   onOrdersCountChange?: (ordersCount: number) => void;
 };
 
@@ -46,6 +48,7 @@ const OrderControl = dynamic(
 
 export function OrdersList({
   layout = "grid",
+  onNotificationOrdersCountChange,
   onOrdersCountChange
 }: OrdersListProps = {}) {
   const selectedStore = useSelectedStore();
@@ -94,6 +97,10 @@ export function OrdersList({
     );
   }, [selectedStore, state.data]);
   const ordersCount = filteredOrders.length;
+  const notificationOrdersCount = useMemo(
+    () => filteredOrders.filter(isOrderRequiringAttention).length,
+    [filteredOrders]
+  );
   const visibleOrders = useMemo(
     () => filteredOrders.slice(0, visibleOrdersLimit),
     [filteredOrders, visibleOrdersLimit]
@@ -142,6 +149,10 @@ export function OrdersList({
   useEffect(() => {
     onOrdersCountChange?.(ordersCount);
   }, [onOrdersCountChange, ordersCount]);
+
+  useEffect(() => {
+    onNotificationOrdersCountChange?.(notificationOrdersCount);
+  }, [notificationOrdersCount, onNotificationOrdersCountChange]);
 
   function updateControlledOrder(nextOrder: Order) {
     saveOrderControl(nextOrder);

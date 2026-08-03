@@ -3,8 +3,10 @@ import type { Order } from "../model/types";
 import {
   getOrderStatusLabel,
   getOrderTone,
+  isOrderAwaitingAssembly,
   isOrderAwaitingConfirmation,
   isOrderReady,
+  isOrderRequiringAttention,
   isOrderUnavailableForOpening
 } from "./presentation";
 
@@ -51,6 +53,26 @@ describe("isOrderAwaitingConfirmation", () => {
 
   it("не считает другой расширенный статус ожидающим подтверждения", () => {
     expect(isOrderAwaitingConfirmation(order)).toBe(false);
+  });
+});
+
+describe("isOrderRequiringAttention", () => {
+  it.each(["Ожидает подтверждения", "Ожидает сборку"])(
+    "считает заказ со статусом %s требующим внимания",
+    (extendedStatus) => {
+      expect(isOrderRequiringAttention({ ...order, extended_status: extendedStatus })).toBe(true);
+    }
+  );
+
+  it("не считает заказ с другим статусом требующим внимания", () => {
+    expect(isOrderRequiringAttention({ ...order, extended_status: "Готов" })).toBe(false);
+  });
+
+  it("определяет ожидание сборки независимо от регистра и пробелов", () => {
+    expect(isOrderAwaitingAssembly({
+      ...order,
+      extended_status: "  ОЖИДАЕТ СБОРКУ "
+    })).toBe(true);
   });
 });
 

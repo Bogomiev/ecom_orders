@@ -35,8 +35,10 @@ export {
   getMarketplaceLabel,
   getOrderStatusLabel,
   getOrderTone,
+  isOrderAwaitingAssembly,
   isOrderAwaitingConfirmation,
   isOrderReady,
+  isOrderRequiringAttention,
   isOrderUnavailableForOpening
 } from "./lib/presentation";
 export type { OrderTone } from "./lib/presentation";

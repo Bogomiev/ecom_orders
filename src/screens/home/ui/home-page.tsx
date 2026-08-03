@@ -12,11 +12,12 @@ import { ServiceDesk } from "@/widgets/service-desk";
 
 export function HomePage() {
   const [ordersCount, setOrdersCount] = useState(0);
+  const [notificationOrdersCount, setNotificationOrdersCount] = useState(0);
 
   return (
     <PageShell>
       <div>
-        <OrdersPageHeader ordersCount={ordersCount} />
+        <OrdersPageHeader ordersCount={notificationOrdersCount} />
 
         <div className="dashboard-grid grid items-start md:grid-cols-2 xl:grid-cols-5">
         <WidgetPanel
@@ -29,6 +30,7 @@ export function HomePage() {
         >
           <OrdersList
             layout="list"
+            onNotificationOrdersCountChange={setNotificationOrdersCount}
             onOrdersCountChange={setOrdersCount}
           />
         </WidgetPanel>

@@ -11,6 +11,14 @@ export function isOrderAwaitingConfirmation(order: Order) {
   return getExtendedStatus(order) === "ожидает подтверждения";
 }
 
+export function isOrderAwaitingAssembly(order: Order) {
+  return getExtendedStatus(order) === "ожидает сборку";
+}
+
+export function isOrderRequiringAttention(order: Order) {
+  return isOrderAwaitingConfirmation(order) || isOrderAwaitingAssembly(order);
+}
+
 export function isOrderReady(order: Order) {
   return getExtendedStatus(order) === "готов";
 }
