@@ -39,6 +39,7 @@ export {
   isOrderAwaitingConfirmation,
   isOrderReady,
   isOrderRequiringAttention,
+  isOrderTransferredToCourier,
   isOrderUnavailableForOpening
 } from "./lib/presentation";
 export type { OrderTone } from "./lib/presentation";

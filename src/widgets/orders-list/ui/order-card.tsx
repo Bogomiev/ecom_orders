@@ -6,6 +6,7 @@ import {
   getOrderTone,
   isOrderAwaitingConfirmation,
   isOrderReady,
+  isOrderTransferredToCourier,
   type Order
 } from "@/entities/order";
 import {
@@ -25,6 +26,8 @@ type OrderCardProps = {
   onConfirm: (order: Order) => void;
   onStartControl: (order: Order) => void;
   onGiveToCourier: (order: Order) => void;
+  onPrint: (order: Order) => void;
+  isPrinting?: boolean;
   order: Order;
 };
 
@@ -39,11 +42,14 @@ function OrderCardComponent({
   onConfirm,
   onStartControl,
   onGiveToCourier,
+  onPrint,
+  isPrinting = false,
   order
 }: OrderCardProps) {
   const tone = getOrderTone(order);
   const isConfirmation = isOrderAwaitingConfirmation(order);
   const isReady = isOrderReady(order);
+  const isTransferredToCourier = isOrderTransferredToCourier(order);
   const assembleBefore = useMemo(
     () => formatOrderTime(order.order_created_at),
     [order.order_created_at]
@@ -61,7 +67,12 @@ function OrderCardComponent({
     onCancel(order);
   }
 
-  const isActionPending = isCancelling || isCompleting || isConfirming || isOpening || isGivingOrderToCourier;
+  function handlePrint(event: MouseEvent<HTMLButtonElement>) {
+    event.stopPropagation();
+    onPrint(order);
+  }
+
+  const isActionPending = isCancelling || isCompleting || isConfirming || isOpening || isGivingOrderToCourier || isPrinting;
 
   return (
     <article
@@ -80,6 +91,18 @@ function OrderCardComponent({
       <OrderStatusBadge order={order} tone={tone} />
       <OrderMeta assembleBefore={assembleBefore} className="mt-2" order={order} />
 
+      {isTransferredToCourier ? (
+        <div className="order-card-actions mt-3 border-t pt-3">
+          <button
+            className="order-primary-button min-h-[2.125rem] w-full rounded-lg bg-blue-600 text-xs font-extrabold text-white disabled:cursor-wait disabled:opacity-60"
+            disabled={isActionPending}
+            type="button"
+            onClick={handlePrint}
+          >
+            {isPrinting ? "..." : "Печать"}
+          </button>
+        </div>
+      ) : (
       <div className="order-card-actions mt-3 grid grid-cols-2 gap-2 border-t pt-3">
         <button
           className="order-cancel-button min-h-[2.125rem] rounded-lg border border-slate-300 app-surface text-xs font-extrabold disabled:cursor-wait disabled:opacity-60"
@@ -104,6 +127,7 @@ function OrderCardComponent({
               : "Собрать"}
         </button>
       </div>
+      )}
     </article>
   );
 }

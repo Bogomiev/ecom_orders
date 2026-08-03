@@ -114,12 +114,15 @@ describe("новые расширенные статусы", () => {
     })).toBe(true);
   });
 
-  it.each(["Отменен", "Передан курьеру"])(
-    "не разрешает открывать заказ со статусом %s",
-    (extendedStatus) => {
-      const unavailableOrder = { ...order, extended_status: extendedStatus };
-      expect(isOrderUnavailableForOpening(unavailableOrder)).toBe(true);
-      expect(getOrderStatusLabel(unavailableOrder)).toBe(extendedStatus);
-    }
-  );
+  it("не разрешает открывать отмененный заказ", () => {
+    const unavailableOrder = { ...order, extended_status: "Отменен" };
+    expect(isOrderUnavailableForOpening(unavailableOrder)).toBe(true);
+    expect(getOrderStatusLabel(unavailableOrder)).toBe("Отменен");
+  });
+
+  it("разрешает открывать заказ, переданный курьеру", () => {
+    const courierOrder = { ...order, extended_status: "Передан курьеру" };
+    expect(isOrderUnavailableForOpening(courierOrder)).toBe(false);
+    expect(getOrderStatusLabel(courierOrder)).toBe("Передан курьеру");
+  });
 });

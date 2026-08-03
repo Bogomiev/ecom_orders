@@ -23,9 +23,12 @@ export function isOrderReady(order: Order) {
   return getExtendedStatus(order) === "готов";
 }
 
+export function isOrderTransferredToCourier(order: Order) {
+  return getExtendedStatus(order) === "передан курьеру";
+}
+
 export function isOrderUnavailableForOpening(order: Order) {
-  const status = getExtendedStatus(order);
-  return status === "отменен" || status === "передан курьеру";
+  return getExtendedStatus(order) === "отменен";
 }
 
 export function getOrderTone(order: Order): OrderTone {

@@ -23,6 +23,23 @@ export const ORDERS_SERVICE_PATH = "/api/orders";
 export const PRODUCTS_SERVICE_PATH = "/api/entities/product";
 export const ORDERS_REFRESH_INTERVAL_SECONDS = 5;
 
+export async function printOrder(orderId: string): Promise<string> {
+  const response = await fetch(
+    `${ORDERS_SERVICE_PATH}/print?${new URLSearchParams({ id: orderId })}`,
+    {
+      cache: "no-store",
+      headers: { Accept: "text/plain" }
+    }
+  );
+  const body = await response.text();
+
+  if (!response.ok) {
+    throw new Error(`Не удалось получить печатную форму. Статус: ${response.status}`);
+  }
+
+  return body.trim();
+}
+
 export type ConfirmOrderResult = {
   data: ConfirmOrderResponse;
   status: number;

@@ -13,6 +13,7 @@ import {
 } from "@/entities/order";
 import type { ProductsResponse } from "@/entities/product";
 import { PageNotificationStack, type PageNotification } from "@/shared/ui/page-notification";
+import { PdfDialog } from "@/shared/ui/pdf-dialog";
 import { usePageNotifications } from "@/shared/lib/use-page-notifications";
 import {
   useHasAccessToken,
@@ -30,6 +31,7 @@ import {
   enrichOrder,
   getMissingOrderProductIds
 } from "../model/order-products";
+import { printOrder } from "../api/orders";
 
 type OrdersListProps = {
   layout?: "grid" | "list";
@@ -58,6 +60,8 @@ export function OrdersList({
   const [controlLoadError, setControlLoadError] = useState<string | null>(null);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [openingOrderId, setOpeningOrderId] = useState<string | null>(null);
+  const [printingOrderId, setPrintingOrderId] = useState<string | null>(null);
+  const [printPdf, setPrintPdf] = useState<{ base64: string; title: string } | null>(null);
   const { dismiss, notifications, notify } = usePageNotifications();
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
   const [visibleOrdersLimit, setVisibleOrdersLimit] = useState(ORDERS_BATCH_SIZE);
@@ -322,6 +326,22 @@ export function OrdersList({
     },
     [openOrderControl, showOrderNotification]
   );
+  const handlePrintOrder = useCallback(async (order: Order) => {
+    setPrintingOrderId(order.id);
+    try {
+      const base64 = await printOrder(order.uid_1c);
+      if (!base64) throw new Error("Сервер вернул пустую печатную форму");
+      setPrintPdf({ base64, title: `Заказ ${order.number}` });
+    } catch (error) {
+      showOrderNotification(
+        "Ошибка печати",
+        error instanceof Error ? error.message : "Не удалось получить печатную форму",
+        "warning"
+      );
+    } finally {
+      if (isMountedRef.current) setPrintingOrderId(null);
+    }
+  }, [showOrderNotification]);
 
   return (
     <section className="space-y-3">
@@ -353,8 +373,7 @@ export function OrdersList({
         <>
           <div className={ordersGridClassName}>
             {visibleOrders.map((order) =>
-              expandedOrderId === order.id &&
-              !isOrderUnavailableForOpening(order) ? (
+              expandedOrderId === order.id ? (
                 <OrderCard
                   key={order.id}
                   isCancelling={cancellingOrderId === order.id}
@@ -362,12 +381,14 @@ export function OrdersList({
                   isConfirming={confirmingOrderId === order.id}
                   isOpening={openingOrderId === order.id}
                   isGivingOrderToCourier={givingOrderToCourierId === order.id}
+                  isPrinting={printingOrderId === order.id}
                   order={order}
                   onCancel={handleCancelOrder}
                   onCollapse={() => setExpandedOrderId(null)}
                   onConfirm={handleConfirmOrder}
                   onStartControl={handleStartControl}
                   onGiveToCourier={handleGiveOrderToCourier}
+                  onPrint={handlePrintOrder}
                 />
               ) : (
                 <OrderCardMini
@@ -403,6 +424,13 @@ export function OrdersList({
         onComplete={handleCompleteOrder}
         onClose={() => setControlOrder(null)}
       />
+      {printPdf ? (
+        <PdfDialog
+          base64={printPdf.base64}
+          title={printPdf.title}
+          onClose={() => setPrintPdf(null)}
+        />
+      ) : null}
       <PageNotificationStack
         notifications={notifications}
         onClose={dismiss}
