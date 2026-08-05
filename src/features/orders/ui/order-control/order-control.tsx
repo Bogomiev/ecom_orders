@@ -107,7 +107,7 @@ export function OrderControl({
                 Сборка заказа
               </h2>
               <p className="truncate text-xs leading-4 app-muted">
-                {activeOrder.source} · заказ #{activeOrder.number}
+                {activeOrder.source} · заказ {activeOrder.number}{activeOrder.external_id ? ` / ${activeOrder.external_id}` : ""}
               </p>
             </div>
           </div>
@@ -154,7 +154,7 @@ export function OrderControl({
               <input
                 id="quantity-bags"
                 aria-label="Количество пакетов"
-                className="h-8 w-16 rounded-md border app-border app-surface px-1 text-center text-sm font-bold tabular-nums app-text outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:opacity-60"
+                className="h-8 w-16 rounded-md border border-red-500 bg-red-50 px-1 text-center text-sm font-bold tabular-nums text-red-700 outline-none focus:border-red-600 focus:ring-2 focus:ring-red-200 disabled:opacity-60 dark:bg-red-950/40 dark:text-red-300"
                 disabled={isCompleting}
                 inputMode="numeric"
                 min="0"

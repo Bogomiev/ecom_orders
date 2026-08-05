@@ -23,6 +23,7 @@ export const OrderSchema = z.object({
   id: z.string(),
   uid_1c: z.string(),
   number: z.string(),
+  external_id: z.string().nullish(),
   source: z.string(),
   status: z.string(),
   extended_status: z.string(),

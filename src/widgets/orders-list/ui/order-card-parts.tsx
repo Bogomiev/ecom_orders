@@ -78,10 +78,7 @@ export function OrderCardHeader({ order }: { order: Order }) {
         {marketplace}
       </span>
       <span className="min-w-0 flex-1 truncate text-sm font-medium app-muted">
-        #{order.number}
-      </span>
-      <span className="delivery-badge inline-flex min-h-7 shrink-0 items-center rounded-md border app-border app-surface px-2.5 text-xs font-extrabold">
-        {order.source.toLowerCase().includes("сайт") ? "Самовывоз" : "Доставка"}
+        {order.number}{order.external_id ? `/${order.external_id}` : ""}
       </span>
     </div>
   );
@@ -89,10 +86,15 @@ export function OrderCardHeader({ order }: { order: Order }) {
 
 export function OrderStatusBadge({ order, tone }: { order: Order; tone: OrderTone }) {
   return (
-    <span className={`order-status-pill mt-2 inline-flex min-h-7 items-center gap-2 rounded-full px-3 text-xs font-extrabold order-status-${tone}`}>
-      <span className="status-dot h-2 w-2 rounded-full" />
-      {getOrderStatusLabel(order)}
-    </span>
+    <div className="mt-2 flex items-center justify-between gap-2">
+      <span className={`order-status-pill inline-flex min-h-7 min-w-0 items-center gap-2 rounded-full px-3 text-xs font-extrabold order-status-${tone}`}>
+        <span className="status-dot h-2 w-2 shrink-0 rounded-full" />
+        <span className="truncate">{getOrderStatusLabel(order)}</span>
+      </span>
+      <span className="delivery-badge inline-flex min-h-7 shrink-0 items-center rounded-md border app-border app-surface px-2.5 text-xs font-extrabold">
+        {order.source.toLowerCase().includes("сайт") ? "Самовывоз" : "Доставка"}
+      </span>
+    </div>
   );
 }
 

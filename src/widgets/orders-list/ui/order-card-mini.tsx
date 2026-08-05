@@ -39,7 +39,7 @@ function OrderCardMiniComponent({
 
   return (
     <button
-      aria-label={`${marketplace}, заказ ${order.number}, ${statusLabel}`}
+      aria-label={`${marketplace}, заказ ${order.number}${order.external_id ? ` / ${order.external_id}` : ""}, ${statusLabel}`}
       className="order-mini-card w-full rounded-xl border app-border app-surface-muted p-2.5 text-left transition-[border-color,box-shadow] hover:border-slate-400 hover:shadow-[0_0_0_1px_#c5cfde] disabled:cursor-wait disabled:opacity-70"
       disabled={disabled || isOpening || cannotOpen}
       type="button"

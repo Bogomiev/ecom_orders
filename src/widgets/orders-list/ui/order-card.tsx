@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useMemo, type MouseEvent } from "react";
+import { memo, useMemo, useState, type MouseEvent } from "react";
 import {
   formatOrderTime,
   getOrderTone,
@@ -15,6 +15,7 @@ import {
   OrderStatusBadge
 } from "./order-card-parts";
 import { LoadingDots } from "@/shared/ui/loading-dots";
+import { Dialog } from "@/shared/ui/dialog";
 
 type OrderCardProps = {
   isCancelling?: boolean;
@@ -49,6 +50,7 @@ function OrderCardComponent({
   isPrinting = false,
   order
 }: OrderCardProps) {
+  const [isCancelConfirmationOpen, setIsCancelConfirmationOpen] = useState(false);
   const tone = getOrderTone(order);
   const isConfirmation = isOrderAwaitingConfirmation(order);
   const isReady = isOrderReady(order);
@@ -67,6 +69,11 @@ function OrderCardComponent({
 
   function handleCancel(event: MouseEvent<HTMLButtonElement>) {
     event.stopPropagation();
+    setIsCancelConfirmationOpen(true);
+  }
+
+  function confirmCancel() {
+    setIsCancelConfirmationOpen(false);
     onCancel(order);
   }
 
@@ -134,6 +141,39 @@ function OrderCardComponent({
         </button>
       </div>
       )}
+
+      {isCancelConfirmationOpen ? (
+        <Dialog
+          ariaLabelledBy={`cancel-order-title-${order.id}`}
+          className="w-full max-w-sm rounded-2xl app-surface p-5 shadow-2xl"
+          onClose={() => setIsCancelConfirmationOpen(false)}
+        >
+          <div onClick={(event) => event.stopPropagation()}>
+            <h2
+              className="text-lg font-extrabold app-text"
+              id={`cancel-order-title-${order.id}`}
+            >
+              Отменить заказ?
+            </h2>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                className="rounded-xl border border-slate-300 app-surface px-4 py-2 text-sm font-bold app-text transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                type="button"
+                onClick={() => setIsCancelConfirmationOpen(false)}
+              >
+                Нет
+              </button>
+              <button
+                className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                type="button"
+                onClick={confirmCancel}
+              >
+                Да
+              </button>
+            </div>
+          </div>
+        </Dialog>
+      ) : null}
     </article>
   );
 }

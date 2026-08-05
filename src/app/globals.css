@@ -319,12 +319,6 @@ button {
   white-space: nowrap;
 }
 
-@container (max-width: 280px) {
-  .order-card-header > .delivery-badge {
-    margin-left: 0;
-  }
-}
-
 .order-card-actions {
   border-color: var(--border);
 }

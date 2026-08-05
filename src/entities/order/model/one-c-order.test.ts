@@ -12,6 +12,7 @@ describe("normalizeOneCOrders", () => {
         id: "1",
         uid_1c: "uid",
         number: "10",
+        external_id: "EXT-10",
         source: "Сайт",
         status: "Новый",
         extended_status: "",
@@ -36,6 +37,7 @@ describe("normalizeOneCOrders", () => {
 
     const result = normalizeOneCOrders(source);
     expect(result.items[0].quantityBags).toBe(0);
+    expect(result.items[0].external_id).toBe("EXT-10");
     expect(result.items[0].controlledItems).toEqual([]);
     expect(result.items[0].items[0]).toMatchObject({
       product_name: "product",
