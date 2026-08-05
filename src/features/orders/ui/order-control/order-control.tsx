@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import type { Order } from "@/entities/order";
 import type { Product } from "@/entities/product";
 import { Dialog } from "@/shared/ui/dialog";
+import { LoadingDots } from "@/shared/ui/loading-dots";
 import { OrderControlDetailsPanel } from "./order-control-details-panel";
 import type { ScanNotification } from "./order-control-shared";
 
@@ -53,6 +54,13 @@ export function OrderControl({
     (line) => line.quantity_fact === line.quantity
   ).length;
   const progress = lines.length === 0 ? 0 : completedLines / lines.length * 100;
+
+  function setQuantityBags(value: number) {
+    onOrderChange({
+      ...activeOrder,
+      quantityBags: Math.max(0, Math.trunc(value))
+    });
+  }
 
   function showNotification(message: ReactNode, tone: ScanNotification["tone"]) {
     setNotification({
@@ -139,6 +147,26 @@ export function OrderControl({
 
         <div className="flex items-center gap-4 border-t app-border app-surface-muted px-5 py-3">
           <div className="min-w-0 flex-1">
+            <div className="mb-3 flex items-center gap-2.5">
+              <label className="text-sm font-bold app-text" htmlFor="quantity-bags">
+                Количество пакетов
+              </label>
+              <input
+                id="quantity-bags"
+                aria-label="Количество пакетов"
+                className="h-8 w-16 rounded-md border app-border app-surface px-1 text-center text-sm font-bold tabular-nums app-text outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:opacity-60"
+                disabled={isCompleting}
+                inputMode="numeric"
+                min="0"
+                step="1"
+                type="number"
+                value={activeOrder.quantityBags}
+                onChange={(event) => {
+                  const value = event.currentTarget.valueAsNumber;
+                  setQuantityBags(Number.isFinite(value) ? value : 0);
+                }}
+              />
+            </div>
             <div className="mb-1.5 flex items-center justify-between text-xs font-bold">
               <span className="app-text">Собрано позиций</span>
               <span className="tabular-nums app-muted">{completedLines} / {lines.length}</span>
@@ -156,7 +184,11 @@ export function OrderControl({
             type="button"
             onClick={() => onComplete(activeOrder)}
           >
-            {isCompleting ? "Завершение..." : "Завершить сборку"}
+            {isCompleting ? (
+              <span className="inline-flex items-center gap-1">
+                Завершение<LoadingDots label="Завершение сборки" />
+              </span>
+            ) : "Завершить сборку"}
           </button>
         </div>
       {isCloseConfirmationOpen ? (

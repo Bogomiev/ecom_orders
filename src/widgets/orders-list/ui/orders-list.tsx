@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  isOrderAwaitingAssembly,
   isOrderAwaitingConfirmation,
   isOrderReady,
   isOrderRequiringAttention,
@@ -64,13 +65,26 @@ export function OrdersList({
   const [printPdf, setPrintPdf] = useState<{ base64: string; title: string } | null>(null);
   const { dismiss, notifications, notify } = usePageNotifications();
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
+  const ordersRefreshKeyRef = useRef(0);
+  const refreshFailureCallbacksRef = useRef(new Map<number, () => void>());
   const [visibleOrdersLimit, setVisibleOrdersLimit] = useState(ORDERS_BATCH_SIZE);
   const isMountedRef = useRef(true);
   const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
   const controlledOrdersRef = useRef(new Map<string, Order>());
   const { getProducts, refreshProducts, retryProducts } = useProductsCache();
+  const handleOrdersRefreshResult = useCallback(
+    (refreshKey: number, succeeded: boolean) => {
+      const onFailure = refreshFailureCallbacksRef.current.get(refreshKey);
+      if (onFailure === undefined) return;
+
+      refreshFailureCallbacksRef.current.delete(refreshKey);
+      if (!succeeded) onFailure();
+    },
+    []
+  );
   const { setState, state } = useOrders({
     controlledOrdersRef,
+    onRefreshResult: handleOrdersRefreshResult,
     refreshKey: ordersRefreshKey,
     setControlOrder,
     storeId: selectedStore?.id
@@ -240,10 +254,12 @@ export function OrdersList({
     },
     [notify]
   );
-  const refreshOrders = useCallback(
-    () => setOrdersRefreshKey((current) => current + 1),
-    []
-  );
+  const refreshOrders = useCallback((onFailure: () => void) => {
+    const nextRefreshKey = ordersRefreshKeyRef.current + 1;
+    ordersRefreshKeyRef.current = nextRefreshKey;
+    refreshFailureCallbacksRef.current.set(nextRefreshKey, onFailure);
+    setOrdersRefreshKey(nextRefreshKey);
+  }, []);
   const handleCompleteSuccess = useCallback((order: Order) => {
     controlledOrdersRef.current.delete(order.id);
     setControlOrder(null);
@@ -266,6 +282,13 @@ export function OrdersList({
     onCompleteSuccess: handleCompleteSuccess,
     refresh: refreshOrders
   });
+  const isOrderSelectionLocked =
+    cancellingOrderId !== null ||
+    completingOrderId !== null ||
+    confirmingOrderId !== null ||
+    givingOrderToCourierId !== null ||
+    openingOrderId !== null ||
+    printingOrderId !== null;
   useEffect(() => {
     if (confirmingOrderId === null || state.data === null) return;
 
@@ -300,17 +323,27 @@ export function OrdersList({
   useEffect(() => {
     if (state.data === null) return;
 
-    if (
-      cancellingOrderId !== null &&
-      !state.data.items.some((order) => order.id === cancellingOrderId)
-    ) {
-      clearCancellingOrder();
+    if (cancellingOrderId !== null) {
+      const cancellingOrder = state.data.items.find(
+        (order) => order.id === cancellingOrderId
+      );
+      if (
+        cancellingOrder === undefined ||
+        isOrderUnavailableForOpening(cancellingOrder)
+      ) {
+        clearCancellingOrder();
+      }
     }
-    if (
-      completingOrderId !== null &&
-      !state.data.items.some((order) => order.id === completingOrderId)
-    ) {
-      clearCompletingOrder();
+    if (completingOrderId !== null) {
+      const completingOrder = state.data.items.find(
+        (order) => order.id === completingOrderId
+      );
+      if (
+        completingOrder === undefined ||
+        !isOrderAwaitingAssembly(completingOrder)
+      ) {
+        clearCompletingOrder();
+      }
     }
   }, [
     cancellingOrderId,
@@ -382,6 +415,7 @@ export function OrdersList({
                   isOpening={openingOrderId === order.id}
                   isGivingOrderToCourier={givingOrderToCourierId === order.id}
                   isPrinting={printingOrderId === order.id}
+                  isSelectionLocked={isOrderSelectionLocked}
                   order={order}
                   onCancel={handleCancelOrder}
                   onCollapse={() => setExpandedOrderId(null)}
@@ -393,10 +427,11 @@ export function OrdersList({
               ) : (
                 <OrderCardMini
                   key={order.id}
-                  disabled={!hasAccessToken}
+                  disabled={!hasAccessToken || isOrderSelectionLocked}
                   order={order}
                   onOpen={(selectedOrder) =>
                     hasAccessToken &&
+                    !isOrderSelectionLocked &&
                     !isOrderUnavailableForOpening(selectedOrder) &&
                     setExpandedOrderId(selectedOrder.id)
                   }

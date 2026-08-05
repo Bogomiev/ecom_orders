@@ -9,3 +9,4 @@ export {
   setStoredCurrentSeller
 } from "./model/current-seller";
 export { useCurrentSeller } from "./model/use-current-seller";
+export { normalizeSellerBarcode } from "./model/normalize-seller-barcode";

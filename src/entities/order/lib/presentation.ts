@@ -59,7 +59,7 @@ export function getOrderStatusLabel(order: Order) {
 
 export function getMarketplaceLabel(source: string) {
   const normalized = source.toLowerCase();
-  if (normalized.includes("яндекс")) return "ЯМ";
+  if (normalized.includes("яндекс")) return "ЯE";
   if (normalized.includes("wildberries")) return "WB";
   if (normalized.includes("ozon")) return "OZON";
   if (normalized.includes("сайт")) return "САЙТ";

@@ -65,15 +65,34 @@ export function PageNotificationStack({
     return null;
   }
 
+  const importantNotifications = notifications.filter(
+    ({ tone }) => tone === "error" || tone === "warning"
+  );
+  const informationalNotifications = notifications.filter(
+    ({ tone }) => tone !== "error" && tone !== "warning"
+  );
+
+  const renderNotifications = (items: PageNotification[]) =>
+    items.map((notification) => (
+      <PageNotificationItem
+        key={notification.id}
+        notification={notification}
+        onClose={onClose}
+      />
+    ));
+
   return (
-    <div className="pointer-events-none fixed inset-x-3 top-20 z-50 flex flex-col gap-3 sm:left-auto sm:right-4 sm:top-4 sm:w-full sm:max-w-md">
-      {notifications.map((notification) => (
-        <PageNotificationItem
-          key={notification.id}
-          notification={notification}
-          onClose={onClose}
-        />
-      ))}
-    </div>
+    <>
+      {importantNotifications.length > 0 ? (
+        <div className="pointer-events-none fixed left-1/2 top-[15vh] z-[100] flex w-[calc(100%-1.5rem)] max-w-md -translate-x-1/2 flex-col gap-3">
+          {renderNotifications(importantNotifications)}
+        </div>
+      ) : null}
+      {informationalNotifications.length > 0 ? (
+        <div className="pointer-events-none fixed inset-x-3 top-20 z-[100] flex flex-col gap-3 sm:left-auto sm:right-4 sm:top-4 sm:w-full sm:max-w-md">
+          {renderNotifications(informationalNotifications)}
+        </div>
+      ) : null}
+    </>
   );
 }

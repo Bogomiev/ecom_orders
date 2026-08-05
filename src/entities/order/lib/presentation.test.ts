@@ -24,6 +24,7 @@ const order = {
   order_sum: 0,
   shipment_store_name: "Магазин",
   store_id: "store",
+  quantityBags: 0,
   items: [],
   controlledItems: []
 } satisfies Order;

@@ -33,6 +33,7 @@ export const OrderSchema = z.object({
   order_sum: z.number(),
   shipment_store_name: z.string(),
   store_id: z.string(),
+  quantityBags: z.number().int().nonnegative(),
   items: z.array(OrderItemSchema),
   controlledItems: z.array(OrderControlledItemSchema)
 });
@@ -61,6 +62,7 @@ export const CancelOrderRequestSchema = z.object({
 });
 
 export const CompleteOrderRequestSchema = ConfirmOrderRequestSchema.extend({
+  quantityBags: z.number().int().positive(),
   orderControlledItem: z.array(
     OrderControlledItemSchema.omit({ result: true })
   )

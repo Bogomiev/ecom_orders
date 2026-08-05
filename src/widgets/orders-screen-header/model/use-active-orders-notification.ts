@@ -21,7 +21,7 @@ export function useActiveOrdersNotification(
   notify: (input: {
     body: string;
     title: string;
-    tone: "warning";
+    tone: "info";
   }) => void
 ) {
   const countRef = useRef(ordersCount);
@@ -39,7 +39,7 @@ export function useActiveOrdersNotification(
         body,
         tag: "assembly-active-orders"
       });
-      notify({ body, title: NOTIFICATION_TITLE, tone: "warning" });
+      notify({ body, title: NOTIFICATION_TITLE, tone: "info" });
     }, INTERVAL_MS);
 
     return () => window.clearInterval(interval);

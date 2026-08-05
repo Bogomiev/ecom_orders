@@ -34,6 +34,7 @@ describe("normalizeOneCOrders", () => {
     });
 
     const result = normalizeOneCOrders(source);
+    expect(result.items[0].quantityBags).toBe(0);
     expect(result.items[0].controlledItems).toEqual([]);
     expect(result.items[0].items[0]).toMatchObject({
       product_name: "product",

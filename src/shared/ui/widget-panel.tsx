@@ -101,7 +101,7 @@ export function WidgetPanel({
           </div>
         </header>
       ) : null}
-      <div className="widget-content min-h-0 flex-1 overflow-y-auto p-3">{children}</div>
+      <div className="widget-content flex-1 p-3">{children}</div>
     </section>
   );
 }

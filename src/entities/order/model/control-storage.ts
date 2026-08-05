@@ -1,6 +1,7 @@
 import type { Order, OrderControlledItem } from "./types";
 
 const ORDER_CONTROL_STORAGE_KEY_PREFIX = "ecom-orders-control:";
+const QUANTITY_BAGS_STORAGE_KEY_SUFFIX = "quantity-bags";
 
 type StoredOrderControlItem = {
   controlledItems: OrderControlledItem[];
@@ -9,6 +10,22 @@ type StoredOrderControlItem = {
 
 function getStorageKey(orderId: string, productId: string) {
   return `${ORDER_CONTROL_STORAGE_KEY_PREFIX}${orderId}:${productId}`;
+}
+
+function getQuantityBagsStorageKey(orderId: string) {
+  return `${ORDER_CONTROL_STORAGE_KEY_PREFIX}${orderId}:${QUANTITY_BAGS_STORAGE_KEY_SUFFIX}`;
+}
+
+function readStoredQuantityBags(orderId: string) {
+  if (typeof window === "undefined") return null;
+
+  const rawValue = window.localStorage.getItem(
+    getQuantityBagsStorageKey(orderId)
+  );
+  if (rawValue === null) return null;
+
+  const value = Number(rawValue);
+  return Number.isInteger(value) && value >= 0 ? value : null;
 }
 
 function isControlledItem(value: unknown): value is OrderControlledItem {
@@ -67,6 +84,11 @@ function readStoredItem(
 export function saveOrderControl(order: Order) {
   if (typeof window === "undefined") return;
 
+  window.localStorage.setItem(
+    getQuantityBagsStorageKey(order.uid_1c),
+    String(order.quantityBags)
+  );
+
   order.items.forEach((item) => {
     if (item.quantity_fact <= 0) return;
 
@@ -93,13 +115,15 @@ export function restoreOrderControl(order: Order): Order {
       return storedItem === null ? [] : [[item.product_id, storedItem] as const];
     })
   );
+  const storedQuantityBags = readStoredQuantityBags(order.uid_1c);
 
-  if (storedItems.size === 0) return order;
+  if (storedItems.size === 0 && storedQuantityBags === null) return order;
 
   const restoredProductIds = new Set(storedItems.keys());
 
   return {
     ...order,
+    quantityBags: storedQuantityBags ?? order.quantityBags,
     items: order.items.map((item) => {
       const storedItem = storedItems.get(item.product_id);
       return storedItem === undefined
@@ -119,6 +143,8 @@ export function restoreOrderControl(order: Order): Order {
 
 export function clearStoredOrderControl(order: Order) {
   if (typeof window === "undefined") return;
+
+  window.localStorage.removeItem(getQuantityBagsStorageKey(order.uid_1c));
 
   order.items.forEach((item) => {
     window.localStorage.removeItem(

@@ -1,7 +1,7 @@
 import type { Seller } from "./types";
 
 export const CURRENT_SELLER_STORAGE_KEY = "ecom-orders-current-seller";
-export const CURRENT_SELLER_TTL_HOURS = 12;
+export const CURRENT_SELLER_TTL_HOURS = 16;
 export const CURRENT_SELLER_CHANGE_EVENT = "ecom-orders-current-seller-change";
 
 type StoredSeller = {

@@ -19,6 +19,7 @@ const order = {
   order_sum: 1,
   shipment_store_name: "Магазин",
   store_id: "store",
+  quantityBags: 0,
   controlledItems: [],
   items: [{
     product_id: "product",

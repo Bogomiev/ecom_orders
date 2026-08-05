@@ -31,6 +31,7 @@ const initialState: OrdersState = {
 
 type UseOrdersOptions = {
   controlledOrdersRef: RefObject<Map<string, Order>>;
+  onRefreshResult?: (refreshKey: number, succeeded: boolean) => void;
   refreshKey: number;
   setControlOrder: Dispatch<SetStateAction<Order | null>>;
   storeId?: string;
@@ -38,6 +39,7 @@ type UseOrdersOptions = {
 
 export function useOrders({
   controlledOrdersRef,
+  onRefreshResult,
   refreshKey,
   setControlOrder,
   storeId
@@ -95,6 +97,7 @@ export function useOrders({
           isLoading: false,
           lastUpdatedAt: new Date()
         }));
+        onRefreshResult?.(refreshKey, true);
       } catch (error) {
         if (!isMounted || controller.signal.aborted) return;
         setState((current) => ({
@@ -104,6 +107,7 @@ export function useOrders({
             : "Не удалось загрузить заказы",
           isLoading: false
         }));
+        onRefreshResult?.(refreshKey, false);
       } finally {
         if (activeController === controller) {
           activeController = null;
@@ -124,7 +128,7 @@ export function useOrders({
       isRequestInFlightRef.current = false;
       window.clearInterval(interval);
     };
-  }, [controlledOrdersRef, refreshKey, setControlOrder, storeId]);
+  }, [controlledOrdersRef, onRefreshResult, refreshKey, setControlOrder, storeId]);
 
   return { setState, state };
 }

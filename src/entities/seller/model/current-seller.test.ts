@@ -27,6 +27,7 @@ describe("current seller storage", () => {
   });
 
   it("возвращает выбранного продавца до истечения TTL", () => {
+    expect(CURRENT_SELLER_TTL_HOURS).toBe(16);
     setStoredCurrentSeller(seller);
     expect(getStoredCurrentSeller()).toEqual(seller);
   });

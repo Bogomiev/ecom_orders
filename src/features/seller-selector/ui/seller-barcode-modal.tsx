@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, type FormEvent } from "react";
-import type { Seller } from "@/entities/seller";
+import { normalizeSellerBarcode, type Seller } from "@/entities/seller";
 import { findSellerByBarcode } from "@/entities/seller/api/find-seller";
 import { Dialog } from "@/shared/ui/dialog";
 
@@ -19,7 +19,7 @@ export function SellerBarcodeModal({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const normalizedBarcode = barcode.trim();
+    const normalizedBarcode = normalizeSellerBarcode(barcode).trim();
     if (!normalizedBarcode || isLoading) return;
     setIsLoading(true);
     setError(null);
@@ -48,7 +48,7 @@ export function SellerBarcodeModal({
     >
       <button aria-label="Закрыть" className="absolute right-5 top-3 flex h-9 w-9 items-center justify-center rounded-full text-2xl app-muted hover:bg-slate-100 hover:text-slate-700" type="button" onClick={onClose}>×</button>
       <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-        <input ref={inputRef} autoFocus autoComplete="off" className="h-12 w-full rounded-xl border app-border app-surface-muted px-4 text-base app-text outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" disabled={isLoading} inputMode="numeric" placeholder="Отсканируйте штрихкод на бейдже" value={barcode} onChange={(event) => setBarcode(event.target.value)} />
+        <input ref={inputRef} autoFocus autoCapitalize="none" autoComplete="off" className="h-12 w-full rounded-xl border app-border app-surface-muted px-4 text-base app-text outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" disabled={isLoading} lang="en" placeholder="Отсканируйте штрихкод на бейдже" spellCheck={false} value={barcode} onChange={(event) => setBarcode(normalizeSellerBarcode(event.target.value))} />
         {error ? <p className="text-sm font-medium text-red-600" role="alert">{error}</p> : null}
         {isLoading ? <p className="text-sm font-medium text-blue-600">Ищем продавца...</p> : null}
       </form>

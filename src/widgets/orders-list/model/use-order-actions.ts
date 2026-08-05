@@ -24,7 +24,7 @@ type Notify = (
 type Options = {
   notify: Notify;
   onCompleteSuccess: (order: Order) => void;
-  refresh: () => void;
+  refresh: (onFailure: () => void) => void;
 };
 
 export function requireCurrentSeller(notify: Notify) {
@@ -90,7 +90,7 @@ export function useOrderActions({
       );
       if (result.status === 200 || result.status === 400) {
         isWaitingForRefresh = true;
-        refresh();
+        refresh(clearConfirmingOrder);
       }
     } catch {
       notify(
@@ -125,7 +125,7 @@ export function useOrderActions({
       );
       if (result.status === 200 || result.status === 400) {
         isWaitingForRefresh = true;
-        refresh();
+        refresh(clearCancellingOrder);
       }
     } catch {
       notify(
@@ -159,7 +159,7 @@ export function useOrderActions({
         result.status === 200 ? "success" : "warning"
       );
       isWaitingForRefresh = true;
-      refresh();
+      refresh(clearGivingOrderToCourier);
     } catch {
       notify(
         "Ошибка выдачи заказа курьеру",
@@ -174,6 +174,10 @@ export function useOrderActions({
   }, [clearGivingOrderToCourier, notify, refresh, requireSeller]);
 
   const complete = useCallback(async (order: Order) => {
+    if (order.quantityBags <= 0) {
+      notify("Предупреждение", "Укажите количество пакетов", "warning");
+      return;
+    }
     if (order.items.every((item) => item.quantity_fact === 0)) {
       notify("Управление заказами", "Не отсканирован ни один товар!", "warning");
       return;
@@ -187,6 +191,7 @@ export function useOrderActions({
       const result = await completeOrder({
         orderId: order.uid_1c,
         seller: seller.userId,
+        quantityBags: order.quantityBags,
         orderControlledItem: getCompleteOrderItems(order)
       });
       notify(
@@ -200,9 +205,9 @@ export function useOrderActions({
         clearStoredOrderControl(order);
         onCompleteSuccess(order);
         isWaitingForRefresh = true;
-        refresh();
+        refresh(clearCompletingOrder);
       } else if (result.status === 400) {
-        refresh();
+        refresh(clearCompletingOrder);
       }
     } catch {
       notify(

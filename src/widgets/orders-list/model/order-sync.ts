@@ -56,6 +56,7 @@ function isSameOrder(currentOrder: Order, nextOrder: Order) {
     currentOrder.order_sum === nextOrder.order_sum &&
     currentOrder.shipment_store_name === nextOrder.shipment_store_name &&
     currentOrder.store_id === nextOrder.store_id &&
+    currentOrder.quantityBags === nextOrder.quantityBags &&
     areSameArrays(currentOrder.items, nextOrder.items, isSameOrderItem) &&
     areSameArrays(
       currentOrder.controlledItems,
@@ -92,6 +93,7 @@ export function mergeOrderWithLocalControl(
 
   return {
     ...serverOrder,
+    quantityBags: localOrder.quantityBags,
     items: serverOrder.items.map((serverItem) => {
       const localItem = localItemsByProductId.get(serverItem.product_id);
       return localItem === undefined

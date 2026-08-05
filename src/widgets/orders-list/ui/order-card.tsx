@@ -14,6 +14,7 @@ import {
   OrderMeta,
   OrderStatusBadge
 } from "./order-card-parts";
+import { LoadingDots } from "@/shared/ui/loading-dots";
 
 type OrderCardProps = {
   isCancelling?: boolean;
@@ -21,6 +22,7 @@ type OrderCardProps = {
   isConfirming?: boolean;
   isOpening?: boolean;
   isGivingOrderToCourier?: boolean;
+  isSelectionLocked?: boolean;
   onCollapse: () => void;
   onCancel: (order: Order) => void;
   onConfirm: (order: Order) => void;
@@ -37,6 +39,7 @@ function OrderCardComponent({
   isConfirming = false,
   isOpening = false,
   isGivingOrderToCourier = false,
+  isSelectionLocked = false,
   onCollapse,
   onCancel,
   onConfirm,
@@ -76,12 +79,15 @@ function OrderCardComponent({
 
   return (
     <article
+      aria-disabled={isSelectionLocked}
       className={`order-full-card order-full-card-${tone} w-full rounded-xl border-2 border-blue-500 app-surface-muted p-2.5`}
       role="button"
-      tabIndex={0}
-      onClick={onCollapse}
+      tabIndex={isSelectionLocked ? -1 : 0}
+      onClick={() => {
+        if (!isSelectionLocked) onCollapse();
+      }}
       onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
+        if (!isSelectionLocked && (event.key === "Enter" || event.key === " ")) {
           event.preventDefault();
           onCollapse();
         }
@@ -99,7 +105,7 @@ function OrderCardComponent({
             type="button"
             onClick={handlePrint}
           >
-            {isPrinting ? "..." : "Печать"}
+            {isPrinting ? <LoadingDots label="Печать" /> : "Печать"}
           </button>
         </div>
       ) : (
@@ -110,7 +116,7 @@ function OrderCardComponent({
           type="button"
           onClick={handleCancel}
         >
-          {isCancelling ? "..." : "Отмена"}
+          {isCancelling ? <LoadingDots label="Отмена заказа" /> : "Отмена"}
         </button>
         <button
           className="order-primary-button min-h-[2.125rem] rounded-lg bg-emerald-600 text-xs font-extrabold text-white"
@@ -119,7 +125,7 @@ function OrderCardComponent({
           onClick={handlePrimaryAction}
         >
           {isOpening || isConfirming || isCompleting || isGivingOrderToCourier
-            ? "..."
+            ? <LoadingDots label="Обработка заказа" />
             : isReady
               ? "Выдать"
               : isConfirmation

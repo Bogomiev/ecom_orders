@@ -20,6 +20,7 @@ const order: Order = {
   order_sum: 10,
   shipment_store_name: "Магазин",
   store_id: "store",
+  quantityBags: 3,
   items: [{
     product_id: "product",
     product_name: "Товар",
@@ -56,8 +57,18 @@ describe("order control storage", () => {
       items: [{ ...order.items[0], quantity_fact: 0 }]
     };
 
-    expect(restoreOrderControl(emptyOrder).items[0].quantity_fact).toBe(1);
+    const restoredOrder = restoreOrderControl({
+      ...emptyOrder,
+      quantityBags: 0
+    });
+    expect(restoredOrder.items[0].quantity_fact).toBe(1);
+    expect(restoredOrder.quantityBags).toBe(3);
     clearStoredOrderControl(order);
-    expect(restoreOrderControl(emptyOrder).items[0].quantity_fact).toBe(0);
+    const clearedOrder = restoreOrderControl({
+      ...emptyOrder,
+      quantityBags: 0
+    });
+    expect(clearedOrder.items[0].quantity_fact).toBe(0);
+    expect(clearedOrder.quantityBags).toBe(0);
   });
 });
