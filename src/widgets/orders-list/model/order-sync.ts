@@ -54,6 +54,7 @@ function isSameOrder(currentOrder: Order, nextOrder: Order) {
     currentOrder.delivery_date === nextOrder.delivery_date &&
     currentOrder.delivery_time === nextOrder.delivery_time &&
     currentOrder.order_sum === nextOrder.order_sum &&
+    currentOrder.comment === nextOrder.comment &&
     currentOrder.shipment_store_name === nextOrder.shipment_store_name &&
     currentOrder.store_id === nextOrder.store_id &&
     currentOrder.quantityBags === nextOrder.quantityBags &&

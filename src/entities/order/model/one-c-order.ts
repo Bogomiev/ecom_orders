@@ -29,6 +29,7 @@ const OneCOrderSchema = z.object({
   delivery_date: z.string(),
   delivery_time: z.string(),
   order_sum: z.number(),
+  comment: z.string(),
   shipment_store_name: z.string(),
   store_id: z.string(),
   items: z.array(OneCOrderItemSchema),

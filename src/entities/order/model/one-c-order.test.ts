@@ -20,6 +20,7 @@ describe("normalizeOneCOrders", () => {
         delivery_date: "",
         delivery_time: "",
         order_sum: 100,
+        comment: "Комментарий: Позвонить перед доставкой",
         shipment_store_name: "Магазин",
         store_id: "store",
         controlledItems: null,
