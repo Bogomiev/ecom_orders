@@ -40,7 +40,7 @@ endef
 
 .PHONY: help install ssl ssl-request ssl-test https no-https build all \
         status logs logs-app logs-nginx logs-certbot restart down \
-        update check-docker ask-domain render-http up
+        update check-docker ask-domain render-http render-https _render-domain-check up
 
 # Голый `make` (без аргумента) выполняет первую цель в файле — пусть это
 # будет безобидный help, а не install, чтобы ничего не запускалось случайно.
@@ -114,23 +114,40 @@ check-docker:
 
 ask-domain:
 	@touch $(ENV_FILE)
-	@read -p "$$(printf '$(BOLD)Домен для развёртывания$(RESET) (например example.com): ')" DOMAIN; \
-	read -p "$$(printf '$(BOLD)Email для Let'"'"'s Encrypt$(RESET): ')" EMAIL; \
+	@read -p "$$(printf '$(BOLD)Домен для развёртывания$(RESET) (например example.com): ')" DOMAIN_RAW; \
+	read -p "$$(printf '$(BOLD)Email для Let'"'"'s Encrypt$(RESET): ')" EMAIL_RAW; \
+	DOMAIN=$$(printf '%s' "$$DOMAIN_RAW" | tr -cd 'A-Za-z0-9.-'); \
+	EMAIL=$$(printf '%s' "$$EMAIL_RAW" | tr -cd 'A-Za-z0-9.@+_-'); \
 	if [ -z "$$DOMAIN" ] || [ -z "$$EMAIL" ]; then \
 		printf "$(RED)✘ Домен и email обязательны.$(RESET)\n"; exit 1; \
+	fi; \
+	if [ "$$DOMAIN_RAW" != "$$DOMAIN" ] || [ "$$EMAIL_RAW" != "$$EMAIL" ]; then \
+		printf "$(YELLOW)⚠ Во введённых значениях были посторонние символы (пробелы/BOM/перенос строки) — очищено.$(RESET)\n"; \
 	fi; \
 	sed -i "/^DOMAIN=/d;/^EMAIL=/d" $(ENV_FILE); \
 	echo "DOMAIN=$$DOMAIN" >> $(ENV_FILE); \
 	echo "EMAIL=$$EMAIL" >> $(ENV_FILE); \
-	grep -q '^ONE_C_API_URL=' $(ENV_FILE) || echo "ONE_C_API_URL=http://dev.1c.ikorniysrv.ru:85/eshop/hs/PAPI/v1" >> $(ENV_FILE); \
-	for f in $(TEMPLATES)/http.conf.template $(TEMPLATES)/https.conf.template; do \
-		if [ -f "$$f" ]; then sed -i "s/example\.com/$$DOMAIN/g" "$$f"; fi; \
-	done; \
-	printf "$(GREEN)✔ Домен %s сохранён в $(ENV_FILE) и подставлен в шаблоны nginx.$(RESET)\n" "$$DOMAIN"
+	grep -q '^ONE_C_API_URL=' $(ENV_FILE) || echo "ONE_C_API_URL=http://1c.ikorniysrv.ru:85/eshop/hs/PAPI/v1" >> $(ENV_FILE); \
+	printf "$(GREEN)✔ Домен %s сохранён в $(ENV_FILE).$(RESET)\n" "$$DOMAIN"
 
-render-http:
-	@cp $(TEMPLATES)/http.conf.template $(NGINX_DIR)/app.conf
-	$(call ok,nginx/conf.d/app.conf сгенерирован из http.conf.template.)
+# Читает DOMAIN из .env и генерирует nginx/conf.d/app.conf ЗАНОВО из pristine-шаблона
+# (templates/*.template с плейсхолдером __DOMAIN__, который НИКОГДА не изменяется).
+# Полностью идемпотентно: сколько раз ни вызови — результат всегда чистый,
+# накопления/дублирования домена в файле невозможны в принципе.
+render-http: _render-domain-check
+	@DOMAIN=$$(grep '^DOMAIN=' $(ENV_FILE) | cut -d '=' -f2-); \
+	sed "s/__DOMAIN__/$$DOMAIN/g" $(TEMPLATES)/http.conf.template > $(NGINX_DIR)/app.conf
+	$(call ok,nginx/conf.d/app.conf сгенерирован (HTTP) для домена из $(ENV_FILE).)
+
+render-https: _render-domain-check
+	@DOMAIN=$$(grep '^DOMAIN=' $(ENV_FILE) | cut -d '=' -f2-); \
+	sed "s/__DOMAIN__/$$DOMAIN/g" $(TEMPLATES)/https.conf.template > $(NGINX_DIR)/app.conf
+	$(call ok,nginx/conf.d/app.conf сгенерирован (HTTPS) для домена из $(ENV_FILE).)
+
+_render-domain-check:
+	@if [ ! -f $(ENV_FILE) ] || ! grep -q '^DOMAIN=' $(ENV_FILE); then \
+		printf "$(RED)✘ DOMAIN не задан в $(ENV_FILE) — сначала выполните: make install$(RESET)\n"; exit 1; \
+	fi
 
 up:
 	$(call log,Запуск контейнеров проекта $(PROJECT_NAME)...)
@@ -170,13 +187,11 @@ ssl-test: ## Тестовый запрос сертификата (--dry-run), �
 		-d $$DOMAIN \
 		--email $$EMAIL --agree-tos --no-eff-email --non-interactive -v --dry-run
 
-https: ## Включить HTTPS и редирект http -> https (после make ssl)
-	@cp $(TEMPLATES)/https.conf.template $(NGINX_DIR)/app.conf
+https: render-https ## Включить HTTPS и редирект http -> https (после make ssl)
 	$(call ok,nginx переключён на HTTPS, редирект http->https включён.)
 	@$(COMPOSE) exec nginx nginx -s reload 2>/dev/null || $(COMPOSE) restart nginx
 
-no-https: ## Откатить nginx обратно на обычный HTTP (без TLS и редиректа)
-	@cp $(TEMPLATES)/http.conf.template $(NGINX_DIR)/app.conf
+no-https: render-http ## Откатить nginx обратно на обычный HTTP (без TLS и редиректа)
 	$(call ok,nginx переключён обратно на HTTP, редирект http->https отключён.)
 	@$(COMPOSE) exec nginx nginx -s reload 2>/dev/null || $(COMPOSE) restart nginx
 
