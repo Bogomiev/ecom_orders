@@ -19,6 +19,7 @@ type OrderCardMiniProps = {
   disabled?: boolean;
   isOpening?: boolean;
   onOpen: (order: Order) => void;
+  onView: (order: Order) => void;
   order: Order;
 };
 
@@ -26,6 +27,7 @@ function OrderCardMiniComponent({
   disabled = false,
   isOpening = false,
   onOpen,
+  onView,
   order
 }: OrderCardMiniProps) {
   const tone = getOrderTone(order);
@@ -38,17 +40,27 @@ function OrderCardMiniComponent({
   const marketplace = getMarketplaceLabel(order.source);
 
   return (
-    <button
+    <article
       aria-label={`${marketplace}, заказ ${order.number}${order.external_id ? ` / ${order.external_id}` : ""}, ${statusLabel}`}
-      className="order-mini-card w-full rounded-xl border app-border app-surface-muted p-2.5 text-left transition-[border-color,box-shadow] hover:border-slate-400 hover:shadow-[0_0_0_1px_#c5cfde] disabled:cursor-wait disabled:opacity-70"
-      disabled={disabled || isOpening || cannotOpen}
-      type="button"
-      onClick={() => onOpen(order)}
+      aria-disabled={disabled || isOpening || cannotOpen}
+      className="order-mini-card w-full rounded-xl border app-border app-surface-muted p-2.5 text-left transition-[border-color,box-shadow] hover:border-slate-400 hover:shadow-[0_0_0_1px_#c5cfde] aria-disabled:cursor-wait aria-disabled:opacity-70"
+      role="button"
+      tabIndex={disabled || isOpening || cannotOpen ? -1 : 0}
+      onClick={() => {
+        if (!disabled && !isOpening && !cannotOpen) onOpen(order);
+      }}
+      onKeyDown={(event) => {
+        if (event.target !== event.currentTarget) return;
+        if (!disabled && !isOpening && !cannotOpen && (event.key === "Enter" || event.key === " ")) {
+          event.preventDefault();
+          onOpen(order);
+        }
+      }}
     >
-      <OrderCardHeader order={order} />
+      <OrderCardHeader order={order} onView={onView} />
       <OrderStatusBadge order={order} tone={tone} />
       <OrderMeta assembleBefore={assembleBefore} order={order} />
-    </button>
+    </article>
   );
 }
 

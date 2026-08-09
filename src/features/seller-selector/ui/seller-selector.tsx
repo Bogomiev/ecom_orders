@@ -9,11 +9,13 @@ import {
 } from "@/entities/seller";
 import { SellerBarcodeModal } from "./seller-barcode-modal";
 import { SellerMenu } from "./seller-menu";
+import { PersonalAccountDialog } from "./personal-account-dialog";
 
 export function SellerSelector() {
   const currentSeller = useCurrentSeller();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPersonalAccountOpen, setIsPersonalAccountOpen] = useState(false);
   const selectorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -53,6 +55,11 @@ export function SellerSelector() {
     setIsModalOpen(true);
   }
 
+  function handleOpenPersonalAccount() {
+    setIsMenuOpen(false);
+    setIsPersonalAccountOpen(true);
+  }
+
   const initials = currentSeller?.name
     .split(/\s+/)
     .filter(Boolean)
@@ -84,12 +91,16 @@ export function SellerSelector() {
           <SellerMenu
             canLogout={currentSeller !== null}
             onLogout={handleLogout}
+            onOpenPersonalAccount={handleOpenPersonalAccount}
             onScanBadge={handleScanBadge}
           />
         ) : null}
       </div>
       {isModalOpen ? (
         <SellerBarcodeModal onClose={handleModalClose} onSelect={handleSelect} />
+      ) : null}
+      {isPersonalAccountOpen ? (
+        <PersonalAccountDialog onClose={() => setIsPersonalAccountOpen(false)} />
       ) : null}
     </>
   );

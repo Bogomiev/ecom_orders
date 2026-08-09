@@ -9,6 +9,7 @@ type WidgetPanelProps = {
   count?: number;
   description?: string;
   icon?: WidgetIconName;
+  headerAction?: ReactNode;
   showHeader?: boolean;
   title?: string;
 };
@@ -69,6 +70,7 @@ export function WidgetPanel({
   count,
   description,
   icon,
+  headerAction,
   showHeader = true,
   title
 }: WidgetPanelProps) {
@@ -93,6 +95,7 @@ export function WidgetPanel({
                 </p>
               ) : null}
             </div>
+            {headerAction}
             {typeof count === "number" ? (
               <span className="widget-count grid h-8 min-w-8 place-items-center rounded-full text-xs font-black">
                 {count}

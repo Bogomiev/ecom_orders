@@ -30,6 +30,7 @@ type OrderCardProps = {
   onStartControl: (order: Order) => void;
   onGiveToCourier: (order: Order) => void;
   onPrint: (order: Order) => void;
+  onView: (order: Order) => void;
   isPrinting?: boolean;
   order: Order;
 };
@@ -47,6 +48,7 @@ function OrderCardComponent({
   onStartControl,
   onGiveToCourier,
   onPrint,
+  onView,
   isPrinting = false,
   order
 }: OrderCardProps) {
@@ -94,13 +96,14 @@ function OrderCardComponent({
         if (!isSelectionLocked) onCollapse();
       }}
       onKeyDown={(event) => {
+        if (event.target !== event.currentTarget) return;
         if (!isSelectionLocked && (event.key === "Enter" || event.key === " ")) {
           event.preventDefault();
           onCollapse();
         }
       }}
     >
-      <OrderCardHeader order={order} />
+      <OrderCardHeader order={order} onView={onView} />
       <OrderStatusBadge order={order} tone={tone} />
       <OrderMeta assembleBefore={assembleBefore} className="mt-2" order={order} />
 

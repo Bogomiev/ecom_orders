@@ -70,16 +70,32 @@ function OrderComment({ comment }: { comment: string }) {
   );
 }
 
-export function OrderCardHeader({ order }: { order: Order }) {
+export function OrderCardHeader({
+  onView,
+  order
+}: {
+  onView: (order: Order) => void;
+  order: Order;
+}) {
   const marketplace = getMarketplaceLabel(order.source);
+
+  function handleView(event: MouseEvent<HTMLButtonElement>) {
+    event.stopPropagation();
+    onView(order);
+  }
+
   return (
     <div className="order-card-header flex flex-wrap items-center gap-2.5">
       <span className={`marketplace-badge marketplace-${marketplace.toLowerCase()} inline-flex min-h-6 items-center rounded-md px-2.5 text-xs font-extrabold`}>
         {marketplace}
       </span>
-      <span className="min-w-0 flex-1 truncate text-sm font-medium app-muted">
+      <button
+        className="min-w-0 flex-1 cursor-pointer break-words text-left text-xs font-medium app-muted"
+        type="button"
+        onClick={handleView}
+      >
         {order.number}{order.external_id ? `/${order.external_id}` : ""}
-      </span>
+      </button>
     </div>
   );
 }

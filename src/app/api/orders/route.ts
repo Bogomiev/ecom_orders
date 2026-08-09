@@ -9,11 +9,17 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   try {
-    const storeId = new URL(request.url).searchParams.get("store")?.trim();
-    const searchParams = storeId
-      ? `?${new URLSearchParams({ store: storeId })}`
-      : "";
-    const data = await fetchOneCJson(`/GetOrders${searchParams}`, OneCOrdersResponseSchema, {
+    const requestSearchParams = new URL(request.url).searchParams;
+    const storeId = requestSearchParams.get("store")?.trim();
+    const requestedHistoryDays = Number(requestSearchParams.get("historyDays"));
+    const historyDays = Number.isInteger(requestedHistoryDays) && requestedHistoryDays >= 1
+      ? String(requestedHistoryDays)
+      : null;
+    const oneCSearchParams = new URLSearchParams();
+    if (storeId) oneCSearchParams.set("store", storeId);
+    if (historyDays) oneCSearchParams.set("historyDays", historyDays);
+    const query = oneCSearchParams.toString();
+    const data = await fetchOneCJson(`/GetOrders${query ? `?${query}` : ""}`, OneCOrdersResponseSchema, {
       cache: "no-store"
     });
     const orders = normalizeOneCOrders(data);

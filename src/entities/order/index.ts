@@ -44,6 +44,15 @@ export {
 } from "./lib/presentation";
 export type { OrderTone } from "./lib/presentation";
 export {
+  DEFAULT_ORDER_HISTORY_DAYS,
+  getStoredOrderHistoryDays,
+  normalizeOrderHistoryDays,
+  ORDER_HISTORY_DAYS_CHANGE_EVENT,
+  ORDER_HISTORY_DAYS_STORAGE_KEY,
+  setStoredOrderHistoryDays
+} from "./model/history-settings";
+export { useOrderHistoryDays } from "./model/use-order-history-days";
+export {
   normalizeOneCOrders,
   OneCOrdersResponseSchema
 } from "./model/one-c-order";

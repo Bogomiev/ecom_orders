@@ -1,10 +1,12 @@
 export function SellerMenu({
   canLogout,
   onLogout,
+  onOpenPersonalAccount,
   onScanBadge
 }: {
   canLogout: boolean;
   onLogout: () => void;
+  onOpenPersonalAccount: () => void;
   onScanBadge: () => void;
 }) {
   return (
@@ -15,7 +17,7 @@ export function SellerMenu({
         </svg>
         Отсканировать бейдж
       </button>
-      <button className="flex h-9 w-full items-center gap-3 rounded-lg px-1.5 text-left text-[13px] font-bold app-text transition hover:bg-slate-50 focus:bg-slate-50 focus:outline-none" type="button">
+      <button className="flex h-9 w-full items-center gap-3 rounded-lg px-1.5 text-left text-[13px] font-bold app-text transition hover:bg-slate-50 focus:bg-slate-50 focus:outline-none" type="button" onClick={onOpenPersonalAccount}>
         <svg aria-hidden="true" className="h-5 w-5 shrink-0 app-muted" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7" viewBox="0 0 24 24">
           <circle cx="12" cy="7" r="3.25" />
           <path d="M5.5 20v-2.25A5.75 5.75 0 0 1 11.25 12h1.5a5.75 5.75 0 0 1 5.75 5.75V20" />

@@ -62,11 +62,14 @@ export type GiveOrderToCourierResult = {
 
 export async function fetchOrders(
   storeId?: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  historyDays?: number
 ): Promise<OrdersResponse> {
-  const path = storeId
-    ? `${ORDERS_SERVICE_PATH}?${new URLSearchParams({ store: storeId })}`
-    : ORDERS_SERVICE_PATH;
+  const searchParams = new URLSearchParams();
+  if (storeId) searchParams.set("store", storeId);
+  if (historyDays !== undefined) searchParams.set("historyDays", String(historyDays));
+  const query = searchParams.toString();
+  const path = query ? `${ORDERS_SERVICE_PATH}?${query}` : ORDERS_SERVICE_PATH;
   const { data } = await fetchJson(path, OrdersResponseSchema, {
     cache: "no-store",
     method: "GET",

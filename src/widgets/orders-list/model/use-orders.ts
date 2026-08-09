@@ -35,6 +35,7 @@ type UseOrdersOptions = {
   refreshKey: number;
   setControlOrder: Dispatch<SetStateAction<Order | null>>;
   storeId?: string;
+  historyDays?: number;
 };
 
 export function useOrders({
@@ -42,7 +43,8 @@ export function useOrders({
   onRefreshResult,
   refreshKey,
   setControlOrder,
-  storeId
+  storeId,
+  historyDays
 }: UseOrdersOptions) {
   const [state, setState] = useState<OrdersState>(initialState);
   const isRequestInFlightRef = useRef(false);
@@ -68,7 +70,7 @@ export function useOrders({
       isRequestInFlightRef.current = true;
 
       try {
-        const data = await fetchOrders(storeId, controller.signal);
+        const data = await fetchOrders(storeId, controller.signal, historyDays);
         if (!isMounted) return;
 
         const mergedControlledOrders = new Map<string, Order>();
@@ -128,7 +130,7 @@ export function useOrders({
       isRequestInFlightRef.current = false;
       window.clearInterval(interval);
     };
-  }, [controlledOrdersRef, onRefreshResult, refreshKey, setControlOrder, storeId]);
+  }, [controlledOrdersRef, historyDays, onRefreshResult, refreshKey, setControlOrder, storeId]);
 
   return { setState, state };
 }

@@ -35,6 +35,7 @@ import {
 import { printOrder } from "../api/orders";
 
 type OrdersListProps = {
+  historyDays?: number;
   layout?: "grid" | "list";
   onNotificationOrdersCountChange?: (ordersCount: number) => void;
   onOrdersCountChange?: (ordersCount: number) => void;
@@ -49,7 +50,13 @@ const OrderControl = dynamic(
   }
 );
 
+const OrderView = dynamic(
+  () => import("@/features/orders").then((module) => module.OrderView),
+  { ssr: false }
+);
+
 export function OrdersList({
+  historyDays,
   layout = "grid",
   onNotificationOrdersCountChange,
   onOrdersCountChange
@@ -59,6 +66,9 @@ export function OrdersList({
   const hasAccessToken = useHasAccessToken();
   const [controlProducts, setControlProducts] = useState<ProductsResponse>([]);
   const [controlLoadError, setControlLoadError] = useState<string | null>(null);
+  const [viewOrder, setViewOrder] = useState<Order | null>(null);
+  const [viewProducts, setViewProducts] = useState<ProductsResponse>([]);
+  const [viewLoadError, setViewLoadError] = useState<string | null>(null);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [openingOrderId, setOpeningOrderId] = useState<string | null>(null);
   const [printingOrderId, setPrintingOrderId] = useState<string | null>(null);
@@ -87,7 +97,8 @@ export function OrdersList({
     onRefreshResult: handleOrdersRefreshResult,
     refreshKey: ordersRefreshKey,
     setControlOrder,
-    storeId: selectedStore?.id
+    storeId: selectedStore?.id,
+    historyDays
   });
 
   useEffect(() => {
@@ -248,6 +259,35 @@ export function OrdersList({
     }
   }, [getProducts, refreshProducts, retryProducts, setState]);
 
+  const openOrderView = useCallback(async (order: Order) => {
+    setViewLoadError(null);
+
+    try {
+      let products = await getProducts();
+
+      if (getMissingOrderProductIds(order, products).length > 0) {
+        try {
+          products = await refreshProducts();
+        } catch {
+          products = await retryProducts();
+        }
+      }
+
+      if (!isMountedRef.current) return;
+
+      setViewProducts(products);
+      setViewOrder(enrichOrder(order, products));
+    } catch (error) {
+      if (!isMountedRef.current) return;
+
+      setViewLoadError(
+        error instanceof Error
+          ? error.message
+          : "Не удалось загрузить содержимое заказа"
+      );
+    }
+  }, [getProducts, refreshProducts, retryProducts]);
+
   const showOrderNotification = useCallback(
     (title: string, body: string, tone: PageNotification["tone"]) => {
       notify({ title, body, tone });
@@ -390,6 +430,12 @@ export function OrdersList({
         </div>
       ) : null}
 
+      {viewLoadError ? (
+        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          {viewLoadError}
+        </div>
+      ) : null}
+
       {state.isLoading ? (
         <div className="rounded-lg border app-border app-surface px-4 py-8 text-center text-sm app-muted">
           Загружаем заказы...
@@ -423,12 +469,14 @@ export function OrdersList({
                   onStartControl={handleStartControl}
                   onGiveToCourier={handleGiveOrderToCourier}
                   onPrint={handlePrintOrder}
+                  onView={(selectedOrder) => void openOrderView(selectedOrder)}
                 />
               ) : (
                 <OrderCardMini
                   key={order.id}
                   disabled={!hasAccessToken || isOrderSelectionLocked}
                   order={order}
+                  onView={(selectedOrder) => void openOrderView(selectedOrder)}
                   onOpen={(selectedOrder) =>
                     hasAccessToken &&
                     !isOrderSelectionLocked &&
@@ -458,6 +506,11 @@ export function OrdersList({
         onOrderChange={updateControlledOrder}
         onComplete={handleCompleteOrder}
         onClose={() => setControlOrder(null)}
+      />
+      <OrderView
+        order={viewOrder}
+        products={viewProducts}
+        onClose={() => setViewOrder(null)}
       />
       {printPdf ? (
         <PdfDialog

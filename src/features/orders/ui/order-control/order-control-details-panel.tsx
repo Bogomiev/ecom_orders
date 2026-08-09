@@ -48,7 +48,7 @@ type OrderControlDetailsPanelProps = {
   products: Product[];
 };
 
-function HonestSignIcon() {
+export function HonestSignIcon() {
   return (
     <svg
       aria-label="Маркируемый товар — Честный ЗНАК"
