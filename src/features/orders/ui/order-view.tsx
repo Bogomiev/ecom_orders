@@ -29,6 +29,7 @@ export function OrderView({ onCancelItem, onClose, order, products }: OrderViewP
   const total = order.items.reduce((sum, line) => sum + line.amount, 0);
   const canEdit = isOrderAwaitingConfirmation(order);
   const isCancelling = cancellingProductId !== null;
+  const activeLinesCount = order.items.filter((line) => !line.canceled).length;
 
   function requestClose() {
     if (!isCancelling) onClose();
@@ -121,11 +122,15 @@ export function OrderView({ onCancelItem, onClose, order, products }: OrderViewP
                     {!line.canceled ? (
                       <button
                         aria-label={`Отменить товар ${line.product_name}`}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-red-300 bg-red-50 text-lg font-bold leading-none text-red-600 transition hover:border-red-500 hover:bg-red-100 disabled:cursor-wait disabled:opacity-50"
-                        disabled={isCancelling}
-                        title="Отменить строку"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-red-300 bg-red-50 text-lg font-bold leading-none text-red-600 transition hover:border-red-500 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={isCancelling || activeLinesCount <= 1}
+                        title={activeLinesCount <= 1 ? "Нельзя отменить последнюю строку" : "Отменить строку"}
                         type="button"
-                        onClick={() => setItemPendingCancellation(line)}
+                        onClick={() => {
+                          if (activeLinesCount > 1 && !isCancelling) {
+                            setItemPendingCancellation(line);
+                          }
+                        }}
                       >
                         ×
                       </button>
