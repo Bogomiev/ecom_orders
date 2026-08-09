@@ -26,7 +26,10 @@ export function OrderView({ onCancelItem, onClose, order, products }: OrderViewP
   if (order === null) return null;
 
   const orderNumber = `${order.number}${order.external_id ? `/${order.external_id}` : ""}`;
-  const total = order.items.reduce((sum, line) => sum + line.amount, 0);
+  const total = order.items.reduce(
+    (sum, line) => line.canceled ? sum : sum + line.amount,
+    0
+  );
   const canEdit = isOrderAwaitingConfirmation(order);
   const isCancelling = cancellingProductId !== null;
   const activeLinesCount = order.items.filter((line) => !line.canceled).length;
