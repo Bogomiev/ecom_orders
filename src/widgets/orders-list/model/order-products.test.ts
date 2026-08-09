@@ -29,6 +29,7 @@ const order = {
     quantity: 1,
     price: 1,
     amount: 1,
+    canceled: false,
     quantity_fact: 0,
     is_weight: false
   }]

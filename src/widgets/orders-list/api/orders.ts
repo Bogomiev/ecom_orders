@@ -1,5 +1,7 @@
 import type {
   CancelOrderRequest,
+  CancelOrderItemRequest,
+  CancelOrderItemResponse,
   CancelOrderResponse,
   CompleteOrderRequest,
   CompleteOrderResponse,
@@ -11,6 +13,7 @@ import type {
 } from "@/entities/order";
 import {
   CancelOrderResponseSchema,
+  CancelOrderItemResponseSchema,
   OrderActionResponseSchema,
   OrdersResponseSchema,
   GiveOrderToCourierResponseSchema
@@ -49,6 +52,31 @@ export type CancelOrderResult = {
   data: CancelOrderResponse;
   status: number;
 };
+
+export type CancelOrderItemResult = {
+  data: CancelOrderItemResponse;
+  status: number;
+};
+
+export async function cancelOrderItem(
+  body: CancelOrderItemRequest
+): Promise<CancelOrderItemResult> {
+  const response = await fetchJson(
+    `${ORDERS_SERVICE_PATH}/cancel-item`,
+    CancelOrderItemResponseSchema,
+    {
+      acceptErrorResponse: true,
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(body)
+    }
+  );
+
+  return response;
+}
 
 export type CompleteOrderResult = {
   data: CompleteOrderResponse;

@@ -49,7 +49,7 @@ export function OrderControl({
   }
 
   const activeOrder = order;
-  const lines = activeOrder.items;
+  const lines = activeOrder.items.filter((line) => !line.canceled);
   const completedLines = lines.filter(
     (line) => line.quantity_fact === line.quantity
   ).length;
@@ -71,7 +71,7 @@ export function OrderControl({
   }
 
   function requestClose() {
-    if (activeOrder.items.some((item) => item.quantity_fact > 0)) {
+    if (lines.some((item) => item.quantity_fact > 0)) {
       setIsCloseConfirmationOpen(true);
       return;
     }

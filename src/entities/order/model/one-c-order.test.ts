@@ -30,6 +30,7 @@ describe("normalizeOneCOrders", () => {
           quantity: 1,
           price: 100,
           amount: 100,
+          canceled: true,
           quantity_fact: null
         }]
       }]
@@ -42,6 +43,7 @@ describe("normalizeOneCOrders", () => {
     expect(result.items[0].items[0]).toMatchObject({
       product_name: "product",
       marking_product: false,
+      canceled: true,
       quantity_fact: 0,
       is_weight: false
     });

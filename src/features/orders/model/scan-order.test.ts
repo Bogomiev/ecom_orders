@@ -28,6 +28,7 @@ const order: Order = {
   delivery_date: "",
   delivery_time: "",
   order_sum: 100,
+  comment: "",
   shipment_store_name: "Магазин",
   store_id: "store-1",
   quantityBags: 0,
@@ -39,6 +40,7 @@ const order: Order = {
     quantity: 1,
     price: 100,
     amount: 100,
+    canceled: false,
     quantity_fact: 0,
     is_weight: false
   }]
@@ -88,6 +90,19 @@ describe("applyBarcodeToOrder", () => {
     expect(result).toMatchObject({
       status: "error",
       code: "quantity-exceeded"
+    });
+  });
+
+  it("не добавляет товар из отменённой строки", () => {
+    const result = applyBarcodeToOrder(
+      { ...order, items: [{ ...order.items[0], canceled: true }] },
+      createBarcodeIndex([product]),
+      "4601234567890"
+    );
+
+    expect(result).toMatchObject({
+      status: "error",
+      code: "product-not-in-order"
     });
   });
 

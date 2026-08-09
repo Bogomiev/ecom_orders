@@ -80,7 +80,9 @@ export function applyBarcodeToOrder(
   }
 
   const { barcodeInfo, product } = barcodeMatch;
-  const orderItem = order.items.find((item) => item.product_id === product.uid);
+  const orderItem = order.items.find(
+    (item) => item.product_id === product.uid && !item.canceled
+  );
 
   if (orderItem === undefined) {
     return {

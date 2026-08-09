@@ -26,6 +26,7 @@ const order: Order = {
     quantity: 2,
     price: 50,
     amount: 100,
+    canceled: false,
     quantity_fact: 1,
     is_weight: false
   }]
@@ -66,6 +67,13 @@ describe("getCompleteOrderItems", () => {
     expect(getCompleteOrderItems({
       ...order,
       items: [{ ...order.items[0], quantity_fact: 0 }]
+    })).toEqual([]);
+  });
+
+  it("не добавляет отменённые строки", () => {
+    expect(getCompleteOrderItems({
+      ...order,
+      items: [{ ...order.items[0], canceled: true }]
     })).toEqual([]);
   });
 });

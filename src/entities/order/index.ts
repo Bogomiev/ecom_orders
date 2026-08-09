@@ -1,5 +1,7 @@
 export type {
   CancelOrderRequest,
+  CancelOrderItemRequest,
+  CancelOrderItemResponse,
   CancelOrderResponse,
   DateTime,
   CompleteOrderControlledItem,
@@ -21,6 +23,8 @@ export {
 } from "./model/control-storage";
 export {
   CancelOrderRequestSchema,
+  CancelOrderItemRequestSchema,
+  CancelOrderItemResponseSchema,
   CancelOrderResponseSchema,
   CompleteOrderRequestSchema,
   ConfirmOrderRequestSchema,

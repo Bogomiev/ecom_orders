@@ -15,6 +15,7 @@ export const OrderItemSchema = z.object({
   quantity: z.number(),
   price: z.number(),
   amount: z.number(),
+  canceled: z.boolean(),
   quantity_fact: z.number(),
   is_weight: z.boolean()
 });
@@ -62,6 +63,16 @@ export const CancelOrderRequestSchema = z.object({
   orderId: z.string().min(1),
   seller: z.string().min(1)
 });
+
+export const CancelOrderItemRequestSchema = z.object({
+  orderId: z.string().min(1),
+  productId: z.string().min(1)
+});
+
+export const CancelOrderItemResponseSchema = z.object({
+  code: z.number(),
+  mess: z.string()
+}).passthrough();
 
 export const CompleteOrderRequestSchema = ConfirmOrderRequestSchema.extend({
   quantityBags: z.number().int().positive(),

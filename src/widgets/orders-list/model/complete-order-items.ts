@@ -7,7 +7,7 @@ export function getCompleteOrderItems(
   order: Order
 ): CompleteOrderControlledItem[] {
   return order.items.flatMap((item) => {
-    if (item.quantity_fact <= 0) return [];
+    if (item.canceled || item.quantity_fact <= 0) return [];
 
     const controlledItems = order.controlledItems.filter(
       (controlledItem) => controlledItem.product_id === item.product_id

@@ -6,6 +6,7 @@ const OneCOrderItemSchema = z.object({
   quantity: z.number(),
   price: z.number(),
   amount: z.number(),
+  canceled: z.boolean().default(false),
   quantity_fact: z.number().nullable().optional()
 });
 

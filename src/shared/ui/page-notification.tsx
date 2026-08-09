@@ -2,7 +2,7 @@ export type PageNotificationTone = "error" | "info" | "success" | "warning";
 
 export type PageNotification = {
   id: string;
-  body: string;
+  body: ReactNode;
   title: string;
   tone?: PageNotificationTone;
 };
@@ -96,3 +96,4 @@ export function PageNotificationStack({
     </>
   );
 }
+import type { ReactNode } from "react";

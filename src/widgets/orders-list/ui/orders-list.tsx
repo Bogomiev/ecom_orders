@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   isOrderAwaitingAssembly,
   isOrderAwaitingConfirmation,
@@ -32,7 +32,7 @@ import {
   enrichOrder,
   getMissingOrderProductIds
 } from "../model/order-products";
-import { printOrder } from "../api/orders";
+import { cancelOrderItem, printOrder } from "../api/orders";
 
 type OrdersListProps = {
   historyDays?: number;
@@ -289,11 +289,58 @@ export function OrdersList({
   }, [getProducts, refreshProducts, retryProducts]);
 
   const showOrderNotification = useCallback(
-    (title: string, body: string, tone: PageNotification["tone"]) => {
+    (title: string, body: ReactNode, tone: PageNotification["tone"]) => {
       notify({ title, body, tone });
     },
     [notify]
   );
+  const handleCancelOrderItem = useCallback(async (order: Order, item: Order["items"][number]) => {
+    try {
+      const result = await cancelOrderItem({
+        orderId: order.uid_1c,
+        productId: item.product_id
+      });
+
+      if (result.status < 200 || result.status >= 300) {
+        throw new Error(result.data.mess);
+      }
+
+      const canceledOrder: Order = {
+        ...order,
+        items: order.items.map((currentItem) =>
+          currentItem.product_id === item.product_id
+            ? { ...currentItem, canceled: true }
+            : currentItem
+        )
+      };
+
+      setViewOrder(canceledOrder);
+      setState((currentState) => {
+        if (currentState.data === null) return currentState;
+        return {
+          ...currentState,
+          data: {
+            ...currentState.data,
+            items: currentState.data.items.map((currentOrder) =>
+              currentOrder.id === canceledOrder.id ? canceledOrder : currentOrder
+            )
+          }
+        };
+      });
+      return true;
+    } catch {
+      showOrderNotification(
+        "Ошибка отмены товара",
+        <>
+          Не удалось отменить товар{" "}
+          <strong className="font-black text-blue-950">{item.product_name}</strong>{" "}
+          в заказе {order.number}
+        </>,
+        "error"
+      );
+      return false;
+    }
+  }, [setState, showOrderNotification]);
   const refreshOrders = useCallback((onFailure: () => void) => {
     const nextRefreshKey = ordersRefreshKeyRef.current + 1;
     ordersRefreshKeyRef.current = nextRefreshKey;
@@ -510,6 +557,7 @@ export function OrdersList({
       <OrderView
         order={viewOrder}
         products={viewProducts}
+        onCancelItem={handleCancelOrderItem}
         onClose={() => setViewOrder(null)}
       />
       {printPdf ? (

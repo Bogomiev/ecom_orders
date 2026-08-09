@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import {
   clearStoredOrderControl,
   type Order
@@ -17,7 +17,7 @@ import { getCompleteOrderItems } from "./complete-order-items";
 
 type Notify = (
   title: string,
-  body: string,
+  body: ReactNode,
   tone: PageNotificationTone
 ) => void;
 

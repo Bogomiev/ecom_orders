@@ -1,13 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import type {
   PageNotification,
   PageNotificationTone
 } from "@/shared/ui/page-notification";
 
 type NotificationInput = {
-  body: string;
+  body: ReactNode;
   title: string;
   tone?: PageNotificationTone;
 };

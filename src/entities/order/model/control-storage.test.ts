@@ -30,6 +30,7 @@ const order: Order = {
     quantity_fact: 1,
     price: 5,
     amount: 10,
+    canceled: false,
     is_weight: false
   }],
   controlledItems: []

@@ -13,6 +13,7 @@ function isSameOrderItem(currentItem: OrderItem, nextItem: OrderItem) {
     currentItem.quantity === nextItem.quantity &&
     currentItem.price === nextItem.price &&
     currentItem.amount === nextItem.amount &&
+    currentItem.canceled === nextItem.canceled &&
     currentItem.quantity_fact === nextItem.quantity_fact &&
     currentItem.is_weight === nextItem.is_weight
   );
