@@ -40,9 +40,13 @@ export function Dialog({
     const previouslyFocused = document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    contentRef.current
-      ?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR)
-      ?.focus();
+    const autofocusElement = contentRef.current?.querySelector<HTMLElement>(
+      "[autofocus]"
+    );
+    const firstFocusableElement = contentRef.current?.querySelector<HTMLElement>(
+      FOCUSABLE_SELECTOR
+    );
+    (autofocusElement ?? firstFocusableElement)?.focus();
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
