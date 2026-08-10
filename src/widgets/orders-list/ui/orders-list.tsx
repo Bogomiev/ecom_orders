@@ -295,6 +295,8 @@ export function OrdersList({
     [notify]
   );
   const handleCancelOrderItem = useCallback(async (order: Order, item: Order["items"][number]) => {
+    if (requireCurrentSeller(showOrderNotification) === null) return false;
+
     try {
       const result = await cancelOrderItem({
         orderId: order.uid_1c,
