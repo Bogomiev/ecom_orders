@@ -101,7 +101,12 @@ export function OrderCardHeader({
             <path d="m4 20 4.2-1 10.6-10.6a2.1 2.1 0 0 0-3-3L5.2 16 4 20Z" />
             <path d="m14.5 6.7 2.8 2.8" />
           </svg>
-        ) : null}
+        ) : (
+          <svg aria-label="Заказ доступен для просмотра" className="ml-1 inline h-3.5 w-3.5 align-[-2px]" fill="none" role="img" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-4-4" />
+          </svg>
+        )}
       </button>
     </div>
   );
