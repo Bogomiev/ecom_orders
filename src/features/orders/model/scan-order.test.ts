@@ -54,6 +54,21 @@ describe("parseScannedCode", () => {
     });
   });
 
+  it("извлекает код товара и вес из весового EAN-13", () => {
+    expect(parseScannedCode("2100070003586")).toEqual({
+      isMark: false,
+      lookupBarcodes: ["2100070003586", "00070", "70"],
+      weight: 0.358
+    });
+  });
+
+  it("не разбирает весовой EAN-13 с неверной контрольной цифрой", () => {
+    expect(parseScannedCode("2100070003587")).toEqual({
+      isMark: false,
+      lookupBarcodes: ["2100070003587"]
+    });
+  });
+
   it("извлекает GTIN из маркировки", () => {
     expect(parseScannedCode("]d20104601234567890ABC")).toEqual({
       isMark: true,
@@ -138,5 +153,32 @@ describe("applyBarcodeToOrder", () => {
     );
 
     expect(result.status).toBe("success");
+  });
+
+  it("находит весовой товар по коду и добавляет вес с этикетки", () => {
+    const weightedProduct = {
+      ...product,
+      isWeight: true,
+      barcodes: [{ barcode: "70", unit: "кг", ratio: 1, isBase: true }]
+    };
+    const weightedOrder = {
+      ...order,
+      items: [{
+        ...order.items[0],
+        quantity: 1,
+        is_weight: true
+      }]
+    };
+    const result = applyBarcodeToOrder(
+      weightedOrder,
+      createBarcodeIndex([weightedProduct]),
+      "2100070003586"
+    );
+
+    expect(result.status).toBe("success");
+    if (result.status === "success") {
+      expect(result.product.uid).toBe(product.uid);
+      expect(result.order.items[0].quantity_fact).toBe(0.358);
+    }
   });
 });

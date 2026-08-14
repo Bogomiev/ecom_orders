@@ -7,6 +7,7 @@ export const WEIGHT_QUANTITY_OVERAGE_PERCENT = 15;
 export type ParsedScannedCode = {
   isMark: boolean;
   lookupBarcodes: string[];
+  weight?: number;
 };
 
 export type BarcodeIndexEntry = {
@@ -32,6 +33,17 @@ export type ScanOrderResult =
 
 export function parseScannedCode(value: string): ParsedScannedCode {
   if (EAN_13_PATTERN.test(value)) {
+    if (value.startsWith("2") && hasValidEan13CheckDigit(value)) {
+      const productCode = value.slice(2, 7);
+      const normalizedProductCode = productCode.replace(/^0+(?=\d)/, "");
+
+      return {
+        isMark: false,
+        lookupBarcodes: [value, productCode, normalizedProductCode],
+        weight: Number(value.slice(7, 12)) / 1000
+      };
+    }
+
     return { isMark: false, lookupBarcodes: [value] };
   }
 
@@ -50,6 +62,20 @@ export function parseScannedCode(value: string): ParsedScannedCode {
     isMark: true,
     lookupBarcodes: gtin.startsWith("0") ? [gtin, gtin.slice(1)] : [gtin]
   };
+}
+
+function hasValidEan13CheckDigit(value: string) {
+  const expectedCheckDigit = Number(value[12]);
+  const sum = value
+    .slice(0, 12)
+    .split("")
+    .reduce(
+      (total, digit, index) =>
+        total + Number(digit) * (index % 2 === 0 ? 1 : 3),
+      0
+    );
+
+  return (10 - (sum % 10)) % 10 === expectedCheckDigit;
 }
 
 export function createBarcodeIndex(products: Product[]) {
@@ -109,7 +135,7 @@ export function applyBarcodeToOrder(
     };
   }
 
-  const quantityToAdd = barcodeInfo.ratio ?? 1;
+  const quantityToAdd = parsedCode.weight ?? barcodeInfo.ratio ?? 1;
   const nextQuantityFact = orderItem.quantity_fact + quantityToAdd;
   const maximumQuantity = orderItem.is_weight
     ? orderItem.quantity * (1 + WEIGHT_QUANTITY_OVERAGE_PERCENT / 100)
