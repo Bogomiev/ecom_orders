@@ -181,4 +181,72 @@ describe("applyBarcodeToOrder", () => {
       expect(result.order.items[0].quantity_fact).toBe(0.358);
     }
   });
+
+  it("сначала находит полный штрихкод, начинающийся с 2", () => {
+    const fullBarcodeProduct = {
+      ...product,
+      barcodes: [{ barcode: "2003960847850", unit: "шт", ratio: 1, isBase: true }]
+    };
+    const result = applyBarcodeToOrder(
+      order,
+      createBarcodeIndex([fullBarcodeProduct]),
+      "2003960847850"
+    );
+
+    expect(result.status).toBe("success");
+    if (result.status === "success") {
+      expect(result.order.items[0].quantity_fact).toBe(1);
+    }
+  });
+
+  it("не применяет весовой шаблон при неверной контрольной цифре", () => {
+    const weightedProduct = {
+      ...product,
+      isWeight: true,
+      barcodes: [{ barcode: "70", unit: "кг", ratio: 1, isBase: true }]
+    };
+    const result = applyBarcodeToOrder(
+      { ...order, items: [{ ...order.items[0], is_weight: true }] },
+      createBarcodeIndex([weightedProduct]),
+      "2100070003587"
+    );
+
+    expect(result).toMatchObject({
+      status: "error",
+      code: "barcode-not-found"
+    });
+  });
+
+  it("применяет весовой допуск по валидному весовому штрихкоду", () => {
+    const mackerel = {
+      ...product,
+      uid: "ef935ff6-42e9-11e8-9e3b-001dd8b89db0",
+      name: "Скумбрия АТЛАНТИЧЕСКАЯ с/м",
+      isWeight: false,
+      barcodes: [
+        { barcode: "2_0003000000_", unit: "кг", ratio: 1, isBase: false },
+        { barcode: "30", unit: "кг", ratio: 1, isBase: true }
+      ]
+    };
+    const mackerelOrder = {
+      ...order,
+      items: [{
+        ...order.items[0],
+        product_id: mackerel.uid,
+        quantity: 0.5,
+        is_weight: false
+      }]
+    };
+    const result = applyBarcodeToOrder(
+      mackerelOrder,
+      createBarcodeIndex([mackerel]),
+      "2000030005608"
+    );
+
+    expect(result.status).toBe("success");
+    if (result.status === "success") {
+      expect(result.product.name).toBe("Скумбрия АТЛАНТИЧЕСКАЯ с/м");
+      expect(result.order.items[0].quantity_fact).toBe(0.56);
+    }
+  });
 });

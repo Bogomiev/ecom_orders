@@ -97,7 +97,9 @@ export function applyBarcodeToOrder(
 ): ScanOrderResult {
   const barcode = scannedBarcode.trim();
   const parsedCode = parseScannedCode(barcode);
-  const barcodeMatch = parsedCode.lookupBarcodes
+  const exactBarcodeMatch = barcodeIndex.get(barcode);
+  const barcodeMatch = exactBarcodeMatch ?? parsedCode.lookupBarcodes
+    .filter((lookupBarcode) => lookupBarcode !== barcode)
     .map((lookupBarcode) => barcodeIndex.get(lookupBarcode))
     .find((match) => match !== undefined);
 
@@ -135,9 +137,12 @@ export function applyBarcodeToOrder(
     };
   }
 
-  const quantityToAdd = parsedCode.weight ?? barcodeInfo.ratio ?? 1;
+  const quantityToAdd = exactBarcodeMatch === undefined
+    ? parsedCode.weight ?? barcodeInfo.ratio ?? 1
+    : barcodeInfo.ratio ?? 1;
   const nextQuantityFact = orderItem.quantity_fact + quantityToAdd;
-  const maximumQuantity = orderItem.is_weight
+  const isWeightBarcode = exactBarcodeMatch === undefined && parsedCode.weight !== undefined;
+  const maximumQuantity = orderItem.is_weight || isWeightBarcode
     ? orderItem.quantity * (1 + WEIGHT_QUANTITY_OVERAGE_PERCENT / 100)
     : orderItem.quantity;
 
