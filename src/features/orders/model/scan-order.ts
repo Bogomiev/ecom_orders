@@ -36,10 +36,16 @@ export function parseScannedCode(value: string): ParsedScannedCode {
     if (value.startsWith("2") && hasValidEan13CheckDigit(value)) {
       const productCode = value.slice(2, 7);
       const normalizedProductCode = productCode.replace(/^0+(?=\d)/, "");
+      const weightBarcodeTemplate = `2_${productCode}00000_`;
 
       return {
         isMark: false,
-        lookupBarcodes: [value, productCode, normalizedProductCode],
+        lookupBarcodes: [
+          value,
+          weightBarcodeTemplate,
+          productCode,
+          normalizedProductCode
+        ],
         weight: Number(value.slice(7, 12)) / 1000
       };
     }

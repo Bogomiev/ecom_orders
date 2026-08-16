@@ -57,7 +57,12 @@ describe("parseScannedCode", () => {
   it("извлекает код товара и вес из весового EAN-13", () => {
     expect(parseScannedCode("2100070003586")).toEqual({
       isMark: false,
-      lookupBarcodes: ["2100070003586", "00070", "70"],
+      lookupBarcodes: [
+        "2100070003586",
+        "2_0007000000_",
+        "00070",
+        "70"
+      ],
       weight: 0.358
     });
   });
@@ -179,6 +184,30 @@ describe("applyBarcodeToOrder", () => {
     if (result.status === "success") {
       expect(result.product.uid).toBe(product.uid);
       expect(result.order.items[0].quantity_fact).toBe(0.358);
+    }
+  });
+
+  it("находит весовой товар по шаблону штрихкода", () => {
+    const sturgeon = {
+      ...product,
+      name: "Осетр стейк с/м",
+      barcodes: [{
+        barcode: "2_0031900000_",
+        unit: "кг",
+        ratio: 1,
+        isBase: false
+      }]
+    };
+    const result = applyBarcodeToOrder(
+      { ...order, items: [{ ...order.items[0], quantity: 1 }] },
+      createBarcodeIndex([sturgeon]),
+      "2000319005602"
+    );
+
+    expect(result.status).toBe("success");
+    if (result.status === "success") {
+      expect(result.product.name).toBe("Осетр стейк с/м");
+      expect(result.order.items[0].quantity_fact).toBe(0.56);
     }
   });
 

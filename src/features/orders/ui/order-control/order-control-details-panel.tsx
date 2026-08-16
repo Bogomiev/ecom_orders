@@ -251,12 +251,12 @@ export function OrderControlDetailsPanel({
     productName?: string
   ) {
     if (code === "barcode-not-found") {
-      onNotify(`Штрихкод ${barcode} не найден в справочнике товаров`, "error");
+      onNotify(`По штрихкоду ${barcode} товар не найден`, "error");
     } else if (code === "product-not-in-order") {
       onNotify(
         <>
           Товар <strong className="font-black text-blue-950">{productName}</strong>{" "}
-          отсутствует в заказе
+          в заказе не найден
         </>,
         "error"
       );
