@@ -291,7 +291,7 @@ export function OrderControlDetailsPanel({
     barcodeSearchInputRef.current?.select();
   }
 
-  function changeQuantityFact(productId: string, change: -1 | 1) {
+  function changeQuantityFact(productId: string, change: number) {
     onOrderChange({
       ...order,
       items: order.items.map((item) =>
@@ -300,7 +300,10 @@ export function OrderControlDetailsPanel({
               ...item,
               quantity_fact: Math.min(
                 item.quantity,
-                Math.max(0, item.quantity_fact + change)
+                Math.max(
+                  0,
+                  Math.round((item.quantity_fact + change) * 1000) / 1000
+                )
               )
             }
           : item
@@ -432,7 +435,12 @@ export function OrderControlDetailsPanel({
                           line.quantity_fact >= line.quantity
                         }
                         type="button"
-                        onClick={() => changeQuantityFact(line.product_id, 1)}
+                        onClick={() =>
+                          changeQuantityFact(
+                            line.product_id,
+                            line.is_weight ? 0.1 : 1
+                          )
+                        }
                       >
                         +
                       </button>
