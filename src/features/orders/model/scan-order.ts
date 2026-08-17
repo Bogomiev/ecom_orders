@@ -2,7 +2,7 @@ import type { Order } from "@/entities/order";
 import type { BarcodeInfo, Product } from "@/entities/product";
 
 const EAN_13_PATTERN = /^\d{13}$/;
-export const WEIGHT_QUANTITY_OVERAGE_PERCENT = 15;
+export const WEIGHT_QUANTITY_OVERAGE_PERCENT = 20;
 
 export type ParsedScannedCode = {
   isMark: boolean;

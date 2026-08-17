@@ -140,7 +140,7 @@ describe("applyBarcodeToOrder", () => {
     expect(result).toMatchObject({ status: "error", code: "mark-required" });
   });
 
-  it("разрешает весовому товару превышение до 15 процентов", () => {
+  it("разрешает весовому товару превышение до 20 процентов", () => {
     const weightedProduct = { ...product, isWeight: true };
     const weightedOrder = {
       ...order,
