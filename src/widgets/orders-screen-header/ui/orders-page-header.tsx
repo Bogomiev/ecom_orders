@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { StoreSelector } from "@/features/store-selector";
 import { SellerSelector } from "@/features/seller-selector";
 import { playNotificationSound } from "@/shared/lib/notification-sound";
@@ -48,6 +49,17 @@ export function OrdersPageHeader({ ordersCount }: OrdersPageHeaderProps) {
         </div>
         <div className="header-actions flex items-center gap-2.5">
           <span className="header-clock min-w-[4.5rem] text-sm font-extrabold tabular-nums">{currentTime}</span>
+          <Link
+            aria-label="Открыть инструкции"
+            className="header-icon-button grid h-9 w-9 place-items-center rounded-lg border app-border app-surface-muted"
+            href="/instructions"
+            title="Инструкции"
+          >
+            <svg aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24">
+              <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11a2 2 0 0 1 2 2v16a2 2 0 0 0-2-2H6.5A2.5 2.5 0 0 0 4 21.5v-16Z" />
+              <path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v18a2 2 0 0 1 2-2h2.5a2.5 2.5 0 0 1 2.5 2.5v-16Z" />
+            </svg>
+          </Link>
           <button
             aria-label="Проверить звук"
             className="header-icon-button grid h-9 w-9 place-items-center rounded-lg border app-border app-surface-muted"
