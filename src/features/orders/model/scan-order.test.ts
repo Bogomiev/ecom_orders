@@ -96,9 +96,10 @@ describe("applyBarcodeToOrder", () => {
     }
   });
 
-  it("не позволяет превысить заказанное количество", () => {
+  it("не позволяет превысить заказанное количество для маркетплейса", () => {
     const filledOrder = {
       ...order,
+      source: "Ozon",
       items: [{ ...order.items[0], quantity_fact: 1 }]
     };
     const result = applyBarcodeToOrder(
@@ -111,6 +112,24 @@ describe("applyBarcodeToOrder", () => {
       status: "error",
       code: "quantity-exceeded"
     });
+  });
+
+  it("не ограничивает количество для заказа с сайта", () => {
+    const filledOrder = {
+      ...order,
+      source: "  САЙТ ",
+      items: [{ ...order.items[0], quantity_fact: 1 }]
+    };
+    const result = applyBarcodeToOrder(
+      filledOrder,
+      createBarcodeIndex([product]),
+      "4601234567890"
+    );
+
+    expect(result.status).toBe("success");
+    if (result.status === "success") {
+      expect(result.order.items[0].quantity_fact).toBe(2);
+    }
   });
 
   it("не добавляет товар из отменённой строки", () => {
@@ -144,6 +163,7 @@ describe("applyBarcodeToOrder", () => {
     const weightedProduct = { ...product, isWeight: true };
     const weightedOrder = {
       ...order,
+      source: "Ozon",
       items: [{
         ...order.items[0],
         quantity: 10,
@@ -158,6 +178,30 @@ describe("applyBarcodeToOrder", () => {
     );
 
     expect(result.status).toBe("success");
+  });
+
+  it("не позволяет весовому товару маркетплейса превысить допуск 20 процентов", () => {
+    const weightedProduct = { ...product, isWeight: true };
+    const weightedOrder = {
+      ...order,
+      source: "Ozon",
+      items: [{
+        ...order.items[0],
+        quantity: 10,
+        quantity_fact: 12,
+        is_weight: true
+      }]
+    };
+    const result = applyBarcodeToOrder(
+      weightedOrder,
+      createBarcodeIndex([weightedProduct]),
+      "4601234567890"
+    );
+
+    expect(result).toMatchObject({
+      status: "error",
+      code: "quantity-exceeded"
+    });
   });
 
   it("находит весовой товар по коду и добавляет вес с этикетки", () => {

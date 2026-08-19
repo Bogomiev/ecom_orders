@@ -4,6 +4,10 @@ import type { BarcodeInfo, Product } from "@/entities/product";
 const EAN_13_PATTERN = /^\d{13}$/;
 export const WEIGHT_QUANTITY_OVERAGE_PERCENT = 20;
 
+function isWebsiteOrder(order: Order) {
+  return order.source.trim().toLowerCase() === "сайт";
+}
+
 export type ParsedScannedCode = {
   isMark: boolean;
   lookupBarcodes: string[];
@@ -148,9 +152,11 @@ export function applyBarcodeToOrder(
     : barcodeInfo.ratio ?? 1;
   const nextQuantityFact = orderItem.quantity_fact + quantityToAdd;
   const isWeightBarcode = exactBarcodeMatch === undefined && parsedCode.weight !== undefined;
-  const maximumQuantity = orderItem.is_weight || isWeightBarcode
-    ? orderItem.quantity * (1 + WEIGHT_QUANTITY_OVERAGE_PERCENT / 100)
-    : orderItem.quantity;
+  const maximumQuantity = isWebsiteOrder(order)
+    ? Number.POSITIVE_INFINITY
+    : orderItem.is_weight || isWeightBarcode
+      ? orderItem.quantity * (1 + WEIGHT_QUANTITY_OVERAGE_PERCENT / 100)
+      : orderItem.quantity;
 
   if (nextQuantityFact > maximumQuantity) {
     return {

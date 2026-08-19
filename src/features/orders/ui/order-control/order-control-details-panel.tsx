@@ -432,15 +432,11 @@ export function OrderControlDetailsPanel({
                         className="flex h-8 w-8 items-center justify-center rounded-md border-2 border-slate-300 bg-white text-base font-bold text-slate-600 shadow-sm transition hover:border-slate-400 hover:bg-slate-50 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
                         disabled={
                           line.marking_product ||
+                          line.is_weight ||
                           line.quantity_fact >= line.quantity
                         }
                         type="button"
-                        onClick={() =>
-                          changeQuantityFact(
-                            line.product_id,
-                            line.is_weight ? 0.1 : 1
-                          )
-                        }
+                        onClick={() => changeQuantityFact(line.product_id, 1)}
                       >
                         +
                       </button>
