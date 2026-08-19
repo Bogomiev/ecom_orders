@@ -24,6 +24,7 @@ const OneCOrderSchema = z.object({
   number: z.string(),
   external_id: z.string().nullish(),
   source: z.string(),
+  deliveryMethod: z.enum(["pickup", "delivery"]),
   status: z.string(),
   extended_status: z.string(),
   order_created_at: z.string(),

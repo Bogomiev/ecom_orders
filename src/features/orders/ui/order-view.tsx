@@ -9,13 +9,15 @@ import { HonestSignIcon } from "./order-control/order-control-details-panel";
 import { formatMoney, formatNumber } from "./order-control/order-control-shared";
 
 type OrderViewProps = {
+  isConfirming?: boolean;
   onClose: () => void;
   onCancelItem: (order: Order, item: OrderItem) => Promise<boolean>;
+  onConfirm: (order: Order) => void;
   order: Order | null;
   products: Product[];
 };
 
-export function OrderView({ onCancelItem, onClose, order, products }: OrderViewProps) {
+export function OrderView({ isConfirming = false, onCancelItem, onClose, onConfirm, order, products }: OrderViewProps) {
   const [cancellingProductId, setCancellingProductId] = useState<string | null>(null);
   const [itemPendingCancellation, setItemPendingCancellation] = useState<OrderItem | null>(null);
   const productCodesById = useMemo(
@@ -146,9 +148,21 @@ export function OrderView({ onCancelItem, onClose, order, products }: OrderViewP
         </table>
       </div>
 
-      <div className="flex items-center justify-between border-t app-border app-surface-muted px-5 py-3 text-sm">
+      <div className="flex items-center justify-between gap-4 border-t app-border app-surface-muted px-5 py-3 text-sm">
         <span className="font-bold app-text">Итого по заказу</span>
-        <strong className="font-bold tabular-nums app-text">{formatMoney(total)} ₽</strong>
+        <div className="flex items-center gap-4">
+          <strong className="font-bold tabular-nums app-text">{formatMoney(total)} ₽</strong>
+          {canEdit ? (
+            <button
+              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white disabled:cursor-wait disabled:opacity-60"
+              disabled={isCancelling || isConfirming}
+              type="button"
+              onClick={() => onConfirm(order)}
+            >
+              {isConfirming ? <LoadingDots label="Подтверждение заказа" /> : "Подтвердить"}
+            </button>
+          ) : null}
+        </div>
       </div>
 
       {itemPendingCancellation !== null ? (

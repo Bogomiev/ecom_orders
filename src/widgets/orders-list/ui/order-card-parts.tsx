@@ -120,7 +120,7 @@ export function OrderStatusBadge({ order, tone }: { order: Order; tone: OrderTon
         <span className="truncate">{getOrderStatusLabel(order)}</span>
       </span>
       <span className="delivery-badge inline-flex min-h-7 shrink-0 items-center rounded-md border app-border app-surface px-2.5 text-xs font-extrabold">
-        {order.source.toLowerCase().includes("сайт") ? "Самовывоз" : "Доставка"}
+        {order.deliveryMethod === "pickup" ? "Самовывоз" : "Доставка"}
       </span>
     </div>
   );

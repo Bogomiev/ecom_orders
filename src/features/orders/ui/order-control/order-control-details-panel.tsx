@@ -354,7 +354,7 @@ export function OrderControlDetailsPanel({
           type="button"
           onClick={() => submitBarcodeSearch(barcodeSearch)}
         >
-          Добавить
+          Найти
         </button>
       </div>
 

@@ -6,7 +6,9 @@ import type { Product } from "@/entities/product";
 import { Dialog } from "@/shared/ui/dialog";
 import { LoadingDots } from "@/shared/ui/loading-dots";
 import { OrderControlDetailsPanel } from "./order-control-details-panel";
-import type { ScanNotification } from "./order-control-shared";
+import { isOrderLineComplete, type ScanNotification } from "./order-control-shared";
+
+const MAX_QUANTITY_BAGS = 9;
 
 type OrderControlProps = {
   isOpen: boolean;
@@ -51,14 +53,14 @@ export function OrderControl({
   const activeOrder = order;
   const lines = activeOrder.items.filter((line) => !line.canceled);
   const completedLines = lines.filter(
-    (line) => line.quantity_fact === line.quantity
+    isOrderLineComplete
   ).length;
   const progress = lines.length === 0 ? 0 : completedLines / lines.length * 100;
 
   function setQuantityBags(value: number) {
     onOrderChange({
       ...activeOrder,
-      quantityBags: Math.max(0, Math.trunc(value))
+      quantityBags: Math.min(MAX_QUANTITY_BAGS, Math.max(0, Math.trunc(value)))
     });
   }
 
@@ -151,21 +153,20 @@ export function OrderControl({
               <label className="text-sm font-bold app-text" htmlFor="quantity-bags">
                 Количество пакетов
               </label>
-              <input
+              <select
                 id="quantity-bags"
                 aria-label="Количество пакетов"
                 className="h-8 w-16 rounded-md border border-red-500 bg-red-50 px-1 text-center text-sm font-bold tabular-nums text-red-700 outline-none focus:border-red-600 focus:ring-2 focus:ring-red-200 disabled:opacity-60 dark:bg-red-950/40 dark:text-red-300"
                 disabled={isCompleting}
-                inputMode="numeric"
-                min="0"
-                step="1"
-                type="number"
                 value={activeOrder.quantityBags}
                 onChange={(event) => {
-                  const value = event.currentTarget.valueAsNumber;
-                  setQuantityBags(Number.isFinite(value) ? value : 0);
+                  setQuantityBags(Number(event.currentTarget.value));
                 }}
-              />
+              >
+                {Array.from({ length: MAX_QUANTITY_BAGS + 1 }, (_, value) => (
+                  <option key={value} value={value}>{value}</option>
+                ))}
+              </select>
             </div>
             <div className="mb-1.5 flex items-center justify-between text-xs font-bold">
               <span className="app-text">Собрано позиций</span>

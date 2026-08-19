@@ -26,6 +26,7 @@ export const OrderSchema = z.object({
   number: z.string(),
   external_id: z.string().nullish(),
   source: z.string(),
+  deliveryMethod: z.enum(["pickup", "delivery"]),
   status: z.string(),
   extended_status: z.string(),
   order_created_at: z.string(),
@@ -36,7 +37,7 @@ export const OrderSchema = z.object({
   comment: z.string(),
   shipment_store_name: z.string(),
   store_id: z.string(),
-  quantityBags: z.number().int().nonnegative(),
+  quantityBags: z.number().int().min(0).max(9),
   items: z.array(OrderItemSchema),
   controlledItems: z.array(OrderControlledItemSchema)
 });
@@ -75,7 +76,7 @@ export const CancelOrderItemResponseSchema = z.object({
 }).passthrough();
 
 export const CompleteOrderRequestSchema = ConfirmOrderRequestSchema.extend({
-  quantityBags: z.number().int().positive(),
+  quantityBags: z.number().int().min(1).max(9),
   orderControlledItem: z.array(
     OrderControlledItemSchema.omit({ result: true })
   )

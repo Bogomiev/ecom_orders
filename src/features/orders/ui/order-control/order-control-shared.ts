@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { OrderItem } from "@/entities/order";
 
 export type ScanNotification = {
   id: number;
@@ -8,6 +9,12 @@ export type ScanNotification = {
 
 export const BARCODE_SCANNER_CAPTURE_EVENT =
   "order-control:barcode-scanner-capture";
+
+export function isOrderLineComplete(line: OrderItem) {
+  if (!line.is_weight) return line.quantity_fact === line.quantity;
+  return line.quantity_fact >= line.quantity * 0.8 &&
+    line.quantity_fact <= line.quantity * 1.2;
+}
 
 export function formatNumber(value: number) {
   return new Intl.NumberFormat("ru-RU", {

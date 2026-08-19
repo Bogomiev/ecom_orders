@@ -41,8 +41,6 @@ type OrdersListProps = {
   onOrdersCountChange?: (ordersCount: number) => void;
 };
 
-const ORDERS_BATCH_SIZE = 20;
-
 const OrderControl = dynamic(
   () => import("@/features/orders").then((module) => module.OrderControl),
   {
@@ -77,9 +75,7 @@ export function OrdersList({
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
   const ordersRefreshKeyRef = useRef(0);
   const refreshFailureCallbacksRef = useRef(new Map<number, () => void>());
-  const [visibleOrdersLimit, setVisibleOrdersLimit] = useState(ORDERS_BATCH_SIZE);
   const isMountedRef = useRef(true);
-  const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
   const controlledOrdersRef = useRef(new Map<string, Order>());
   const { getProducts, refreshProducts, retryProducts } = useProductsCache();
   const handleOrdersRefreshResult = useCallback(
@@ -115,65 +111,24 @@ export function OrdersList({
   }, [getProducts]);
 
   const filteredOrders = useMemo(() => {
-    const orders = state.data?.items ?? [];
-
-    if (selectedStore === null) {
-      return orders;
-    }
-
-    return orders.filter(
-      (order) => order.store_id === selectedStore.id
-    );
-  }, [selectedStore, state.data]);
+    return state.data?.items ?? [];
+  }, [state.data]);
   const ordersCount = filteredOrders.length;
   const notificationOrdersCount = useMemo(
     () => filteredOrders.filter(isOrderRequiringAttention).length,
     [filteredOrders]
   );
-  const visibleOrders = useMemo(
-    () => filteredOrders.slice(0, visibleOrdersLimit),
-    [filteredOrders, visibleOrdersLimit]
-  );
-  const hasMoreOrders = visibleOrders.length < filteredOrders.length;
+  const displayedViewOrder = useMemo(() => {
+    if (viewOrder === null) return null;
+    const refreshedOrder = state.data?.items.find((order) => order.id === viewOrder.id);
+    return refreshedOrder === undefined
+      ? viewOrder
+      : enrichOrder(refreshedOrder, viewProducts);
+  }, [state.data, viewOrder, viewProducts]);
   const ordersGridClassName =
     layout === "list"
       ? "grid gap-2.5"
       : "grid gap-4 md:grid-cols-2 xl:grid-cols-4";
-
-  const loadNextOrders = useCallback(() => {
-    setVisibleOrdersLimit((currentLimit) =>
-      Math.min(currentLimit + ORDERS_BATCH_SIZE, filteredOrders.length)
-    );
-  }, [filteredOrders.length]);
-
-  useEffect(() => {
-    if (!hasMoreOrders) {
-      return;
-    }
-
-    const trigger = loadMoreTriggerRef.current;
-
-    if (trigger === null || !("IntersectionObserver" in window)) {
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          loadNextOrders();
-        }
-      },
-      {
-        rootMargin: "240px 0px"
-      }
-    );
-
-    observer.observe(trigger);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [hasMoreOrders, loadNextOrders]);
 
   useEffect(() => {
     onOrdersCountChange?.(ordersCount);
@@ -466,7 +421,7 @@ export function OrdersList({
   }, [showOrderNotification]);
 
   return (
-    <section className="space-y-3">
+    <section className="orders-list-scroll h-full min-h-0 space-y-3 overflow-y-auto pr-1">
       {state.error ? (
         <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
           {state.error}
@@ -500,7 +455,7 @@ export function OrdersList({
       {filteredOrders.length > 0 ? (
         <>
           <div className={ordersGridClassName}>
-            {visibleOrders.map((order) =>
+            {filteredOrders.map((order) =>
               expandedOrderId === order.id ? (
                 <OrderCard
                   key={order.id}
@@ -524,26 +479,25 @@ export function OrdersList({
                 <OrderCardMini
                   key={order.id}
                   disabled={!hasAccessToken || isOrderSelectionLocked}
+                  isCancelling={cancellingOrderId === order.id}
+                  isCompleting={completingOrderId === order.id}
+                  isConfirming={confirmingOrderId === order.id}
+                  isGivingOrderToCourier={givingOrderToCourierId === order.id}
+                  isOpening={openingOrderId === order.id}
+                  isPrinting={printingOrderId === order.id}
                   order={order}
+                  onCancel={handleCancelOrder}
+                  onConfirm={handleConfirmOrder}
+                  onGiveToCourier={handleGiveOrderToCourier}
+                  onOpen={(selectedOrder) => setExpandedOrderId(selectedOrder.id)}
+                  onPrint={handlePrintOrder}
+                  onStartControl={handleStartControl}
                   onView={(selectedOrder) => void openOrderView(selectedOrder)}
-                  onOpen={(selectedOrder) =>
-                    hasAccessToken &&
-                    !isOrderSelectionLocked &&
-                    !isOrderUnavailableForOpening(selectedOrder) &&
-                    setExpandedOrderId(selectedOrder.id)
-                  }
                 />
               )
             )}
           </div>
 
-          {hasMoreOrders ? (
-            <div
-              ref={loadMoreTriggerRef}
-              aria-hidden="true"
-              className="h-1"
-            />
-          ) : null}
         </>
       ) : null}
 
@@ -557,9 +511,11 @@ export function OrdersList({
         onClose={() => setControlOrder(null)}
       />
       <OrderView
-        order={viewOrder}
+        isConfirming={confirmingOrderId === displayedViewOrder?.id}
+        order={displayedViewOrder}
         products={viewProducts}
         onCancelItem={handleCancelOrderItem}
+        onConfirm={handleConfirmOrder}
         onClose={() => setViewOrder(null)}
       />
       {printPdf ? (

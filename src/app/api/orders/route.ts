@@ -18,10 +18,32 @@ export async function GET(request: Request) {
     const oneCSearchParams = new URLSearchParams();
     if (storeId) oneCSearchParams.set("store", storeId);
     if (historyDays) oneCSearchParams.set("historyDays", historyDays);
-    const query = oneCSearchParams.toString();
-    const data = await fetchOneCJson(`/GetOrders${query ? `?${query}` : ""}`, OneCOrdersResponseSchema, {
-      cache: "no-store"
-    });
+    const fetchPage = (page?: number) => {
+      const pageSearchParams = new URLSearchParams(oneCSearchParams);
+      if (page !== undefined) pageSearchParams.set("page", String(page));
+      const query = pageSearchParams.toString();
+      return fetchOneCJson(
+        `/GetOrders${query ? `?${query}` : ""}`,
+        OneCOrdersResponseSchema,
+        { cache: "no-store" }
+      );
+    };
+    const firstPage = await fetchPage();
+    const remainingPages = firstPage.totalPages > 1
+      ? await Promise.all(
+          Array.from(
+            { length: firstPage.totalPages - 1 },
+            (_, index) => fetchPage(index + 2)
+          )
+        )
+      : [];
+    const data = {
+      ...firstPage,
+      page: 1,
+      perPage: firstPage.totalItems,
+      totalPages: 1,
+      items: [firstPage, ...remainingPages].flatMap((page) => page.items)
+    };
     const orders = normalizeOneCOrders(data);
 
     return NextResponse.json(orders, {

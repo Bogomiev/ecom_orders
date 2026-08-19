@@ -11,6 +11,7 @@ const order: Order = {
   uid_1c: "order-uid",
   number: "1",
   source: "Сайт",
+  deliveryMethod: "pickup",
   status: "Новый",
   extended_status: "",
   order_created_at: "",

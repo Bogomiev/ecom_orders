@@ -3,11 +3,12 @@ import { NotificationPermissionPrompt } from "@/shared/ui/notification-permissio
 
 type PageShellProps = {
   children?: ReactNode;
+  className?: string;
 };
 
-export function PageShell({ children }: PageShellProps) {
+export function PageShell({ children, className = "" }: PageShellProps) {
   return (
-    <main className="app-shell min-h-screen w-full pb-7">
+    <main className={`app-shell min-h-screen w-full pb-7 ${className}`}>
       {children}
       <NotificationPermissionPrompt />
     </main>

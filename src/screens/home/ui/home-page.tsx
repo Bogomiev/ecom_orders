@@ -18,14 +18,14 @@ export function HomePage() {
   const historyDays = useOrderHistoryDays();
 
   return (
-    <PageShell>
-      <div>
+    <PageShell className="home-page-shell h-screen min-h-0 overflow-hidden pb-0">
+      <div className="flex h-full min-h-0 flex-col">
         <OrdersPageHeader ordersCount={notificationOrdersCount} />
 
-        <div className="dashboard-grid grid items-start md:grid-cols-2 xl:grid-cols-5">
+        <div className="dashboard-grid grid min-h-0 flex-1 items-start overflow-hidden md:grid-cols-2 xl:grid-cols-5">
         <WidgetPanel
           accent="blue"
-          className="md:col-span-2 xl:col-span-1"
+          className="orders-widget h-full min-h-0 self-stretch md:col-span-2 xl:col-span-1"
           count={ordersCount}
           description="Обработка и сборка"
           icon="cart"
