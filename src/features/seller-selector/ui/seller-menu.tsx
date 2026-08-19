@@ -1,17 +1,19 @@
 export function SellerMenu({
   canLogout,
+  canScanBadge,
   onLogout,
   onOpenPersonalAccount,
   onScanBadge
 }: {
   canLogout: boolean;
+  canScanBadge: boolean;
   onLogout: () => void;
   onOpenPersonalAccount: () => void;
   onScanBadge: () => void;
 }) {
   return (
     <div id="seller-menu" className="absolute left-0 top-[calc(100%+6px)] z-40 w-[235px] overflow-hidden rounded-xl border app-border app-surface p-2.5 shadow-[0_12px_30px_rgba(15,23,42,0.18)]">
-      <button className="flex h-9 w-full items-center gap-3 rounded-lg px-1.5 text-left text-[13px] font-bold app-text transition hover:bg-slate-50 focus:bg-slate-50 focus:outline-none" type="button" onClick={onScanBadge}>
+      <button className="flex h-9 w-full items-center gap-3 rounded-lg px-1.5 text-left text-[13px] font-bold app-text transition hover:bg-slate-50 focus:bg-slate-50 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent" disabled={!canScanBadge} title={canScanBadge ? undefined : "Сначала авторизуйтесь и выберите магазин"} type="button" onClick={onScanBadge}>
         <svg aria-hidden="true" className="h-5 w-5 shrink-0 app-muted" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.7" viewBox="0 0 24 24">
           <path d="M4 5v14M7 5v14M11 5v14M15 5v14M18 5v14M21 5v14" />
         </svg>

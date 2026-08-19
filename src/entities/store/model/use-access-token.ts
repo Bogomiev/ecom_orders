@@ -1,10 +1,14 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { getAccessTokenFromLocation } from "./access-store";
+import {
+  getAccessTokenFromLocation,
+  getStoredAccessToken
+} from "./access-store";
 
 const subscribe = () => () => undefined;
-const getSnapshot = () => getAccessTokenFromLocation() !== null;
+const getSnapshot = () =>
+  (getAccessTokenFromLocation() ?? getStoredAccessToken()) !== null;
 
 export function useHasAccessToken() {
   return useSyncExternalStore(subscribe, getSnapshot, () => false);

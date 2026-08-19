@@ -4,20 +4,25 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Store } from "@/entities/store";
 import {
   getAccessTokenFromLocation,
+  getStoredAccessToken,
   getStoreUidForAccessToken,
+  removeAccessTokenFromLocation,
   removeStoreUidForAccessToken,
+  setStoredAccessToken,
+  setStoreAuthorized,
   setStoredStoreSelection,
   setStoreUidForAccessToken,
   toStoreSelectionSnapshot
 } from "@/entities/store";
 import { getStores } from "@/entities/store/api/get-stores";
 import { accessTokenIsValid } from "@/entities/store/api/access-token-is-valid";
+import { pinIsValid } from "@/entities/store/api/pin-is-valid";
 import { usePageNotifications } from "@/shared/lib/use-page-notifications";
 import { Dialog } from "@/shared/ui/dialog";
 import { PageNotificationStack } from "@/shared/ui/page-notification";
 
 const LEGACY_STORAGE_KEY = "ecom-orders-selected-store-id";
-const PIN_LENGTH = 4;
+const PIN_LENGTH = 5;
 
 type StoreSelection = Store | null;
 
@@ -145,13 +150,14 @@ function StoreSelectorModal({
   state
 }: {
   onClose: () => void;
-  onSelect: (store: StoreSelection) => void;
+  onSelect: (store: Store, pin: string) => Promise<boolean>;
   selectedStore: StoreSelection;
   state: StoresState;
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [pin, setPin] = useState("");
-  const [pinHasError, setPinHasError] = useState(false);
+  const [pinError, setPinError] = useState<string | null>(null);
+  const [isVerifyingPin, setIsVerifyingPin] = useState(false);
   const filteredStores = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
@@ -167,12 +173,25 @@ function StoreSelectorModal({
   function enterDigit(digit: string) {
     const nextPin = pin.length === PIN_LENGTH ? digit : `${pin}${digit}`;
     setPin(nextPin);
-    setPinHasError(false);
+    setPinError(null);
+  }
 
-    if (nextPin.length === PIN_LENGTH) {
-      const matchedStore = state.stores.find((store) => store.pin === nextPin);
-      if (matchedStore) onSelect(matchedStore);
-      else setPinHasError(true);
+  async function selectStore(store: Store) {
+    if (pin.length !== PIN_LENGTH) {
+      setPinError("Укажите PIN перед выбором магазина");
+      return;
+    }
+
+    setIsVerifyingPin(true);
+    setPinError(null);
+    try {
+      const isSelected = await onSelect(store, pin);
+      if (!isSelected) {
+        setPinError("Неверный PIN");
+        setPin("");
+      }
+    } finally {
+      setIsVerifyingPin(false);
     }
   }
 
@@ -184,7 +203,7 @@ function StoreSelectorModal({
     >
         <h2 id="store-selector-title" className="text-center text-2xl font-extrabold app-text">Смена точки</h2>
         <p className="mt-3 text-center text-base app-muted">
-          Выберите магазин или введите PIN для подтверждения
+          Введите PIN и выберите магазин
         </p>
 
         <input
@@ -214,7 +233,8 @@ function StoreSelectorModal({
                   }`}
                   key={store.id}
                   type="button"
-                  onClick={() => onSelect(store)}
+                  disabled={isVerifyingPin}
+                  onClick={() => void selectStore(store)}
                 >
                   <LocationIcon selected={isSelected} />
                   <span className="min-w-0 flex-1">
@@ -234,10 +254,11 @@ function StoreSelectorModal({
         </div>
 
         <div className="mt-5">
-          <PinDots hasError={pinHasError} pin={pin} />
-          {pinHasError ? (
-            <div className="mt-2 text-center text-xs font-semibold text-red-600">Магазин с таким PIN не найден</div>
+          <PinDots hasError={pinError !== null} pin={pin} />
+          {pinError ? (
+            <div className="mt-2 text-center text-xs font-semibold text-red-600">{pinError}</div>
           ) : null}
+          {isVerifyingPin ? <div className="mt-2 text-center text-xs font-semibold text-blue-600">Проверяем PIN...</div> : null}
         </div>
 
         <div className="mt-5 grid grid-cols-3 gap-2.5">
@@ -246,18 +267,19 @@ function StoreSelectorModal({
               className="h-12 rounded-xl border app-border app-surface-muted text-xl font-bold app-text transition hover:bg-slate-100 active:bg-blue-50"
               key={digit}
               type="button"
+              disabled={isVerifyingPin}
               onClick={() => enterDigit(digit)}
             >
               {digit}
             </button>
           ))}
-          <button className="h-12 rounded-xl border app-border app-surface-muted text-sm font-bold app-muted hover:bg-slate-100" type="button" onClick={onClose}>
+          <button className="h-12 rounded-xl border app-border app-surface-muted text-sm font-bold app-muted hover:bg-slate-100" disabled={isVerifyingPin} type="button" onClick={onClose}>
             Отмена
           </button>
-          <button className="h-12 rounded-xl border app-border app-surface-muted text-xl font-bold app-text hover:bg-slate-100" type="button" onClick={() => enterDigit("0")}>
+          <button className="h-12 rounded-xl border app-border app-surface-muted text-xl font-bold app-text hover:bg-slate-100" disabled={isVerifyingPin} type="button" onClick={() => enterDigit("0")}>
             0
           </button>
-          <button aria-label="Удалить последнюю цифру" className="h-12 rounded-xl border app-border app-surface-muted text-lg font-bold app-muted hover:bg-slate-100" type="button" onClick={() => { setPin((currentPin) => currentPin.slice(0, -1)); setPinHasError(false); }}>
+          <button aria-label="Удалить последнюю цифру" className="h-12 rounded-xl border app-border app-surface-muted text-lg font-bold app-muted hover:bg-slate-100" disabled={isVerifyingPin} type="button" onClick={() => { setPin((currentPin) => currentPin.slice(0, -1)); setPinError(null); }}>
             ⌫
           </button>
         </div>
@@ -280,7 +302,8 @@ export function StoreSelector() {
 
     async function loadStores() {
       try {
-        const token = getAccessTokenFromLocation();
+        setStoreAuthorized(false);
+        const token = getAccessTokenFromLocation() ?? getStoredAccessToken();
         setAccessToken(token);
 
         if (token === null) {
@@ -295,12 +318,15 @@ export function StoreSelector() {
         setIsCheckingAccessToken(false);
         if (!isValid) {
           removeStoreUidForAccessToken(token);
+          if (getStoredAccessToken() === token) {
+            setStoredAccessToken(null);
+          }
           setSelectedStoreId(null);
           setStoredStoreSelection(null);
           setIsAccessTokenInvalid(true);
           setState({ error: null, isLoading: false, stores: [] });
           notify({
-            body: "Укажите действительный токен доступа в адресной строке.",
+            body: "Откройте сервис с действительным токеном доступа.",
             title: "Токен доступа недействителен",
             tone: "error"
           });
@@ -319,6 +345,9 @@ export function StoreSelector() {
         if (mappedStore) {
           setSelectedStoreId(mappedStore.id);
           setStoredStoreSelection(toStoreSelectionSnapshot(mappedStore));
+          setStoredAccessToken(token);
+          removeAccessTokenFromLocation();
+          setStoreAuthorized(true);
         } else {
           setSelectedStoreId(null);
           setStoredStoreSelection(null);
@@ -345,14 +374,30 @@ export function StoreSelector() {
   );
   const handleClose = useCallback(() => setIsOpen(false), []);
 
-  function handleSelect(store: StoreSelection) {
-    if (accessToken === null || accessToken === undefined || store === null) return;
+  async function handleSelect(store: Store, pin: string) {
+    if (accessToken === null || accessToken === undefined) return false;
 
-    setSelectedStoreId(store?.id ?? null);
-    setStoredStoreSelection(toStoreSelectionSnapshot(store));
-    setStoreUidForAccessToken(accessToken, store.uid_1c);
-    window.localStorage.removeItem(LEGACY_STORAGE_KEY);
-    setIsOpen(false);
+    try {
+      const isValid = await pinIsValid(pin);
+      if (!isValid) return false;
+
+      setSelectedStoreId(store.id);
+      setStoredStoreSelection(toStoreSelectionSnapshot(store));
+      setStoreUidForAccessToken(accessToken, store.uid_1c);
+      setStoredAccessToken(accessToken);
+      removeAccessTokenFromLocation();
+      setStoreAuthorized(true);
+      window.localStorage.removeItem(LEGACY_STORAGE_KEY);
+      setIsOpen(false);
+      return true;
+    } catch {
+      notify({
+        body: "Не удалось проверить PIN. Попробуйте ещё раз.",
+        title: "Ошибка проверки PIN",
+        tone: "error"
+      });
+      return false;
+    }
   }
 
   return (

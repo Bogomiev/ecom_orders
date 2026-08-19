@@ -1,4 +1,5 @@
 export const ACCESS_STORES_STORAGE_KEY = "access_stores";
+export const CURRENT_ACCESS_TOKEN_STORAGE_KEY = "ecom-orders-access-token";
 
 type AccessStores = Record<string, string>;
 
@@ -10,6 +11,30 @@ export function getAccessTokenFromLocation() {
     ?.trim();
 
   return token || null;
+}
+
+export function getStoredAccessToken() {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(CURRENT_ACCESS_TOKEN_STORAGE_KEY)?.trim() || null;
+}
+
+export function setStoredAccessToken(token: string | null) {
+  if (typeof window === "undefined") return;
+
+  if (token === null || !token.trim()) {
+    window.localStorage.removeItem(CURRENT_ACCESS_TOKEN_STORAGE_KEY);
+  } else {
+    window.localStorage.setItem(CURRENT_ACCESS_TOKEN_STORAGE_KEY, token.trim());
+  }
+}
+
+export function removeAccessTokenFromLocation() {
+  if (typeof window === "undefined") return;
+
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has("access_token")) return;
+  url.searchParams.delete("access_token");
+  window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
 }
 
 export function getStoreUidForAccessToken(token: string) {

@@ -10,9 +10,17 @@ export type { StoreSelectionSnapshot } from "./model/store-selection";
 export { useSelectedStore } from "./model/use-selected-store";
 export { useHasAccessToken } from "./model/use-access-token";
 export {
+  setStoreAuthorized,
+  useIsStoreAuthorized
+} from "./model/store-authorization";
+export {
   ACCESS_STORES_STORAGE_KEY,
+  CURRENT_ACCESS_TOKEN_STORAGE_KEY,
   getAccessTokenFromLocation,
+  getStoredAccessToken,
   getStoreUidForAccessToken,
+  removeAccessTokenFromLocation,
   removeStoreUidForAccessToken,
+  setStoredAccessToken,
   setStoreUidForAccessToken
 } from "./model/access-store";

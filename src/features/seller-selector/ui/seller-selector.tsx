@@ -7,12 +7,14 @@ import {
   setStoredCurrentSeller,
   useCurrentSeller
 } from "@/entities/seller";
+import { useIsStoreAuthorized } from "@/entities/store";
 import { SellerBarcodeModal } from "./seller-barcode-modal";
 import { SellerMenu } from "./seller-menu";
 import { PersonalAccountDialog } from "./personal-account-dialog";
 
 export function SellerSelector() {
   const currentSeller = useCurrentSeller();
+  const isStoreAuthorized = useIsStoreAuthorized();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPersonalAccountOpen, setIsPersonalAccountOpen] = useState(false);
@@ -51,6 +53,7 @@ export function SellerSelector() {
   }
 
   function handleScanBadge() {
+    if (!isStoreAuthorized) return;
     setIsMenuOpen(false);
     setIsModalOpen(true);
   }
@@ -90,6 +93,7 @@ export function SellerSelector() {
         {isMenuOpen ? (
           <SellerMenu
             canLogout={currentSeller !== null}
+            canScanBadge={isStoreAuthorized}
             onLogout={handleLogout}
             onOpenPersonalAccount={handleOpenPersonalAccount}
             onScanBadge={handleScanBadge}
