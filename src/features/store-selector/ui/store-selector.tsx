@@ -146,15 +146,14 @@ function PinDots({ pin, hasError }: { pin: string; hasError: boolean }) {
 function StoreSelectorModal({
   onClose,
   onSelect,
-  selectedStore,
   state
 }: {
   onClose: () => void;
   onSelect: (store: Store, pin: string) => Promise<boolean>;
-  selectedStore: StoreSelection;
   state: StoresState;
 }) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [pendingStore, setPendingStore] = useState<StoreSelection>(null);
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState<string | null>(null);
   const [isVerifyingPin, setIsVerifyingPin] = useState(false);
@@ -176,16 +175,18 @@ function StoreSelectorModal({
     setPinError(null);
   }
 
-  async function selectStore(store: Store) {
-    if (pin.length !== PIN_LENGTH) {
-      setPinError("Укажите PIN перед выбором магазина");
-      return;
-    }
+  function selectStore(store: Store) {
+    setPendingStore(store);
+    setPinError(null);
+  }
+
+  async function confirmSelection() {
+    if (pendingStore === null || pin.length !== PIN_LENGTH) return;
 
     setIsVerifyingPin(true);
     setPinError(null);
     try {
-      const isSelected = await onSelect(store, pin);
+      const isSelected = await onSelect(pendingStore, pin);
       if (!isSelected) {
         setPinError("Неверный PIN");
         setPin("");
@@ -203,7 +204,7 @@ function StoreSelectorModal({
     >
         <h2 id="store-selector-title" className="text-center text-2xl font-extrabold app-text">Смена точки</h2>
         <p className="mt-3 text-center text-base app-muted">
-          Введите PIN и выберите магазин
+          Выберите магазин
         </p>
 
         <input
@@ -222,7 +223,7 @@ function StoreSelectorModal({
             <div className="px-4 py-6 text-center text-sm app-muted">Загружаем магазины...</div>
           ) : (
             filteredStores.map((store) => {
-              const isSelected = selectedStore?.id === store.id;
+              const isSelected = pendingStore?.id === store.id;
 
               return (
                 <button
@@ -234,7 +235,7 @@ function StoreSelectorModal({
                   key={store.id}
                   type="button"
                   disabled={isVerifyingPin}
-                  onClick={() => void selectStore(store)}
+                  onClick={() => selectStore(store)}
                 >
                   <LocationIcon selected={isSelected} />
                   <span className="min-w-0 flex-1">
@@ -253,7 +254,10 @@ function StoreSelectorModal({
           ) : null}
         </div>
 
-        <div className="mt-5">
+        <div className={`mt-5 rounded-2xl px-3 py-4 transition ${pendingStore ? "bg-blue-50/60" : "bg-slate-100 opacity-60"}`}>
+          <div className={`mb-3 text-center text-sm font-semibold ${pendingStore ? "app-text" : "text-slate-500"}`}>
+            {pendingStore ? "Укажите пин" : "Выберите магазин"}
+          </div>
           <PinDots hasError={pinError !== null} pin={pin} />
           {pinError ? (
             <div className="mt-2 text-center text-xs font-semibold text-red-600">{pinError}</div>
@@ -261,13 +265,13 @@ function StoreSelectorModal({
           {isVerifyingPin ? <div className="mt-2 text-center text-xs font-semibold text-blue-600">Проверяем PIN...</div> : null}
         </div>
 
-        <div className="mt-5 grid grid-cols-3 gap-2.5">
+        <div className={`mt-5 grid grid-cols-3 gap-2.5 transition ${pendingStore ? "" : "opacity-45"}`}>
           {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((digit) => (
             <button
-              className="h-12 rounded-xl border app-border app-surface-muted text-xl font-bold app-text transition hover:bg-slate-100 active:bg-blue-50"
+              className="h-12 rounded-xl border app-border app-surface-muted text-xl font-bold app-text transition hover:bg-slate-100 active:bg-blue-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-300"
               key={digit}
               type="button"
-              disabled={isVerifyingPin}
+              disabled={pendingStore === null || isVerifyingPin}
               onClick={() => enterDigit(digit)}
             >
               {digit}
@@ -276,13 +280,22 @@ function StoreSelectorModal({
           <button className="h-12 rounded-xl border app-border app-surface-muted text-sm font-bold app-muted hover:bg-slate-100" disabled={isVerifyingPin} type="button" onClick={onClose}>
             Отмена
           </button>
-          <button className="h-12 rounded-xl border app-border app-surface-muted text-xl font-bold app-text hover:bg-slate-100" disabled={isVerifyingPin} type="button" onClick={() => enterDigit("0")}>
+          <button className="h-12 rounded-xl border app-border app-surface-muted text-xl font-bold app-text hover:bg-slate-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-300" disabled={pendingStore === null || isVerifyingPin} type="button" onClick={() => enterDigit("0")}>
             0
           </button>
-          <button aria-label="Удалить последнюю цифру" className="h-12 rounded-xl border app-border app-surface-muted text-lg font-bold app-muted hover:bg-slate-100" disabled={isVerifyingPin} type="button" onClick={() => { setPin((currentPin) => currentPin.slice(0, -1)); setPinError(null); }}>
+          <button aria-label="Удалить последнюю цифру" className="h-12 rounded-xl border app-border app-surface-muted text-lg font-bold app-muted hover:bg-slate-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-300" disabled={pendingStore === null || isVerifyingPin} type="button" onClick={() => { setPin((currentPin) => currentPin.slice(0, -1)); setPinError(null); }}>
             ⌫
           </button>
         </div>
+
+        <button
+          className="mt-4 h-12 w-full rounded-xl bg-blue-600 text-base font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+          disabled={pendingStore === null || pin.length !== PIN_LENGTH || isVerifyingPin}
+          type="button"
+          onClick={() => void confirmSelection()}
+        >
+          Выбрать
+        </button>
 
     </Dialog>
   );
@@ -416,7 +429,6 @@ export function StoreSelector() {
       <PageNotificationStack notifications={notifications} onClose={dismiss} />
       {isOpen ? (
         <StoreSelectorModal
-          selectedStore={selectedStore}
           state={state}
           onClose={handleClose}
           onSelect={handleSelect}
