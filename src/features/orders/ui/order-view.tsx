@@ -64,13 +64,30 @@ export function OrderView({ isConfirming = false, onCancelItem, onClose, onConfi
               <path strokeLinejoin="round" d="m5 7 7 4 7-4v9l-7 5-7-5V7Z" />
             </svg>
           </div>
-          <h2 id="order-view-title" className="min-w-0 break-words text-lg font-bold leading-6 app-text">
-            Заказ {orderNumber}
-          </h2>
+          <div className="min-w-0">
+            <h2 id="order-view-title" className="break-words text-lg font-bold leading-6 app-text">
+              Заказ {orderNumber}
+            </h2>
+            {order.deliveryMethod === "delivery" && order.address ? (
+              <div className="mt-1 break-words text-xs leading-4 app-muted">
+                <span className="font-bold app-text">Адрес доставки:</span> {order.address}
+              </div>
+            ) : null}
+            {order.delivery_date || order.delivery_time ? (
+              <div className="mt-1 flex flex-wrap gap-x-5 gap-y-1 break-words text-xs leading-4 app-muted">
+                {order.delivery_date ? (
+                  <span><span className="font-bold app-text">Дата доставки:</span> {order.delivery_date}</span>
+                ) : null}
+                {order.delivery_time ? (
+                  <span><span className="font-bold app-text">Желаемое время доставки:</span> с {order.delivery_time} по {order.delivery_time_by}</span>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
         </div>
         <button
           aria-label="Закрыть"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border app-border app-surface-muted text-lg font-medium leading-none app-muted transition hover:bg-slate-200 hover:text-slate-900 focus:outline-none"
+          className="flex h-9 w-9 shrink-0 self-start items-center justify-center rounded-lg border app-border app-surface-muted text-lg font-medium leading-none app-muted transition hover:bg-slate-200 hover:text-slate-900 focus:outline-none"
           disabled={isCancelling}
           type="button"
           onClick={requestClose}

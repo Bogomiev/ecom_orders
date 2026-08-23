@@ -20,7 +20,9 @@ describe("normalizeOneCOrders", () => {
         order_created_at: "",
         confirmation_date: "",
         delivery_date: "",
-        delivery_time: "",
+        delivery_time: "10:00",
+        delivery_time_by: "12:00",
+        address: "ул. Примерная, 1",
         order_sum: 100,
         comment: "Комментарий: Позвонить перед доставкой",
         shipment_store_name: "Магазин",
@@ -41,6 +43,9 @@ describe("normalizeOneCOrders", () => {
     expect(result.items[0].quantityBags).toBe(0);
     expect(result.items[0].external_id).toBe("EXT-10");
     expect(result.items[0].deliveryMethod).toBe("pickup");
+    expect(result.items[0].delivery_time).toBe("10:00");
+    expect(result.items[0].delivery_time_by).toBe("12:00");
+    expect(result.items[0].address).toBe("ул. Примерная, 1");
     expect(result.items[0].controlledItems).toEqual([]);
     expect(result.items[0].items[0]).toMatchObject({
       product_name: "product",

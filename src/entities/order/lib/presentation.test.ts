@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { Order } from "../model/types";
 import {
+  formatOrderTime,
+  getOrderPickBefore,
   getOrderStatusLabel,
   getOrderTone,
   isOrderAwaitingAssembly,
@@ -22,6 +24,8 @@ const order = {
   confirmation_date: "",
   delivery_date: "",
   delivery_time: "",
+  delivery_time_by: "",
+  address: "",
   order_sum: 0,
   comment: "",
   shipment_store_name: "Магазин",
@@ -56,6 +60,34 @@ describe("isOrderAwaitingConfirmation", () => {
 
   it("не считает другой расширенный статус ожидающим подтверждения", () => {
     expect(isOrderAwaitingConfirmation(order)).toBe(false);
+  });
+});
+
+describe("getOrderPickBefore", () => {
+  it("добавляет 10 минут ко времени создания для ожидающего подтверждения заказа", () => {
+    expect(getOrderPickBefore({
+      ...order,
+      extended_status: "Ожидает подтверждения",
+      order_created_at: "2026-08-23T10:00:00+03:00",
+      confirmation_date: "2026-08-23T12:00:00+03:00"
+    })).toBe(formatOrderTime("2026-08-23T10:10:00"));
+  });
+
+  it("добавляет 10 минут ко времени подтверждения для остальных заказов", () => {
+    expect(getOrderPickBefore({
+      ...order,
+      extended_status: "Ожидает сборку",
+      order_created_at: "2026-08-23T10:00:00+03:00",
+      confirmation_date: "2026-08-23T12:00:00+03:00"
+    })).toBe(formatOrderTime("2026-08-23T12:10:00"));
+  });
+
+  it("считает время из 1С московским независимо от суффикса", () => {
+    expect(getOrderPickBefore({
+      ...order,
+      extended_status: "Ожидает сборку",
+      confirmation_date: "2026-08-23T12:02:36+03:00"
+    })).toBe(formatOrderTime("2026-08-23T12:12:36"));
   });
 });
 

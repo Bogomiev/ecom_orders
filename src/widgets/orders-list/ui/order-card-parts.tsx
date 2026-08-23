@@ -113,25 +113,77 @@ export function OrderCardHeader({
 }
 
 export function OrderStatusBadge({ order, tone }: { order: Order; tone: OrderTone }) {
+  const [isDeliveryOpen, setIsDeliveryOpen] = useState(false);
+
+  function handleDeliveryOpen(event: MouseEvent<HTMLButtonElement>) {
+    event.stopPropagation();
+    setIsDeliveryOpen(true);
+  }
+
   return (
-    <div className="mt-2 flex items-center justify-between gap-2">
-      <span className={`order-status-pill inline-flex min-h-7 min-w-0 items-center gap-2 rounded-full px-3 text-xs font-extrabold order-status-${tone}`}>
-        <span className="status-dot h-2 w-2 shrink-0 rounded-full" />
-        <span className="truncate">{getOrderStatusLabel(order)}</span>
-      </span>
-      <span className="delivery-badge inline-flex min-h-7 shrink-0 items-center rounded-md border app-border app-surface px-2.5 text-xs font-extrabold">
-        {order.deliveryMethod === "pickup" ? "Самовывоз" : "Доставка"}
-      </span>
-    </div>
+    <>
+      <div className="mt-2 flex items-center justify-between gap-2">
+        <span className={`order-status-pill inline-flex min-h-7 min-w-0 items-center gap-2 rounded-full px-3 text-xs font-extrabold order-status-${tone}`}>
+          <span className="status-dot h-2 w-2 shrink-0 rounded-full" />
+          <span className="truncate">{getOrderStatusLabel(order)}</span>
+        </span>
+        {order.deliveryMethod === "delivery" ? (
+          <button
+            className="delivery-badge inline-flex min-h-7 shrink-0 items-center rounded-md border app-border app-surface px-2.5 text-xs font-extrabold"
+            type="button"
+            onClick={handleDeliveryOpen}
+          >
+            Доставка
+          </button>
+        ) : (
+          <span className="delivery-badge inline-flex min-h-7 shrink-0 items-center rounded-md border app-border app-surface px-2.5 text-xs font-extrabold">
+            Самовывоз
+          </span>
+        )}
+      </div>
+
+      {isDeliveryOpen ? (
+        <Dialog
+          ariaLabel="Информация о доставке"
+          className="w-full max-w-xl overflow-hidden rounded-xl app-surface shadow-2xl"
+          onClose={() => setIsDeliveryOpen(false)}
+        >
+          <div onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-center justify-between gap-3 border-b app-border px-4 py-3">
+              <h2 className="text-base font-extrabold">Информация о доставке</h2>
+              <button
+                aria-label="Закрыть"
+                className="grid size-10 place-items-center rounded-lg text-2xl font-bold hover:bg-slate-500/10"
+                type="button"
+                onClick={() => setIsDeliveryOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="max-h-[70vh] space-y-3 overflow-y-auto break-words px-4 py-5 text-sm app-text">
+              {order.address ? (
+                <p><strong>Адрес доставки:</strong> {order.address}</p>
+              ) : null}
+              {order.delivery_date ? (
+                <p><strong>Дата доставки:</strong> {order.delivery_date}</p>
+              ) : null}
+              {order.delivery_time ? (
+                <p><strong>Желаемое время доставки:</strong> с {order.delivery_time} по {order.delivery_time_by}</p>
+              ) : null}
+            </div>
+          </div>
+        </Dialog>
+      ) : null}
+    </>
   );
 }
 
 export function OrderMeta({
-  assembleBefore,
+  pickBefore,
   className = "mt-3",
   order
 }: {
-  assembleBefore: string;
+  pickBefore: string;
   className?: string;
   order: Order;
 }) {
@@ -140,7 +192,7 @@ export function OrderMeta({
       <div className="order-card-meta grid grid-cols-3 gap-2">
         <div><span className="order-meta-label">Позиций</span><strong className="order-meta-value">{order.items.length}</strong></div>
         <div><span className="order-meta-label">Сумма</span><strong className="order-meta-value">{formatOrderMoney(order.order_sum)} ₽</strong></div>
-        <div><span className="order-meta-label">Собрать до</span><strong className="order-meta-value">{assembleBefore}</strong></div>
+        <div><span className="order-meta-label">Собрать до</span><strong className="order-meta-value">{pickBefore}</strong></div>
       </div>
       <OrderComment comment={order.comment} />
     </div>

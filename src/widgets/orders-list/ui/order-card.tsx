@@ -2,11 +2,12 @@
 
 import { memo, useMemo, useState, type MouseEvent } from "react";
 import {
-  formatOrderTime,
+  getOrderPickBefore,
   getOrderTone,
   isOrderAwaitingConfirmation,
   isOrderReady,
   isOrderTransferredToCourier,
+  isOrderUnavailableForOpening,
   type Order
 } from "@/entities/order";
 import {
@@ -57,9 +58,10 @@ function OrderCardComponent({
   const isConfirmation = isOrderAwaitingConfirmation(order);
   const isReady = isOrderReady(order);
   const isTransferredToCourier = isOrderTransferredToCourier(order);
-  const assembleBefore = useMemo(
-    () => formatOrderTime(order.order_created_at),
-    [order.order_created_at]
+  const isCanceled = isOrderUnavailableForOpening(order);
+  const pickBefore = useMemo(
+    () => getOrderPickBefore(order),
+    [order]
   );
 
   function handlePrimaryAction(event: MouseEvent<HTMLButtonElement>) {
@@ -105,9 +107,9 @@ function OrderCardComponent({
     >
       <OrderCardHeader order={order} onView={onView} />
       <OrderStatusBadge order={order} tone={tone} />
-      <OrderMeta assembleBefore={assembleBefore} className="mt-2" order={order} />
+      <OrderMeta pickBefore={pickBefore} className="mt-2" order={order} />
 
-      {isTransferredToCourier ? (
+      {isCanceled ? null : isTransferredToCourier ? (
         <div className="order-card-actions mt-3 border-t pt-3">
           <button
             className="order-primary-button min-h-[2.125rem] w-full rounded-lg bg-blue-600 text-xs font-extrabold text-white disabled:cursor-wait disabled:opacity-60"

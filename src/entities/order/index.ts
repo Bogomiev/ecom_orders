@@ -36,6 +36,7 @@ export {
 export {
   formatOrderMoney,
   formatOrderTime,
+  getOrderPickBefore,
   getMarketplaceLabel,
   getOrderStatusLabel,
   getOrderTone,

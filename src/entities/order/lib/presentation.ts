@@ -75,6 +75,23 @@ export function formatOrderTime(value: string) {
   }).format(date);
 }
 
+export function getOrderPickBefore(order: Order) {
+  const sourceDate = isOrderAwaitingConfirmation(order)
+    ? order.order_created_at
+    : order.confirmation_date;
+  const normalizedDate = sourceDate.trim().replace(" ", "T");
+  const wallClockDate = normalizedDate.replace(/(?:Z|[+-]\d{2}:?\d{2})$/i, "");
+  const date = parseMoscowDateTime(wallClockDate);
+
+  if (Number.isNaN(date.getTime())) return "--:--";
+
+  date.setTime(date.getTime() + 10 * 60 * 1000);
+  return new Intl.DateTimeFormat("ru-RU", {
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(date);
+}
+
 export function formatOrderMoney(value: number) {
   return new Intl.NumberFormat("ru-RU", {
     maximumFractionDigits: 0

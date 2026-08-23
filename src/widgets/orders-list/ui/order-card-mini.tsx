@@ -2,7 +2,7 @@
 
 import { memo, useMemo, useState, type MouseEvent } from "react";
 import {
-  formatOrderTime,
+  getOrderPickBefore,
   getMarketplaceLabel,
   getOrderStatusLabel,
   getOrderTone,
@@ -59,9 +59,9 @@ function OrderCardMiniComponent({
   const tone = getOrderTone(order);
   const statusLabel = getOrderStatusLabel(order);
   const cannotOpen = isOrderUnavailableForOpening(order);
-  const assembleBefore = useMemo(
-    () => formatOrderTime(order.order_created_at),
-    [order.order_created_at]
+  const pickBefore = useMemo(
+    () => getOrderPickBefore(order),
+    [order]
   );
   const marketplace = getMarketplaceLabel(order.source);
   const isConfirmation = isOrderAwaitingConfirmation(order);
@@ -108,9 +108,9 @@ function OrderCardMiniComponent({
     >
       <OrderCardHeader order={order} onView={onView} />
       <OrderStatusBadge order={order} tone={tone} />
-      <OrderMeta assembleBefore={assembleBefore} order={order} />
+      <OrderMeta pickBefore={pickBefore} order={order} />
 
-      {isTransferredToCourier ? (
+      {cannotOpen ? null : isTransferredToCourier ? (
         <div className="order-card-actions mt-3 border-t pt-3">
           <button className="order-primary-button min-h-[2.125rem] w-full rounded-lg bg-blue-600 text-xs font-extrabold text-white disabled:cursor-wait disabled:opacity-60" disabled={areActionsDisabled} type="button" onClick={handlePrint}>
             {isPrinting ? <LoadingDots label="Печать" /> : "Печать"}

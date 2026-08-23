@@ -17,6 +17,8 @@ const order = {
   confirmation_date: "",
   delivery_date: "",
   delivery_time: "",
+  delivery_time_by: "",
+  address: "",
   order_sum: 1,
   comment: "",
   shipment_store_name: "Магазин",

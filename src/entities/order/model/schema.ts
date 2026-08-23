@@ -33,6 +33,8 @@ export const OrderSchema = z.object({
   confirmation_date: z.string(),
   delivery_date: z.string(),
   delivery_time: z.string(),
+  delivery_time_by: z.string(),
+  address: z.string(),
   order_sum: z.number(),
   comment: z.string(),
   shipment_store_name: z.string(),
