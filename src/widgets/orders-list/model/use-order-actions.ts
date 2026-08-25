@@ -154,15 +154,23 @@ export function useOrderActions({
       notify(
         "Управление заказами",
         result.status === 200
-          ? "Заказ успешно передан курьеру"
-          : `При выдаче заказа курьеру произошла ошибка: ${result.data.mess}, статус заказа: ${result.data.data.status}`,
+          ? order.deliveryMethod === "delivery"
+            ? "Заказ успешно передан курьеру"
+            : "Заказ успешно передан покупателю"
+          : order.deliveryMethod === "delivery"
+            ? `При выдаче заказа курьеру произошла ошибка: ${result.data.mess}, статус заказа: ${result.data.data.status}`
+            : `При выдаче заказа покупателю произошла ошибка: ${result.data.mess}, статус заказа: ${result.data.data.status}`,
         result.status === 200 ? "success" : "warning"
       );
-      isWaitingForRefresh = true;
-      refresh(clearGivingOrderToCourier);
+      if (result.status === 200) {
+        isWaitingForRefresh = true;
+        refresh(clearGivingOrderToCourier);
+      }
     } catch {
       notify(
-        "Ошибка выдачи заказа курьеру",
+        order.deliveryMethod === "delivery"
+          ? "Ошибка выдачи заказа курьеру"
+          : "Ошибка передачи заказа покупателю",
         "Не удалось получить ответ сервера, статус заказа: неизвестен",
         "warning"
       );
@@ -205,8 +213,6 @@ export function useOrderActions({
         clearStoredOrderControl(order);
         onCompleteSuccess(order);
         isWaitingForRefresh = true;
-        refresh(clearCompletingOrder);
-      } else if (result.status === 400) {
         refresh(clearCompletingOrder);
       }
     } catch {

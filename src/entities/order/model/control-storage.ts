@@ -90,7 +90,12 @@ export function saveOrderControl(order: Order) {
   );
 
   order.items.forEach((item) => {
-    if (item.quantity_fact <= 0) return;
+    if (item.quantity_fact <= 0) {
+      window.localStorage.removeItem(
+        getStorageKey(order.uid_1c, item.product_id)
+      );
+      return;
+    }
 
     const value: StoredOrderControlItem = {
       controlledItems: order.controlledItems.filter(

@@ -76,4 +76,17 @@ describe("order control storage", () => {
     expect(clearedOrder.items[0].quantity_fact).toBe(0);
     expect(clearedOrder.quantityBags).toBe(0);
   });
+
+  it("удаляет сохраненное количество после обнуления строки", () => {
+    saveOrderControl(order);
+
+    const emptyOrder = {
+      ...order,
+      items: [{ ...order.items[0], quantity_fact: 0 }]
+    };
+    saveOrderControl(emptyOrder);
+
+    const restoredOrder = restoreOrderControl(emptyOrder);
+    expect(restoredOrder.items[0].quantity_fact).toBe(0);
+  });
 });
