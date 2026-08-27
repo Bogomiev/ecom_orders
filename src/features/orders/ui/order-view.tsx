@@ -11,13 +11,15 @@ import { formatMoney, formatNumber } from "./order-control/order-control-shared"
 type OrderViewProps = {
   canEdit?: boolean;
   isConfirming?: boolean;
+  isPrinting?: boolean;
   onClose: () => void;
   onConfirm: (order: Order, pendingCancellationProductIds: ReadonlySet<string>) => Promise<boolean>;
+  onPrint: (order: Order) => void;
   order: Order | null;
   products: Product[];
 };
 
-export function OrderView({ canEdit: requestedCanEdit = false, isConfirming = false, onClose, onConfirm, order, products }: OrderViewProps) {
+export function OrderView({ canEdit: requestedCanEdit = false, isConfirming = false, isPrinting = false, onClose, onConfirm, onPrint, order, products }: OrderViewProps) {
   const [itemPendingCancellation, setItemPendingCancellation] = useState<OrderItem | null>(null);
   const [isDiscardConfirmationOpen, setIsDiscardConfirmationOpen] = useState(false);
   const [pendingCancellationProductIds, setPendingCancellationProductIds] = useState<Set<string>>(new Set());
@@ -108,15 +110,35 @@ export function OrderView({ canEdit: requestedCanEdit = false, isConfirming = fa
             ) : null}
           </div>
         </div>
-        <button
-          aria-label="Закрыть"
-          className="flex h-9 w-9 shrink-0 self-start items-center justify-center rounded-lg border app-border app-surface-muted text-lg font-medium leading-none app-muted transition hover:bg-slate-200 hover:text-slate-900 focus:outline-none"
-          disabled={isConfirming}
-          type="button"
-          onClick={requestClose}
-        >
-          ×
-        </button>
+        <div className="flex shrink-0 self-start items-center gap-2">
+          <button
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border app-border app-surface-muted px-3 text-sm font-bold app-muted transition hover:bg-slate-200 hover:text-slate-900 focus:outline-none disabled:cursor-wait disabled:opacity-60"
+            disabled={isPrinting || isConfirming}
+            type="button"
+            onClick={() => onPrint(order)}
+          >
+            {isPrinting ? (
+              <LoadingDots label="Печать" />
+            ) : (
+              <svg aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24">
+                <path d="M7 8V3h10v5" />
+                <path d="M7 17H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                <path d="M7 14h10v7H7z" />
+                <path d="M17 11h.01" />
+              </svg>
+            )}
+            <span>Печать</span>
+          </button>
+          <button
+            aria-label="Закрыть"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border app-border app-surface-muted text-lg font-medium leading-none app-muted transition hover:bg-slate-200 hover:text-slate-900 focus:outline-none"
+            disabled={isConfirming}
+            type="button"
+            onClick={requestClose}
+          >
+            ×
+          </button>
+        </div>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">

@@ -27,6 +27,8 @@ const FOCUSABLE_SELECTOR = [
   "[tabindex]:not([tabindex='-1'])"
 ].join(",");
 
+const openDialogs: symbol[] = [];
+
 export function Dialog({
   ariaLabel,
   ariaLabelledBy,
@@ -36,9 +38,12 @@ export function Dialog({
   onClose
 }: DialogProps) {
   const contentRef = useRef<HTMLDivElement>(null);
+  const dialogIdRef = useRef(Symbol("dialog"));
   const handleClose = useEffectEvent(onClose);
 
   useEffect(() => {
+    const dialogId = dialogIdRef.current;
+    openDialogs.push(dialogId);
     const previouslyFocused = document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -51,6 +56,8 @@ export function Dialog({
     (autofocusElement ?? firstFocusableElement)?.focus();
 
     function handleKeyDown(event: KeyboardEvent) {
+      if (openDialogs.at(-1) !== dialogId) return;
+
       if (event.key === "Escape") {
         event.stopPropagation();
         handleClose();
@@ -76,6 +83,8 @@ export function Dialog({
 
     window.addEventListener("keydown", handleKeyDown, { capture: true });
     return () => {
+      const dialogIndex = openDialogs.lastIndexOf(dialogId);
+      if (dialogIndex !== -1) openDialogs.splice(dialogIndex, 1);
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKeyDown, { capture: true });
       previouslyFocused?.focus();

@@ -27,12 +27,10 @@ type OrderCardMiniProps = {
   isConfirming?: boolean;
   isGivingOrderToCourier?: boolean;
   isOpening?: boolean;
-  isPrinting?: boolean;
   onCancel: (order: Order) => void;
   onConfirm: (order: Order) => void;
   onGiveToCourier: (order: Order) => void;
   onOpen: (order: Order) => void;
-  onPrint: (order: Order) => void;
   onStartControl: (order: Order) => void;
   onView: (order: Order) => void;
   order: Order;
@@ -45,12 +43,10 @@ function OrderCardMiniComponent({
   isConfirming = false,
   isGivingOrderToCourier = false,
   isOpening = false,
-  isPrinting = false,
   onCancel,
   onConfirm,
   onGiveToCourier,
   onOpen,
-  onPrint,
   onStartControl,
   onView,
   order
@@ -68,7 +64,7 @@ function OrderCardMiniComponent({
   const isReady = isOrderReady(order);
   const isTransferredToCourier = isOrderTransferredToCourier(order);
   const isActionPending = isCancelling || isCompleting || isConfirming ||
-    isGivingOrderToCourier || isOpening || isPrinting;
+    isGivingOrderToCourier || isOpening;
   const areActionsDisabled = disabled || isActionPending || cannotOpen;
 
   function handlePrimaryAction(event: MouseEvent<HTMLButtonElement>) {
@@ -81,11 +77,6 @@ function OrderCardMiniComponent({
   function handleCancel(event: MouseEvent<HTMLButtonElement>) {
     event.stopPropagation();
     setIsCancelConfirmationOpen(true);
-  }
-
-  function handlePrint(event: MouseEvent<HTMLButtonElement>) {
-    event.stopPropagation();
-    onPrint(order);
   }
 
   return (
@@ -110,24 +101,18 @@ function OrderCardMiniComponent({
       <OrderStatusBadge order={order} tone={tone} />
       <OrderMeta pickBefore={pickBefore} order={order} />
 
-      {cannotOpen ? null : isTransferredToCourier ? (
-        <div className="order-card-actions mt-3 border-t pt-3">
-          <button className="order-primary-button min-h-[2.125rem] w-full rounded-lg bg-blue-600 text-xs font-extrabold text-white disabled:cursor-wait disabled:opacity-60" disabled={areActionsDisabled} type="button" onClick={handlePrint}>
-            {isPrinting ? <LoadingDots label="Печать" /> : "Печать"}
-          </button>
-        </div>
-      ) : (
+      {!cannotOpen && !isTransferredToCourier ? (
         <div className="order-card-actions mt-3 grid grid-cols-2 gap-2 border-t pt-3">
-          <button className="order-cancel-button min-h-[2.125rem] rounded-lg border border-slate-300 app-surface text-xs font-extrabold disabled:cursor-wait disabled:opacity-60" disabled={areActionsDisabled} type="button" onClick={handleCancel}>
-            {isCancelling ? <LoadingDots label="Отмена заказа" /> : "Отмена"}
-          </button>
-          <button className="order-primary-button min-h-[2.125rem] rounded-lg bg-emerald-600 text-xs font-extrabold text-white disabled:cursor-wait disabled:opacity-60" disabled={areActionsDisabled} type="button" onClick={handlePrimaryAction}>
-            {isActionPending
-              ? <LoadingDots label="Обработка заказа" />
-              : isReady ? "Выдать" : isConfirmation ? "Подтвердить заказ" : "Собрать"}
-          </button>
+            <button className="order-cancel-button min-h-[2.125rem] rounded-lg border border-slate-300 app-surface text-xs font-extrabold disabled:cursor-wait disabled:opacity-60" disabled={areActionsDisabled} type="button" onClick={handleCancel}>
+              {isCancelling ? <LoadingDots label="Отмена заказа" /> : "Отмена"}
+            </button>
+            <button className="order-primary-button min-h-[2.125rem] rounded-lg bg-emerald-600 text-xs font-extrabold text-white disabled:cursor-wait disabled:opacity-60" disabled={areActionsDisabled} type="button" onClick={handlePrimaryAction}>
+              {isActionPending
+                ? <LoadingDots label="Обработка заказа" />
+                : isReady ? "Выдать" : isConfirmation ? "Подтвердить заказ" : "Собрать"}
+            </button>
         </div>
-      )}
+      ) : null}
 
       {isCancelConfirmationOpen ? (
         <Dialog ariaLabelledBy={`cancel-mini-order-title-${order.id}`} className="w-full max-w-sm rounded-2xl app-surface p-5 shadow-2xl" onClose={() => setIsCancelConfirmationOpen(false)}>

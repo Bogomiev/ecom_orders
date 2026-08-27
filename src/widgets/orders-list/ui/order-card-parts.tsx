@@ -179,10 +179,12 @@ export function OrderMeta({
   className?: string;
   order: Order;
 }) {
+  const activeItemsCount = order.items.filter((item) => !item.canceled).length;
+
   return (
     <div className={className}>
       <div className="order-card-meta grid grid-cols-3 gap-2">
-        <div><span className="order-meta-label">Позиций</span><strong className="order-meta-value">{order.items.length}</strong></div>
+        <div><span className="order-meta-label">Позиций</span><strong className="order-meta-value">{activeItemsCount}</strong></div>
         <div><span className="order-meta-label">Сумма</span><strong className="order-meta-value">{formatOrderMoney(order.order_sum)} ₽</strong></div>
         <div><span className="order-meta-label">Собрать до</span><strong className="order-meta-value">{pickBefore}</strong></div>
       </div>

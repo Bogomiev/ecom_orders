@@ -30,9 +30,7 @@ type OrderCardProps = {
   onConfirm: (order: Order) => void;
   onStartControl: (order: Order) => void;
   onGiveToCourier: (order: Order) => void;
-  onPrint: (order: Order) => void;
   onView: (order: Order) => void;
-  isPrinting?: boolean;
   order: Order;
 };
 
@@ -48,9 +46,7 @@ function OrderCardComponent({
   onConfirm,
   onStartControl,
   onGiveToCourier,
-  onPrint,
   onView,
-  isPrinting = false,
   order
 }: OrderCardProps) {
   const [isCancelConfirmationOpen, setIsCancelConfirmationOpen] = useState(false);
@@ -81,12 +77,7 @@ function OrderCardComponent({
     onCancel(order);
   }
 
-  function handlePrint(event: MouseEvent<HTMLButtonElement>) {
-    event.stopPropagation();
-    onPrint(order);
-  }
-
-  const isActionPending = isCancelling || isCompleting || isConfirming || isOpening || isGivingOrderToCourier || isPrinting;
+  const isActionPending = isCancelling || isCompleting || isConfirming || isOpening || isGivingOrderToCourier;
 
   return (
     <article
@@ -109,43 +100,32 @@ function OrderCardComponent({
       <OrderStatusBadge order={order} tone={tone} />
       <OrderMeta pickBefore={pickBefore} className="mt-2" order={order} />
 
-      {isCanceled ? null : isTransferredToCourier ? (
-        <div className="order-card-actions mt-3 border-t pt-3">
-          <button
-            className="order-primary-button min-h-[2.125rem] w-full rounded-lg bg-blue-600 text-xs font-extrabold text-white disabled:cursor-wait disabled:opacity-60"
-            disabled={isActionPending}
-            type="button"
-            onClick={handlePrint}
-          >
-            {isPrinting ? <LoadingDots label="Печать" /> : "Печать"}
-          </button>
+      {!isCanceled && !isTransferredToCourier ? (
+        <div className="order-card-actions mt-3 grid grid-cols-2 gap-2 border-t pt-3">
+            <button
+              className="order-cancel-button min-h-[2.125rem] rounded-lg border border-slate-300 app-surface text-xs font-extrabold disabled:cursor-wait disabled:opacity-60"
+              disabled={isActionPending}
+              type="button"
+              onClick={handleCancel}
+            >
+              {isCancelling ? <LoadingDots label="Отмена заказа" /> : "Отмена"}
+            </button>
+            <button
+              className="order-primary-button min-h-[2.125rem] rounded-lg bg-emerald-600 text-xs font-extrabold text-white"
+              disabled={isActionPending}
+              type="button"
+              onClick={handlePrimaryAction}
+            >
+              {isOpening || isConfirming || isCompleting || isGivingOrderToCourier
+                ? <LoadingDots label="Обработка заказа" />
+                : isReady
+                  ? "Выдать"
+                  : isConfirmation
+                  ? "Подтвердить заказ"
+                  : "Собрать"}
+            </button>
         </div>
-      ) : (
-      <div className="order-card-actions mt-3 grid grid-cols-2 gap-2 border-t pt-3">
-        <button
-          className="order-cancel-button min-h-[2.125rem] rounded-lg border border-slate-300 app-surface text-xs font-extrabold disabled:cursor-wait disabled:opacity-60"
-          disabled={isActionPending}
-          type="button"
-          onClick={handleCancel}
-        >
-          {isCancelling ? <LoadingDots label="Отмена заказа" /> : "Отмена"}
-        </button>
-        <button
-          className="order-primary-button min-h-[2.125rem] rounded-lg bg-emerald-600 text-xs font-extrabold text-white"
-          disabled={isActionPending}
-          type="button"
-          onClick={handlePrimaryAction}
-        >
-          {isOpening || isConfirming || isCompleting || isGivingOrderToCourier
-            ? <LoadingDots label="Обработка заказа" />
-            : isReady
-              ? "Выдать"
-              : isConfirmation
-              ? "Подтвердить заказ"
-              : "Собрать"}
-        </button>
-      </div>
-      )}
+      ) : null}
 
       {isCancelConfirmationOpen ? (
         <Dialog

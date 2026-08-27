@@ -417,7 +417,6 @@ export function OrdersList({
                   isConfirming={confirmingOrderId === order.id}
                   isOpening={openingOrderId === order.id}
                   isGivingOrderToCourier={givingOrderToCourierId === order.id}
-                  isPrinting={printingOrderId === order.id}
                   isSelectionLocked={isOrderSelectionLocked}
                   order={order}
                   onCancel={handleCancelOrder}
@@ -425,7 +424,6 @@ export function OrdersList({
                   onConfirm={(selectedOrder) => void openOrderView(selectedOrder, true)}
                   onStartControl={handleStartControl}
                   onGiveToCourier={handleGiveOrderToCourier}
-                  onPrint={handlePrintOrder}
                   onView={(selectedOrder) => void openOrderView(selectedOrder)}
                 />
               ) : (
@@ -437,13 +435,11 @@ export function OrdersList({
                   isConfirming={confirmingOrderId === order.id}
                   isGivingOrderToCourier={givingOrderToCourierId === order.id}
                   isOpening={openingOrderId === order.id}
-                  isPrinting={printingOrderId === order.id}
                   order={order}
                   onCancel={handleCancelOrder}
                   onConfirm={(selectedOrder) => void openOrderView(selectedOrder, true)}
                   onGiveToCourier={handleGiveOrderToCourier}
                   onOpen={(selectedOrder) => setExpandedOrderId(selectedOrder.id)}
-                  onPrint={handlePrintOrder}
                   onStartControl={handleStartControl}
                   onView={(selectedOrder) => void openOrderView(selectedOrder)}
                 />
@@ -467,9 +463,11 @@ export function OrdersList({
         key={`${displayedViewOrder?.id ?? "closed"}-${isViewEditable ? "edit" : "view"}`}
         canEdit={isViewEditable}
         isConfirming={confirmingOrderId === displayedViewOrder?.id}
+        isPrinting={printingOrderId === displayedViewOrder?.id}
         order={displayedViewOrder}
         products={viewProducts}
         onConfirm={handleConfirmOrder}
+        onPrint={handlePrintOrder}
         onClose={() => setViewOrder(null)}
       />
       {printPdf ? (
