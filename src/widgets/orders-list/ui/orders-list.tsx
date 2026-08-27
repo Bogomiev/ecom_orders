@@ -32,7 +32,7 @@ import {
   enrichOrder,
   getMissingOrderProductIds
 } from "../model/order-products";
-import { cancelOrderItem, printOrder } from "../api/orders";
+import { printOrder } from "../api/orders";
 
 type OrdersListProps = {
   historyDays?: number;
@@ -65,6 +65,7 @@ export function OrdersList({
   const [controlProducts, setControlProducts] = useState<ProductsResponse>([]);
   const [controlLoadError, setControlLoadError] = useState<string | null>(null);
   const [viewOrder, setViewOrder] = useState<Order | null>(null);
+  const [isViewEditable, setIsViewEditable] = useState(false);
   const [viewProducts, setViewProducts] = useState<ProductsResponse>([]);
   const [viewLoadError, setViewLoadError] = useState<string | null>(null);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
@@ -214,7 +215,7 @@ export function OrdersList({
     }
   }, [getProducts, refreshProducts, retryProducts, setState]);
 
-  const openOrderView = useCallback(async (order: Order) => {
+  const openOrderView = useCallback(async (order: Order, canEdit = false) => {
     setViewLoadError(null);
 
     try {
@@ -231,6 +232,7 @@ export function OrdersList({
       if (!isMountedRef.current) return;
 
       setViewProducts(products);
+      setIsViewEditable(canEdit);
       setViewOrder(enrichOrder(order, products));
     } catch (error) {
       if (!isMountedRef.current) return;
@@ -249,55 +251,6 @@ export function OrdersList({
     },
     [notify]
   );
-  const handleCancelOrderItem = useCallback(async (order: Order, item: Order["items"][number]) => {
-    if (requireCurrentSeller(showOrderNotification) === null) return false;
-
-    try {
-      const result = await cancelOrderItem({
-        orderId: order.uid_1c,
-        productId: item.product_id
-      });
-
-      if (result.status < 200 || result.status >= 300) {
-        throw new Error(result.data.mess);
-      }
-
-      const canceledOrder: Order = {
-        ...order,
-        items: order.items.map((currentItem) =>
-          currentItem.product_id === item.product_id
-            ? { ...currentItem, canceled: true }
-            : currentItem
-        )
-      };
-
-      setViewOrder(canceledOrder);
-      setState((currentState) => {
-        if (currentState.data === null) return currentState;
-        return {
-          ...currentState,
-          data: {
-            ...currentState.data,
-            items: currentState.data.items.map((currentOrder) =>
-              currentOrder.id === canceledOrder.id ? canceledOrder : currentOrder
-            )
-          }
-        };
-      });
-      return true;
-    } catch {
-      showOrderNotification(
-        "Ошибка отмены товара",
-        <>
-          Не удалось отменить товар{" "}
-          <strong className="font-black text-blue-950">{item.product_name}</strong>{" "}
-          в заказе {order.number}
-        </>,
-        "error"
-      );
-      return false;
-    }
-  }, [setState, showOrderNotification]);
   const refreshOrders = useCallback((onFailure: () => void) => {
     const nextRefreshKey = ordersRefreshKeyRef.current + 1;
     ordersRefreshKeyRef.current = nextRefreshKey;
@@ -469,7 +422,7 @@ export function OrdersList({
                   order={order}
                   onCancel={handleCancelOrder}
                   onCollapse={() => setExpandedOrderId(null)}
-                  onConfirm={handleConfirmOrder}
+                  onConfirm={(selectedOrder) => void openOrderView(selectedOrder, true)}
                   onStartControl={handleStartControl}
                   onGiveToCourier={handleGiveOrderToCourier}
                   onPrint={handlePrintOrder}
@@ -487,7 +440,7 @@ export function OrdersList({
                   isPrinting={printingOrderId === order.id}
                   order={order}
                   onCancel={handleCancelOrder}
-                  onConfirm={handleConfirmOrder}
+                  onConfirm={(selectedOrder) => void openOrderView(selectedOrder, true)}
                   onGiveToCourier={handleGiveOrderToCourier}
                   onOpen={(selectedOrder) => setExpandedOrderId(selectedOrder.id)}
                   onPrint={handlePrintOrder}
@@ -511,10 +464,11 @@ export function OrdersList({
         onClose={() => setControlOrder(null)}
       />
       <OrderView
+        key={`${displayedViewOrder?.id ?? "closed"}-${isViewEditable ? "edit" : "view"}`}
+        canEdit={isViewEditable}
         isConfirming={confirmingOrderId === displayedViewOrder?.id}
         order={displayedViewOrder}
         products={viewProducts}
-        onCancelItem={handleCancelOrderItem}
         onConfirm={handleConfirmOrder}
         onClose={() => setViewOrder(null)}
       />

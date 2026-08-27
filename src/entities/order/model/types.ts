@@ -1,10 +1,9 @@
 import type { z } from "zod";
 import type {
   CancelOrderRequestSchema,
-  CancelOrderItemRequestSchema,
-  CancelOrderItemResponseSchema,
   CancelOrderResponseSchema,
   CompleteOrderRequestSchema,
+  ConfirmOrderItemSchema,
   ConfirmOrderRequestSchema,
   OrderActionResponseSchema,
   OrderControlledItemSchema,
@@ -20,9 +19,8 @@ export type OrderItem = z.infer<typeof OrderItemSchema>;
 export type OrderControlledItem = z.infer<typeof OrderControlledItemSchema>;
 export type Order = z.infer<typeof OrderSchema>;
 export type ConfirmOrderRequest = z.infer<typeof ConfirmOrderRequestSchema>;
+export type ConfirmOrderItem = z.infer<typeof ConfirmOrderItemSchema>;
 export type CancelOrderRequest = z.infer<typeof CancelOrderRequestSchema>;
-export type CancelOrderItemRequest = z.infer<typeof CancelOrderItemRequestSchema>;
-export type CancelOrderItemResponse = z.infer<typeof CancelOrderItemResponseSchema>;
 export type CompleteOrderRequest = z.infer<typeof CompleteOrderRequestSchema>;
 export type CompleteOrderControlledItem =
   CompleteOrderRequest["orderControlledItem"][number];

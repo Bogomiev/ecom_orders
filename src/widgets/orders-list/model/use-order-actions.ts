@@ -3,6 +3,7 @@
 import { useCallback, useState, type ReactNode } from "react";
 import {
   clearStoredOrderControl,
+  ConfirmOrderItemAction,
   type Order
 } from "@/entities/order";
 import { getStoredCurrentSeller } from "@/entities/seller";
@@ -70,16 +71,25 @@ export function useOrderActions({
     [notify]
   );
 
-  const confirm = useCallback(async (order: Order) => {
+  const confirm = useCallback(async (
+    order: Order,
+    pendingCancellationProductIds: ReadonlySet<string> = new Set()
+  ) => {
     const seller = requireSeller();
-    if (seller === null) return;
+    if (seller === null) return false;
     setConfirmingOrderId(order.id);
     let isWaitingForRefresh = false;
 
     try {
       const result = await confirmOrder({
         orderId: order.uid_1c,
-        seller: seller.userId
+        seller: seller.userId,
+        items: order.items.map((item) => ({
+          product_id: item.product_id,
+          action: item.canceled || pendingCancellationProductIds.has(item.product_id)
+            ? ConfirmOrderItemAction.CANCELLED
+            : ConfirmOrderItemAction.CONFIRMED
+        }))
       });
       notify(
         "Управление заказами",
@@ -92,12 +102,14 @@ export function useOrderActions({
         isWaitingForRefresh = true;
         refresh(clearConfirmingOrder);
       }
+      return result.status === 200;
     } catch {
       notify(
         "Ошибка подтверждения",
         "Не удалось получить ответ сервера, статус заказа: неизвестен",
         "warning"
       );
+      return false;
     } finally {
       if (!isWaitingForRefresh) {
         clearConfirmingOrder();

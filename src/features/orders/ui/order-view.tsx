@@ -9,17 +9,18 @@ import { HonestSignIcon } from "./order-control/order-control-details-panel";
 import { formatMoney, formatNumber } from "./order-control/order-control-shared";
 
 type OrderViewProps = {
+  canEdit?: boolean;
   isConfirming?: boolean;
   onClose: () => void;
-  onCancelItem: (order: Order, item: OrderItem) => Promise<boolean>;
-  onConfirm: (order: Order) => void;
+  onConfirm: (order: Order, pendingCancellationProductIds: ReadonlySet<string>) => Promise<boolean>;
   order: Order | null;
   products: Product[];
 };
 
-export function OrderView({ isConfirming = false, onCancelItem, onClose, onConfirm, order, products }: OrderViewProps) {
-  const [cancellingProductId, setCancellingProductId] = useState<string | null>(null);
+export function OrderView({ canEdit: requestedCanEdit = false, isConfirming = false, onClose, onConfirm, order, products }: OrderViewProps) {
   const [itemPendingCancellation, setItemPendingCancellation] = useState<OrderItem | null>(null);
+  const [isDiscardConfirmationOpen, setIsDiscardConfirmationOpen] = useState(false);
+  const [pendingCancellationProductIds, setPendingCancellationProductIds] = useState<Set<string>>(new Set());
   const productCodesById = useMemo(
     () => new Map(products.map((product) => [product.uid, product.code])),
     [products]
@@ -29,31 +30,53 @@ export function OrderView({ isConfirming = false, onCancelItem, onClose, onConfi
 
   const orderNumber = `${order.number}${order.external_id ? `/${order.external_id}` : ""}`;
   const total = order.items.reduce(
-    (sum, line) => line.canceled ? sum : sum + line.amount,
+    (sum, line) => line.canceled || pendingCancellationProductIds.has(line.product_id)
+      ? sum
+      : sum + line.amount,
     0
   );
-  const canEdit = isOrderAwaitingConfirmation(order);
-  const isCancelling = cancellingProductId !== null;
-  const activeLinesCount = order.items.filter((line) => !line.canceled).length;
+  const canEdit = requestedCanEdit && isOrderAwaitingConfirmation(order);
+  const activeLinesCount = order.items.filter(
+    (line) => !line.canceled && !pendingCancellationProductIds.has(line.product_id)
+  ).length;
 
   function requestClose() {
-    if (!isCancelling) onClose();
+    if (isConfirming) return;
+    if (isDiscardConfirmationOpen) {
+      setIsDiscardConfirmationOpen(false);
+      return;
+    }
+    if (pendingCancellationProductIds.size > 0) {
+      setItemPendingCancellation(null);
+      setIsDiscardConfirmationOpen(true);
+      return;
+    }
+    onClose();
   }
 
-  async function cancelItem(item: OrderItem) {
-    setCancellingProductId(item.product_id);
-    try {
-      await onCancelItem(order!, item);
-    } finally {
-      setCancellingProductId(null);
-      setItemPendingCancellation(null);
-    }
+  function markItemForCancellation(item: OrderItem) {
+    setPendingCancellationProductIds((current) => new Set(current).add(item.product_id));
+    setItemPendingCancellation(null);
+  }
+
+  function restoreItem(item: OrderItem) {
+    setPendingCancellationProductIds((current) => {
+      const next = new Set(current);
+      next.delete(item.product_id);
+      return next;
+    });
+  }
+
+  async function confirmOrder() {
+    const isConfirmed = await onConfirm(order!, pendingCancellationProductIds);
+    if (isConfirmed) onClose();
   }
 
   return (
     <Dialog
       ariaLabelledBy="order-view-title"
       className="relative mx-auto flex h-[min(650px,calc(100vh-32px))] w-[min(700px,calc(100vw-32px))] flex-col overflow-hidden rounded-2xl app-surface shadow-2xl [zoom:.83]"
+      closeOnBackdrop={!canEdit}
       onClose={requestClose}
     >
       <div className="flex items-center justify-between border-b app-border px-5 py-3.5">
@@ -88,7 +111,7 @@ export function OrderView({ isConfirming = false, onCancelItem, onClose, onConfi
         <button
           aria-label="Закрыть"
           className="flex h-9 w-9 shrink-0 self-start items-center justify-center rounded-lg border app-border app-surface-muted text-lg font-medium leading-none app-muted transition hover:bg-slate-200 hover:text-slate-900 focus:outline-none"
-          disabled={isCancelling}
+          disabled={isConfirming}
           type="button"
           onClick={requestClose}
         >
@@ -115,13 +138,16 @@ export function OrderView({ isConfirming = false, onCancelItem, onClose, onConfi
             </tr>
           </thead>
           <tbody>
-            {order.items.map((line) => (
-              <tr className={line.canceled ? "line-through opacity-60" : undefined} key={line.product_id}>
+            {order.items.map((line) => {
+              const isPendingCancellation = pendingCancellationProductIds.has(line.product_id);
+              const isInactive = line.canceled || isPendingCancellation;
+              return (
+              <tr className={line.canceled ? "bg-slate-100 opacity-60 dark:bg-slate-800/50" : isPendingCancellation ? "bg-amber-50 opacity-60 dark:bg-amber-950/30" : undefined} key={line.product_id}>
                 <td className="border-b app-border px-5 py-2.5">
                   <div className="flex items-start gap-2.5">
                     {line.marking_product ? <HonestSignIcon /> : null}
                     <div className="min-w-0">
-                      <div className="break-words text-[13px] font-bold leading-[18px] app-text">
+                      <div className={`break-words text-[13px] font-bold leading-[18px] app-text${isInactive ? " line-through" : ""}`}>
                         {line.product_name}
                       </div>
                       <div className="mt-0.5 text-[11px] leading-4 app-muted">
@@ -130,37 +156,48 @@ export function OrderView({ isConfirming = false, onCancelItem, onClose, onConfi
                     </div>
                   </div>
                 </td>
-                <td className="border-b app-border px-3 py-2.5 text-right text-sm font-bold tabular-nums app-text">
+                <td className={`border-b app-border px-3 py-2.5 text-right text-sm font-bold tabular-nums app-text${isInactive ? " line-through" : ""}`}>
                   {formatNumber(line.quantity)}
                 </td>
-                <td className="border-b app-border px-3 py-2.5 text-right text-sm font-medium tabular-nums app-text">
+                <td className={`border-b app-border px-3 py-2.5 text-right text-sm font-medium tabular-nums app-text${isInactive ? " line-through" : ""}`}>
                   {formatMoney(line.price)} ₽
                 </td>
-                <td className="border-b app-border px-5 py-2.5 text-right text-sm font-bold tabular-nums app-text">
+                <td className={`border-b app-border px-5 py-2.5 text-right text-sm font-bold tabular-nums app-text${isInactive ? " line-through" : ""}`}>
                   {formatMoney(line.amount)} ₽
                 </td>
                 {canEdit ? (
                   <td className="border-b app-border px-3 py-2.5 text-center no-underline">
-                    {!line.canceled ? (
+                    {!line.canceled && !isPendingCancellation ? (
                       <button
                         aria-label={`Отменить товар ${line.product_name}`}
                         className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-red-300 bg-red-50 text-lg font-bold leading-none text-red-600 transition hover:border-red-500 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
-                        disabled={isCancelling || activeLinesCount <= 1}
+                        disabled={isConfirming || activeLinesCount <= 1}
                         title={activeLinesCount <= 1 ? "Нельзя отменить последнюю строку" : "Отменить строку"}
                         type="button"
                         onClick={() => {
-                          if (activeLinesCount > 1 && !isCancelling) {
+                          if (activeLinesCount > 1 && !isConfirming) {
                             setItemPendingCancellation(line);
                           }
                         }}
                       >
                         ×
                       </button>
+                    ) : isPendingCancellation ? (
+                      <button
+                        aria-label={`Вернуть товар ${line.product_name}`}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-amber-400 bg-amber-100 text-lg font-bold leading-none text-amber-800 transition hover:border-amber-500 hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={isConfirming}
+                        title="Снять пометку на отмену"
+                        type="button"
+                        onClick={() => restoreItem(line)}
+                      >
+                        ↩
+                      </button>
                     ) : null}
                   </td>
                 ) : null}
               </tr>
-            ))}
+            );})}
           </tbody>
         </table>
       </div>
@@ -172,9 +209,9 @@ export function OrderView({ isConfirming = false, onCancelItem, onClose, onConfi
           {canEdit ? (
             <button
               className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white disabled:cursor-wait disabled:opacity-60"
-              disabled={isCancelling || isConfirming}
+              disabled={isConfirming}
               type="button"
-              onClick={() => onConfirm(order)}
+              onClick={() => void confirmOrder()}
             >
               {isConfirming ? <LoadingDots label="Подтверждение заказа" /> : "Подтвердить"}
             </button>
@@ -193,7 +230,7 @@ export function OrderView({ isConfirming = false, onCancelItem, onClose, onConfi
             <div className="mt-5 flex justify-end gap-2">
               <button
                 className="rounded-lg border app-border px-4 py-2 text-sm font-bold app-text transition hover:bg-slate-100"
-                disabled={isCancelling}
+                disabled={isConfirming}
                 type="button"
                 onClick={() => setItemPendingCancellation(null)}
               >
@@ -201,15 +238,38 @@ export function OrderView({ isConfirming = false, onCancelItem, onClose, onConfi
               </button>
               <button
                 className="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700 disabled:cursor-wait disabled:opacity-60"
-                disabled={isCancelling}
+                disabled={isConfirming}
                 type="button"
-                onClick={() => void cancelItem(itemPendingCancellation)}
+                onClick={() => markItemForCancellation(itemPendingCancellation)}
               >
-                {isCancelling ? (
-                  <span className="inline-flex items-center gap-1">
-                    Отмена<LoadingDots label="Отмена строки заказа" />
-                  </span>
-                ) : "Да"}
+                Да
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {isDiscardConfirmationOpen ? (
+        <div
+          aria-modal="true"
+          className="absolute inset-0 z-20 flex items-center justify-center bg-slate-950/35 p-4"
+          role="dialog"
+        >
+          <div className="w-full max-w-sm rounded-xl app-surface p-5 shadow-2xl">
+            <h3 className="text-base font-bold app-text">Отменить изменения?</h3>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                className="rounded-lg border app-border px-4 py-2 text-sm font-bold app-text transition hover:bg-slate-100"
+                type="button"
+                onClick={() => setIsDiscardConfirmationOpen(false)}
+              >
+                Нет
+              </button>
+              <button
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700"
+                type="button"
+                onClick={onClose}
+              >
+                Да
               </button>
             </div>
           </div>

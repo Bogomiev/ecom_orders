@@ -14,6 +14,7 @@ type DialogProps = {
   ariaLabelledBy?: string;
   children: ReactNode;
   className?: string;
+  closeOnBackdrop?: boolean;
   onClose: () => void;
 };
 
@@ -31,6 +32,7 @@ export function Dialog({
   ariaLabelledBy,
   children,
   className = "",
+  closeOnBackdrop = true,
   onClose
 }: DialogProps) {
   const contentRef = useRef<HTMLDivElement>(null);
@@ -81,7 +83,7 @@ export function Dialog({
   }, []);
 
   function handleBackdropMouseDown(event: MouseEvent<HTMLDivElement>) {
-    if (event.target === event.currentTarget) onClose();
+    if (closeOnBackdrop && event.target === event.currentTarget) onClose();
   }
 
   return createPortal(

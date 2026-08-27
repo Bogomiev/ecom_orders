@@ -92,6 +92,11 @@ export function OrderControl({
   }
 
   function requestComplete() {
+    if (activeOrder.quantityBags <= 0) {
+      showNotification("Укажите количество пакетов", "warning");
+      return;
+    }
+
     if (lines.every(isOrderLineComplete)) {
       onComplete(activeOrder);
       return;

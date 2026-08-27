@@ -52,9 +52,20 @@ export const OrdersResponseSchema = z.object({
   items: z.array(OrderSchema)
 });
 
+export enum ConfirmOrderItemAction {
+  CONFIRMED = "CONFIRMED",
+  CANCELLED = "CANCELLED"
+}
+
+export const ConfirmOrderItemSchema = z.object({
+  product_id: z.string().min(1),
+  action: z.enum(ConfirmOrderItemAction)
+});
+
 export const ConfirmOrderRequestSchema = z.object({
   orderId: z.string().min(1),
-  seller: z.string().min(1)
+  seller: z.string().min(1),
+  items: z.array(ConfirmOrderItemSchema)
 });
 
 export const GiveOrderToCourierRequestSchema = z.object({
@@ -67,17 +78,7 @@ export const CancelOrderRequestSchema = z.object({
   seller: z.string().min(1)
 });
 
-export const CancelOrderItemRequestSchema = z.object({
-  orderId: z.string().min(1),
-  productId: z.string().min(1)
-});
-
-export const CancelOrderItemResponseSchema = z.object({
-  code: z.number(),
-  mess: z.string()
-}).passthrough();
-
-export const CompleteOrderRequestSchema = ConfirmOrderRequestSchema.extend({
+export const CompleteOrderRequestSchema = ConfirmOrderRequestSchema.omit({ items: true }).extend({
   quantityBags: z.number().int().min(1).max(9),
   orderControlledItem: z.array(
     OrderControlledItemSchema.omit({ result: true })
