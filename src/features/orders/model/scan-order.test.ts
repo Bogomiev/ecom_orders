@@ -117,7 +117,7 @@ describe("applyBarcodeToOrder", () => {
     });
   });
 
-  it("не ограничивает количество для заказа с сайта", () => {
+  it("не позволяет превысить заказанное количество штучного товара с сайта", () => {
     const filledOrder = {
       ...order,
       source: "  САЙТ ",
@@ -126,6 +126,29 @@ describe("applyBarcodeToOrder", () => {
     const result = applyBarcodeToOrder(
       filledOrder,
       createBarcodeIndex([product]),
+      "4601234567890"
+    );
+
+    expect(result).toMatchObject({
+      status: "error",
+      code: "quantity-exceeded"
+    });
+  });
+
+  it("не ограничивает количество весового товара с сайта", () => {
+    const weightedProduct = { ...product, isWeight: true };
+    const filledOrder = {
+      ...order,
+      source: "  САЙТ ",
+      items: [{
+        ...order.items[0],
+        quantity_fact: 1,
+        is_weight: true
+      }]
+    };
+    const result = applyBarcodeToOrder(
+      filledOrder,
+      createBarcodeIndex([weightedProduct]),
       "4601234567890"
     );
 

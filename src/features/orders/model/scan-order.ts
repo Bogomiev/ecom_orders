@@ -152,9 +152,10 @@ export function applyBarcodeToOrder(
     : barcodeInfo.ratio ?? 1;
   const nextQuantityFact = orderItem.quantity_fact + quantityToAdd;
   const isWeightBarcode = exactBarcodeMatch === undefined && parsedCode.weight !== undefined;
-  const maximumQuantity = isWebsiteOrder(order)
+  const isWeightItem = orderItem.is_weight || isWeightBarcode;
+  const maximumQuantity = isWebsiteOrder(order) && isWeightItem
     ? Number.POSITIVE_INFINITY
-    : orderItem.is_weight || isWeightBarcode
+    : isWeightItem
       ? orderItem.quantity * (1 + WEIGHT_QUANTITY_OVERAGE_PERCENT / 100)
       : orderItem.quantity;
 
