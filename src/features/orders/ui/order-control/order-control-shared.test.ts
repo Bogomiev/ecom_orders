@@ -20,10 +20,11 @@ describe("isOrderLineComplete", () => {
     expect(isOrderLineComplete(line)).toBe(true);
   });
 
-  it("учитывает весовой товар в пределах отклонения ±20%", () => {
+  it("считает весовой товар собранным от 80% плана", () => {
     expect(isOrderLineComplete({ ...line, is_weight: true, quantity_fact: 8 })).toBe(true);
     expect(isOrderLineComplete({ ...line, is_weight: true, quantity_fact: 12 })).toBe(true);
     expect(isOrderLineComplete({ ...line, is_weight: true, quantity_fact: 7.999 })).toBe(false);
-    expect(isOrderLineComplete({ ...line, is_weight: true, quantity_fact: 12.001 })).toBe(false);
+    expect(isOrderLineComplete({ ...line, is_weight: true, quantity_fact: 12.001 })).toBe(true);
+    expect(isOrderLineComplete({ ...line, is_weight: true, quantity_fact: 15 })).toBe(true);
   });
 });

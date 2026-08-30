@@ -12,6 +12,7 @@ import {
   BARCODE_SCANNER_CAPTURE_EVENT,
   formatMoney,
   formatNumber,
+  isOrderLineComplete,
   type ScanNotification
 } from "./order-control-shared";
 
@@ -377,7 +378,7 @@ export function OrderControlDetailsPanel({
           </thead>
           <tbody>
             {lines.map((line) => {
-              const isComplete = line.quantity_fact === line.quantity;
+              const isComplete = isOrderLineComplete(line);
               const isUntouched = line.quantity_fact === 0;
               const factTone = isComplete
                 ? "bg-[#e3f3e9] text-[#00963e]"
