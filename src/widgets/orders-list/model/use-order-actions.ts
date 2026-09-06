@@ -212,6 +212,14 @@ export function useOrderActions({
         orderId: order.uid_1c,
         seller: seller.userId,
         quantityBags: order.quantityBags,
+        addItems: [
+          ...(order.quantityThermalBagsS > 0
+            ? [{ product_id: "termoS", quantity: order.quantityThermalBagsS }]
+            : []),
+          ...(order.quantityThermalBagsM > 0
+            ? [{ product_id: "termoM", quantity: order.quantityThermalBagsM }]
+            : [])
+        ],
         orderControlledItem: getCompleteOrderItems(order)
       });
       notify(

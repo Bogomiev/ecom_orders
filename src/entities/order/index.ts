@@ -43,7 +43,8 @@ export {
   isOrderReady,
   isOrderRequiringAttention,
   isOrderTransferredToCourier,
-  isOrderUnavailableForOpening
+  isOrderUnavailableForOpening,
+  isOzonOrder
 } from "./lib/presentation";
 export type { OrderTone } from "./lib/presentation";
 export {

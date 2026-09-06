@@ -21,6 +21,8 @@ const order: Order = {
   shipment_store_name: "Магазин",
   store_id: "store-1",
   quantityBags: 1,
+  quantityThermalBagsS: 0,
+  quantityThermalBagsM: 0,
   controlledItems: [],
   items: [{
     product_id: "product-1",

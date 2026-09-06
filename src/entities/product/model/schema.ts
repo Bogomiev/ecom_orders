@@ -13,6 +13,7 @@ export const ProductSchema = z.object({
   name: z.string(),
   markingType: z.string(),
   isWeight: z.boolean(),
+  isThermalMode: z.boolean(),
   barcodes: z.array(BarcodeInfoSchema)
 });
 

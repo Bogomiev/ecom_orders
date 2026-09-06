@@ -24,6 +24,8 @@ const order = {
   shipment_store_name: "Магазин",
   store_id: "store",
   quantityBags: 0,
+  quantityThermalBagsS: 0,
+  quantityThermalBagsM: 0,
   controlledItems: [],
   items: [{
     product_id: "product",
@@ -44,6 +46,7 @@ const product = {
   name: "Икра",
   markingType: "Маркируемый",
   isWeight: true,
+  isThermalMode: false,
   barcodes: []
 };
 

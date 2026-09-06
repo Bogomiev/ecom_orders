@@ -40,6 +40,8 @@ export const OrderSchema = z.object({
   shipment_store_name: z.string(),
   store_id: z.string(),
   quantityBags: z.number().int().min(0).max(9),
+  quantityThermalBagsS: z.number().int().min(0).max(9),
+  quantityThermalBagsM: z.number().int().min(0).max(9),
   items: z.array(OrderItemSchema),
   controlledItems: z.array(OrderControlledItemSchema)
 });
@@ -80,6 +82,10 @@ export const CancelOrderRequestSchema = z.object({
 
 export const CompleteOrderRequestSchema = ConfirmOrderRequestSchema.omit({ items: true }).extend({
   quantityBags: z.number().int().min(1).max(9),
+  addItems: z.array(z.object({
+    product_id: z.string().min(1),
+    quantity: z.number().int().min(1)
+  })),
   orderControlledItem: z.array(
     OrderControlledItemSchema.omit({ result: true })
   )

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import type { Order } from "@/entities/order";
+import { isOzonOrder, type Order } from "@/entities/order";
 import type { Product } from "@/entities/product";
 import { Dialog } from "@/shared/ui/dialog";
 import { LoadingDots } from "@/shared/ui/loading-dots";
@@ -32,6 +32,7 @@ export function OrderControl({
   const [notification, setNotification] = useState<ScanNotification | null>(null);
   const [isCloseConfirmationOpen, setIsCloseConfirmationOpen] = useState(false);
   const [isIncompleteConfirmationOpen, setIsIncompleteConfirmationOpen] = useState(false);
+  const [isThermalConfirmationOpen, setIsThermalConfirmationOpen] = useState(false);
 
   useEffect(() => {
     if (notification === null) {
@@ -57,11 +58,25 @@ export function OrderControl({
     isOrderLineComplete
   ).length;
   const progress = lines.length === 0 ? 0 : completedLines / lines.length * 100;
+  const orderProductIds = new Set(lines.map((line) => line.product_id));
+  const showThermalPackages = isOzonOrder(activeOrder) && products.some(
+    (product) => product.isThermalMode && orderProductIds.has(product.uid)
+  );
 
   function setQuantityBags(value: number) {
     onOrderChange({
       ...activeOrder,
       quantityBags: Math.min(MAX_QUANTITY_BAGS, Math.max(0, Math.trunc(value)))
+    });
+  }
+
+  function setThermalPackages(size: "S" | "M", value: number) {
+    const quantity = Math.min(MAX_QUANTITY_BAGS, Math.max(0, Math.trunc(value)));
+    onOrderChange({
+      ...activeOrder,
+      ...(size === "S"
+        ? { quantityThermalBagsS: quantity }
+        : { quantityThermalBagsM: quantity })
     });
   }
 
@@ -98,7 +113,7 @@ export function OrderControl({
     }
 
     if (lines.every(isOrderLineComplete)) {
-      onComplete(activeOrder);
+      requestThermalComplete();
       return;
     }
 
@@ -107,11 +122,30 @@ export function OrderControl({
 
   function confirmIncompleteComplete() {
     setIsIncompleteConfirmationOpen(false);
+    requestThermalComplete();
+  }
+
+  function requestThermalComplete() {
+    if (
+      showThermalPackages &&
+      activeOrder.quantityThermalBagsS === 0 &&
+      activeOrder.quantityThermalBagsM === 0
+    ) {
+      setIsThermalConfirmationOpen(true);
+      return;
+    }
+
     onComplete(activeOrder);
   }
 
   function cancelIncompleteComplete() {
     setIsIncompleteConfirmationOpen(false);
+  }
+
+
+  function confirmWithoutThermalPackage() {
+    setIsThermalConfirmationOpen(false);
+    onComplete(activeOrder);
   }
 
   return (
@@ -173,24 +207,50 @@ export function OrderControl({
 
         <div className="flex items-center gap-4 border-t app-border app-surface-muted px-5 py-3">
           <div className="min-w-0 flex-1">
-            <div className="mb-3 flex items-center gap-2.5">
-              <label className="text-sm font-bold app-text" htmlFor="quantity-bags">
-                Количество пакетов
-              </label>
-              <select
-                id="quantity-bags"
-                aria-label="Количество пакетов"
-                className="h-8 w-16 rounded-md border border-red-500 bg-red-50 px-1 text-center text-sm font-bold tabular-nums text-red-700 outline-none focus:border-red-600 focus:ring-2 focus:ring-red-200 disabled:opacity-60 dark:bg-red-950/40 dark:text-red-300"
-                disabled={isCompleting}
-                value={activeOrder.quantityBags}
-                onChange={(event) => {
-                  setQuantityBags(Number(event.currentTarget.value));
-                }}
-              >
-                {Array.from({ length: MAX_QUANTITY_BAGS + 1 }, (_, value) => (
-                  <option key={value} value={value}>{value}</option>
-                ))}
-              </select>
+            <div className="mb-3 space-y-2">
+              <div className="flex items-center gap-2.5">
+                <label className="text-sm font-bold app-text" htmlFor="quantity-bags">Количество пакетов</label>
+                <select
+                  id="quantity-bags"
+                  aria-label="Количество пакетов"
+                  className="h-8 w-16 rounded-md border border-red-500 bg-red-50 px-1 text-center text-sm font-bold tabular-nums text-red-700 outline-none focus:border-red-600 focus:ring-2 focus:ring-red-200 disabled:opacity-60 dark:bg-red-950/40 dark:text-red-300"
+                  disabled={isCompleting}
+                  value={activeOrder.quantityBags}
+                  onChange={(event) => {
+                    setQuantityBags(Number(event.currentTarget.value));
+                  }}
+                >
+                  {Array.from({ length: MAX_QUANTITY_BAGS + 1 }, (_, value) => (
+                    <option key={value} value={value}>{value}</option>
+                  ))}
+                </select>
+              </div>
+              {showThermalPackages ? (
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <label className="text-sm font-bold app-text" htmlFor="quantity-thermal-bags-s">Термопакет S</label>
+                  <select
+                    id="quantity-thermal-bags-s"
+                    aria-label="Термопакет S"
+                    className="h-8 w-16 rounded-md border app-border app-surface px-1 text-center text-sm font-bold tabular-nums app-text outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200 disabled:opacity-60"
+                    disabled={isCompleting}
+                    value={activeOrder.quantityThermalBagsS}
+                    onChange={(event) => setThermalPackages("S", Number(event.currentTarget.value))}
+                  >
+                    {Array.from({ length: MAX_QUANTITY_BAGS + 1 }, (_, value) => <option key={value} value={value}>{value}</option>)}
+                  </select>
+                  <label className="text-sm font-bold app-text" htmlFor="quantity-thermal-bags-m">Термопакет M</label>
+                  <select
+                    id="quantity-thermal-bags-m"
+                    aria-label="Термопакет M"
+                    className="h-8 w-16 rounded-md border app-border app-surface px-1 text-center text-sm font-bold tabular-nums app-text outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200 disabled:opacity-60"
+                    disabled={isCompleting}
+                    value={activeOrder.quantityThermalBagsM}
+                    onChange={(event) => setThermalPackages("M", Number(event.currentTarget.value))}
+                  >
+                    {Array.from({ length: MAX_QUANTITY_BAGS + 1 }, (_, value) => <option key={value} value={value}>{value}</option>)}
+                  </select>
+                </div>
+              ) : null}
             </div>
             <div className="mb-1.5 flex items-center justify-between text-xs font-bold">
               <span className="app-text">Собрано позиций</span>
@@ -295,6 +355,22 @@ export function OrderControl({
               >
                 Да
               </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {isThermalConfirmationOpen ? (
+        <div aria-modal="true" className="absolute inset-0 z-20 flex items-center justify-center bg-slate-950/35 p-4" role="dialog">
+          <div className="w-full max-w-md rounded-2xl app-surface p-5 shadow-2xl">
+            <div className="flex items-start gap-3">
+              <div aria-hidden="true" className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-amber-100 text-2xl font-bold text-amber-600">!</div>
+              <h3 className="min-w-0 text-base font-bold app-text">
+                В заказе есть товары с терморежимом. Собрать заказ без термопакета?
+              </h3>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button className="rounded-xl border border-slate-300 app-surface px-4 py-2 text-sm font-bold app-text transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-violet-500" type="button" onClick={() => setIsThermalConfirmationOpen(false)}>Нет</button>
+              <button className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2" type="button" onClick={confirmWithoutThermalPackage}>Да</button>
             </div>
           </div>
         </div>

@@ -3,8 +3,8 @@ import type { Product } from "@/entities/product";
 import { addBarcodeToProductCounting } from "./product-counting";
 
 const products: Product[] = [
-  { uid: "piece", code: "10", name: "Штучный товар", markingType: "", isWeight: false, barcodes: [{ barcode: "4600000000001", unit: "шт", ratio: 5, isBase: true }] },
-  { uid: "weight", code: "12345", name: "Весовой товар", markingType: "", isWeight: true, barcodes: [{ barcode: "2_1234500000_", unit: "кг", ratio: 1, isBase: true }] }
+  { uid: "piece", code: "10", name: "Штучный товар", markingType: "", isWeight: false, isThermalMode: false, barcodes: [{ barcode: "4600000000001", unit: "шт", ratio: 5, isBase: true }] },
+  { uid: "weight", code: "12345", name: "Весовой товар", markingType: "", isWeight: true, isThermalMode: false, barcodes: [{ barcode: "2_1234500000_", unit: "кг", ratio: 1, isBase: true }] }
 ];
 
 describe("addBarcodeToProductCounting", () => {

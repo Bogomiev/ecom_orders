@@ -31,6 +31,8 @@ const order = {
   shipment_store_name: "Магазин",
   store_id: "store",
   quantityBags: 0,
+  quantityThermalBagsS: 0,
+  quantityThermalBagsM: 0,
   items: [],
   controlledItems: []
 } satisfies Order;

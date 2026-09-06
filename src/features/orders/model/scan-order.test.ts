@@ -13,6 +13,7 @@ const product: Product = {
   name: "Икра",
   markingType: "БезОсобенностейУчета",
   isWeight: false,
+  isThermalMode: false,
   barcodes: [{ barcode: "4601234567890", unit: "шт", ratio: 1, isBase: true }]
 };
 
@@ -35,6 +36,8 @@ const order: Order = {
   shipment_store_name: "Магазин",
   store_id: "store-1",
   quantityBags: 0,
+  quantityThermalBagsS: 0,
+  quantityThermalBagsM: 0,
   controlledItems: [],
   items: [{
     product_id: product.uid,
@@ -234,6 +237,7 @@ describe("applyBarcodeToOrder", () => {
     const weightedProduct = {
       ...product,
       isWeight: true,
+  isThermalMode: false,
       barcodes: [{ barcode: "70", unit: "кг", ratio: 1, isBase: true }]
     };
     const weightedOrder = {
@@ -302,6 +306,7 @@ describe("applyBarcodeToOrder", () => {
     const weightedProduct = {
       ...product,
       isWeight: true,
+  isThermalMode: false,
       barcodes: [{ barcode: "70", unit: "кг", ratio: 1, isBase: true }]
     };
     const result = applyBarcodeToOrder(
@@ -322,6 +327,7 @@ describe("applyBarcodeToOrder", () => {
       uid: "ef935ff6-42e9-11e8-9e3b-001dd8b89db0",
       name: "Скумбрия АТЛАНТИЧЕСКАЯ с/м",
       isWeight: false,
+  isThermalMode: false,
       barcodes: [
         { barcode: "2_0003000000_", unit: "кг", ratio: 1, isBase: false },
         { barcode: "30", unit: "кг", ratio: 1, isBase: true }

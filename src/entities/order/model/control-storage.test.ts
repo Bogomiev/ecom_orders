@@ -25,6 +25,8 @@ const order: Order = {
   shipment_store_name: "Магазин",
   store_id: "store",
   quantityBags: 3,
+  quantityThermalBagsS: 2,
+  quantityThermalBagsM: 1,
   items: [{
     product_id: "product",
     product_name: "Товар",
@@ -64,17 +66,25 @@ describe("order control storage", () => {
 
     const restoredOrder = restoreOrderControl({
       ...emptyOrder,
-      quantityBags: 0
+      quantityBags: 0,
+      quantityThermalBagsS: 0,
+      quantityThermalBagsM: 0
     });
     expect(restoredOrder.items[0].quantity_fact).toBe(1);
     expect(restoredOrder.quantityBags).toBe(3);
+    expect(restoredOrder.quantityThermalBagsS).toBe(2);
+    expect(restoredOrder.quantityThermalBagsM).toBe(1);
     clearStoredOrderControl(order);
     const clearedOrder = restoreOrderControl({
       ...emptyOrder,
-      quantityBags: 0
+      quantityBags: 0,
+      quantityThermalBagsS: 0,
+      quantityThermalBagsM: 0
     });
     expect(clearedOrder.items[0].quantity_fact).toBe(0);
     expect(clearedOrder.quantityBags).toBe(0);
+    expect(clearedOrder.quantityThermalBagsS).toBe(0);
+    expect(clearedOrder.quantityThermalBagsM).toBe(0);
   });
 
   it("удаляет сохраненное количество после обнуления строки", () => {

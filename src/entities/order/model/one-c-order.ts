@@ -58,6 +58,8 @@ export function normalizeOneCOrders(data: OneCOrdersResponse): OrdersResponse {
       ...order,
       controlledItems: controlledItems ?? [],
       quantityBags: 0,
+      quantityThermalBagsS: 0,
+      quantityThermalBagsM: 0,
       items: items.map(({ quantity_fact, ...item }) => ({
         ...item,
         product_name: item.product_id,
