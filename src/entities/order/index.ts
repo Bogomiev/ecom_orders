@@ -40,6 +40,7 @@ export {
   getOrderTone,
   isOrderAwaitingAssembly,
   isOrderAwaitingConfirmation,
+  isOrderAwaitingPayment,
   isOrderReady,
   isOrderRequiringAttention,
   isOrderTransferredToCourier,

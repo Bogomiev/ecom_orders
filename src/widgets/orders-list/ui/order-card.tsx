@@ -5,6 +5,7 @@ import {
   getOrderPickBefore,
   getOrderTone,
   isOrderAwaitingConfirmation,
+  isOrderAwaitingPayment,
   isOrderReady,
   isOrderTransferredToCourier,
   isOrderUnavailableForOpening,
@@ -53,6 +54,7 @@ function OrderCardComponent({
   const tone = getOrderTone(order);
   const isConfirmation = isOrderAwaitingConfirmation(order);
   const isReady = isOrderReady(order);
+  const isAwaitingPayment = isOrderAwaitingPayment(order);
   const isTransferredToCourier = isOrderTransferredToCourier(order);
   const isCanceled = isOrderUnavailableForOpening(order);
   const pickBefore = useMemo(
@@ -111,14 +113,14 @@ function OrderCardComponent({
               {isCancelling ? <LoadingDots label="Отмена заказа" /> : "Отмена"}
             </button>
             <button
-              className="order-primary-button min-h-[2.125rem] rounded-lg bg-emerald-600 text-xs font-extrabold text-white"
-              disabled={isActionPending}
+              className="order-primary-button min-h-[2.125rem] rounded-lg bg-emerald-600 text-xs font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={isActionPending || isAwaitingPayment}
               type="button"
               onClick={handlePrimaryAction}
             >
               {isOpening || isConfirming || isCompleting || isGivingOrderToCourier
                 ? <LoadingDots label="Обработка заказа" />
-                : isReady
+                : isReady || isAwaitingPayment
                   ? "Выдать"
                   : isConfirmation
                   ? "Подтвердить заказ"

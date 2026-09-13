@@ -27,6 +27,10 @@ export function isOrderReady(order: Order) {
   return getExtendedStatus(order) === "готов";
 }
 
+export function isOrderAwaitingPayment(order: Order) {
+  return getExtendedStatus(order) === "ожидает оплату";
+}
+
 export function isOrderTransferredToCourier(order: Order) {
   return getExtendedStatus(order) === "передан курьеру";
 }
@@ -48,6 +52,7 @@ export function getOrderTone(order: Order): OrderTone {
 
 export function getOrderStatusLabel(order: Order) {
   const status = getExtendedStatus(order);
+  if (isOrderAwaitingPayment(order)) return "Ожидает оплату";
   if (status === "готов") return "Готов";
   if (status === "отменен") return "Отменен";
   if (status === "передан курьеру") return "Передан курьеру";

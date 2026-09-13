@@ -7,6 +7,7 @@ import {
   getOrderStatusLabel,
   getOrderTone,
   isOrderAwaitingConfirmation,
+  isOrderAwaitingPayment,
   isOrderReady,
   isOrderTransferredToCourier,
   isOrderUnavailableForOpening,
@@ -62,6 +63,7 @@ function OrderCardMiniComponent({
   const marketplace = getMarketplaceLabel(order.source);
   const isConfirmation = isOrderAwaitingConfirmation(order);
   const isReady = isOrderReady(order);
+  const isAwaitingPayment = isOrderAwaitingPayment(order);
   const isTransferredToCourier = isOrderTransferredToCourier(order);
   const isActionPending = isCancelling || isCompleting || isConfirming ||
     isGivingOrderToCourier || isOpening;
@@ -106,10 +108,10 @@ function OrderCardMiniComponent({
             <button className="order-cancel-button min-h-[2.125rem] rounded-lg border border-slate-300 app-surface text-xs font-extrabold disabled:cursor-wait disabled:opacity-60" disabled={areActionsDisabled} type="button" onClick={handleCancel}>
               {isCancelling ? <LoadingDots label="Отмена заказа" /> : "Отмена"}
             </button>
-            <button className="order-primary-button min-h-[2.125rem] rounded-lg bg-emerald-600 text-xs font-extrabold text-white disabled:cursor-wait disabled:opacity-60" disabled={areActionsDisabled} type="button" onClick={handlePrimaryAction}>
+            <button className="order-primary-button min-h-[2.125rem] rounded-lg bg-emerald-600 text-xs font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60" disabled={areActionsDisabled || isAwaitingPayment} type="button" onClick={handlePrimaryAction}>
               {isActionPending
                 ? <LoadingDots label="Обработка заказа" />
-                : isReady ? "Выдать" : isConfirmation ? "Подтвердить заказ" : "Собрать"}
+                : isReady || isAwaitingPayment ? "Выдать" : isConfirmation ? "Подтвердить заказ" : "Собрать"}
             </button>
         </div>
       ) : null}
