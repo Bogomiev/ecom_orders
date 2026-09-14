@@ -12,6 +12,11 @@ TEMPLATES    := $(NGINX_DIR)/templates
 COMPOSE      := sudo docker compose -p $(PROJECT_NAME) --env-file $(ENV_FILE)
 REPO_URL     := https://github.com/Bogomiev/ecom_orders
 
+AUTODEPLOY_SCRIPT := scripts/autodeploy.sh
+DEPLOY_LOG         := deploy.log
+CRON_SCHEDULE       := 0 * * * *
+PROJECT_DIR         := $(abspath .)
+
 # ---------------------------------------------------------------------------
 # Цвета для вывода (ANSI). Отключаются автоматически, если вывод не в терминал.
 # ---------------------------------------------------------------------------
@@ -40,7 +45,8 @@ endef
 
 .PHONY: help install ssl ssl-request ssl-test https no-https build all \
         status logs logs-app logs-nginx logs-certbot restart down \
-        update check-docker ask-domain render-http render-https _render-domain-check up
+        update check-docker ask-domain render-http render-https _render-domain-check up \
+        autodeploy autodeploy-off check-cron
 
 # Голый `make` (без аргумента) выполняет первую цель в файле — пусть это
 # будет безобидный help, а не install, чтобы ничего не запускалось случайно.
@@ -226,6 +232,34 @@ update: ## Обновить код из git (git init+pull на месте, БЕ
 	fi
 	$(call ok,Код обновлён. Файлы деплоя (Makefile/docker-compose.yml/nginx/certbot/.env) не затронуты.)
 	@printf "$(DIM)Что изменилось: git log -1 --stat$(RESET)\n"
+
+##@ 🔁 Автодеплой
+
+autodeploy: check-cron ## Включить автодеплой: раз в час проверять GitHub и применять изменения
+	@chmod +x "$(PROJECT_DIR)/$(AUTODEPLOY_SCRIPT)"
+	@sudo git config --global --add safe.directory "$(PROJECT_DIR)" >/dev/null 2>&1 || true
+	@( sudo crontab -l 2>/dev/null | grep -v -F "$(PROJECT_DIR)/$(AUTODEPLOY_SCRIPT)" ; \
+	   echo "$(CRON_SCHEDULE) \"$(PROJECT_DIR)/$(AUTODEPLOY_SCRIPT)\" >> \"$(PROJECT_DIR)/$(DEPLOY_LOG)\" 2>&1" ) | sudo crontab -
+	$(call ok,Автодеплой включён: проверка GitHub каждый час. Лог изменений: $(DEPLOY_LOG))
+
+autodeploy-off: ## Отключить автодеплой (удалить cron-задачу)
+	@if sudo crontab -l 2>/dev/null | grep -q -F "$(PROJECT_DIR)/$(AUTODEPLOY_SCRIPT)"; then \
+		( sudo crontab -l 2>/dev/null | grep -v -F "$(PROJECT_DIR)/$(AUTODEPLOY_SCRIPT)" ) | sudo crontab -; \
+		printf "$(GREEN)✔ Автодеплой отключён.$(RESET)\n"; \
+	else \
+		printf "$(YELLOW)⚠ Автодеплой не был включён — нечего отключать.$(RESET)\n"; \
+	fi
+
+check-cron:
+	@if command -v crontab >/dev/null 2>&1 && { systemctl is-active --quiet cron 2>/dev/null || systemctl is-active --quiet crond 2>/dev/null || pgrep -x cron >/dev/null 2>&1 || pgrep -x crond >/dev/null 2>&1; }; then \
+		printf "$(GREEN)cron уже установлен и запущен.$(RESET)\n"; \
+	else \
+		printf "$(YELLOW)cron не найден — устанавливаю...$(RESET)\n"; \
+		sudo apt-get update -y; \
+		sudo apt-get install -y cron; \
+		sudo systemctl enable cron --now; \
+		printf "$(GREEN)✔ cron установлен и запущен.$(RESET)\n"; \
+	fi
 
 ##@ 🛠️  Сборка и обслуживание
 
