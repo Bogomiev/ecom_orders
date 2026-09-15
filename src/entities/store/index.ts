@@ -14,13 +14,7 @@ export {
   useIsStoreAuthorized
 } from "./model/store-authorization";
 export {
-  ACCESS_STORES_STORAGE_KEY,
-  CURRENT_ACCESS_TOKEN_STORAGE_KEY,
+  clearLegacyAccessStorage,
   getAccessTokenFromLocation,
-  getStoredAccessToken,
-  getStoreUidForAccessToken,
-  removeAccessTokenFromLocation,
-  removeStoreUidForAccessToken,
-  setStoredAccessToken,
-  setStoreUidForAccessToken
+  removeAccessTokenFromLocation
 } from "./model/access-store";

@@ -1,3 +1,4 @@
+import { requireSession } from "@/server/rms/client";
 import { NextResponse } from "next/server";
 import { SellersResponseSchema } from "@/entities/seller";
 import { fetchOneCJson } from "@/server/one-c/client";
@@ -5,6 +6,8 @@ import { fetchOneCJson } from "@/server/one-c/client";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
+  const authError = await requireSession(request);
+  if (authError) return authError;
   const sellerBarcode = new URL(request.url).searchParams.get("sellerBarcode")?.trim();
 
   if (!sellerBarcode) {

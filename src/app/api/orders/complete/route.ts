@@ -1,3 +1,4 @@
+import { requireSession } from "@/server/rms/client";
 import { NextResponse } from "next/server";
 import {
   CompleteOrderRequestSchema,
@@ -7,6 +8,8 @@ import {
 import { fetchOneCResponse } from "@/server/one-c/client";
 
 export async function POST(request: Request) {
+  const authError = await requireSession(request);
+  if (authError) return authError;
   const parsedBody = CompleteOrderRequestSchema.safeParse(
     await request.json().catch(() => null)
   );

@@ -18,6 +18,7 @@ import { PdfDialog } from "@/shared/ui/pdf-dialog";
 import { usePageNotifications } from "@/shared/lib/use-page-notifications";
 import {
   useHasAccessToken,
+  useIsStoreAuthorized,
   useSelectedStore
 } from "@/entities/store";
 import { OrderCard } from "./order-card";
@@ -62,6 +63,7 @@ export function OrdersList({
   const selectedStore = useSelectedStore();
   const [controlOrder, setControlOrder] = useState<Order | null>(null);
   const hasAccessToken = useHasAccessToken();
+  const isStoreAuthorized = useIsStoreAuthorized();
   const [controlProducts, setControlProducts] = useState<ProductsResponse>([]);
   const [controlLoadError, setControlLoadError] = useState<string | null>(null);
   const [viewOrder, setViewOrder] = useState<Order | null>(null);
@@ -94,7 +96,7 @@ export function OrdersList({
     onRefreshResult: handleOrdersRefreshResult,
     refreshKey: ordersRefreshKey,
     setControlOrder,
-    storeId: selectedStore?.id,
+    storeId: isStoreAuthorized ? selectedStore?.id : undefined,
     historyDays
   });
 
@@ -106,10 +108,11 @@ export function OrdersList({
   }, []);
 
   useEffect(() => {
+    if (!isStoreAuthorized) return;
     void getProducts().catch(() => {
       // Ошибка фоновой загрузки будет показана, если пользователь откроет контроль.
     });
-  }, [getProducts]);
+  }, [getProducts, isStoreAuthorized]);
 
   const filteredOrders = useMemo(() => {
     return state.data?.items ?? [];

@@ -1,3 +1,4 @@
+import { authenticatedFetch } from "@/shared/api/auth";
 import type {
   CancelOrderRequest,
   CancelOrderResponse,
@@ -24,7 +25,7 @@ export const PRODUCTS_SERVICE_PATH = "/api/entities/product";
 export const ORDERS_REFRESH_INTERVAL_SECONDS = 5;
 
 export async function printOrder(orderId: string): Promise<string> {
-  const response = await fetch(
+  const response = await authenticatedFetch(
     `${ORDERS_SERVICE_PATH}/print?${new URLSearchParams({ id: orderId })}`,
     {
       cache: "no-store",

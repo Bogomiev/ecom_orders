@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  referrer: "no-referrer",
   title: "Икорный: Сборка",
   description: "Order management dashboard for ecommerce teams"
 };
