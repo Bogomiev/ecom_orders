@@ -1,7 +1,10 @@
+import { requireSession } from "@/server/rms/client";
 import { NextResponse } from "next/server";
 import { ONE_C_API_URL } from "@/server/one-c/client";
 
 export async function GET(request: Request) {
+  const authError = await requireSession(request);
+  if (authError) return authError;
   const id = new URL(request.url).searchParams.get("id")?.trim();
   if (!id) {
     return NextResponse.json(

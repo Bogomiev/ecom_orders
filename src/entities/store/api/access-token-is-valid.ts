@@ -7,5 +7,6 @@ export async function accessTokenIsValid(
     { cache: "no-store", signal }
   );
 
+  if (response.status >= 500) throw new Error("Не удалось проверить токен доступа в RMS");
   return response.status === 200;
 }

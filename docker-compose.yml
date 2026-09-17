@@ -8,6 +8,9 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
+      RMS_API_URL: ${RMS_API_URL:?Set RMS_API_URL reachable from the app container}
+      APP_ORIGIN: ${APP_ORIGIN:?Set the public HTTPS APP_ORIGIN}
+      RMS_SIGNING_KEY: ${RMS_SIGNING_KEY:?Set the same signing key as RMS}
       ONE_C_API_URL: ${ONE_C_API_URL:-http://dev.1c.ikorniysrv.ru:85/eshop/hs/PAPI/v1}
     expose:
       - "3000"

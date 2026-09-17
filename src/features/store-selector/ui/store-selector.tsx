@@ -4,19 +4,16 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Store } from "@/entities/store";
 import {
   getAccessTokenFromLocation,
-  getStoredAccessToken,
-  getStoreUidForAccessToken,
+  clearLegacyAccessStorage,
+  getStoredStoreSelection,
   removeAccessTokenFromLocation,
-  removeStoreUidForAccessToken,
-  setStoredAccessToken,
   setStoreAuthorized,
   setStoredStoreSelection,
-  setStoreUidForAccessToken,
   toStoreSelectionSnapshot
 } from "@/entities/store";
 import { getStores } from "@/entities/store/api/get-stores";
 import { accessTokenIsValid } from "@/entities/store/api/access-token-is-valid";
-import { pinIsValid } from "@/entities/store/api/pin-is-valid";
+import { login, restoreSession, SESSION_EXPIRED_EVENT } from "@/shared/api/auth";
 import { usePageNotifications } from "@/shared/lib/use-page-notifications";
 import { Dialog } from "@/shared/ui/dialog";
 import { PageNotificationStack } from "@/shared/ui/page-notification";
@@ -149,7 +146,7 @@ function StoreSelectorModal({
   state
 }: {
   onClose: () => void;
-  onSelect: (store: Store, pin: string) => Promise<boolean>;
+  onSelect: (store: Store, pin: string) => Promise<void>;
   state: StoresState;
 }) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -186,11 +183,10 @@ function StoreSelectorModal({
     setIsVerifyingPin(true);
     setPinError(null);
     try {
-      const isSelected = await onSelect(pendingStore, pin);
-      if (!isSelected) {
-        setPinError("Неверный PIN");
-        setPin("");
-      }
+      await onSelect(pendingStore, pin);
+    } catch (error) {
+      setPinError(error instanceof Error ? error.message : "Не удалось выполнить вход");
+      setPin("");
     } finally {
       setIsVerifyingPin(false);
     }
@@ -316,50 +312,41 @@ export function StoreSelector() {
     async function loadStores() {
       try {
         setStoreAuthorized(false);
-        const token = getAccessTokenFromLocation() ?? getStoredAccessToken();
+        clearLegacyAccessStorage();
+        const urlToken = getAccessTokenFromLocation();
+        setIsCheckingAccessToken(true);
+        const session = urlToken ? null : await restoreSession();
+        if (controller.signal.aborted) return;
+        const token = urlToken ?? session?.userToken ?? null;
         setAccessToken(token);
-
         if (token === null) {
+          setIsCheckingAccessToken(false);
           setSelectedStoreId(null);
           setStoredStoreSelection(null);
           setState({ error: null, isLoading: false, stores: [] });
+          notify({ body: "Откройте сервис по ссылке с токеном доступа.", title: "Требуется вход", tone: "error" });
           return;
         }
-
-        setIsCheckingAccessToken(true);
-        const isValid = await accessTokenIsValid(token, controller.signal);
-        setIsCheckingAccessToken(false);
-        if (!isValid) {
-          removeStoreUidForAccessToken(token);
-          if (getStoredAccessToken() === token) {
-            setStoredAccessToken(null);
-          }
+        if (urlToken && !await accessTokenIsValid(urlToken, controller.signal)) {
+          setIsCheckingAccessToken(false);
           setSelectedStoreId(null);
           setStoredStoreSelection(null);
           setIsAccessTokenInvalid(true);
           setState({ error: null, isLoading: false, stores: [] });
-          notify({
-            body: "Откройте сервис с действительным токеном доступа.",
-            title: "Токен доступа недействителен",
-            tone: "error"
-          });
+          notify({ body: "Откройте сервис с действительным токеном доступа.", title: "Токен доступа недействителен", tone: "error" });
           return;
         }
-
+        setIsCheckingAccessToken(false);
         setIsAccessTokenInvalid(false);
-        const data = await getStores(controller.signal);
+        const data = await getStores(controller.signal, urlToken ?? undefined);
+        if (controller.signal.aborted) return;
         setState({ error: null, isLoading: false, stores: data.items });
 
-        const mappedStoreUid = getStoreUidForAccessToken(token);
-        const mappedStore = data.items.find(
-          (store) => store.uid_1c === mappedStoreUid
-        );
-
+        const storedStore = getStoredStoreSelection();
+        const mappedStore = session ? data.items.find((store) => store.id === storedStore?.id) : null;
         if (mappedStore) {
           setSelectedStoreId(mappedStore.id);
           setStoredStoreSelection(toStoreSelectionSnapshot(mappedStore));
-          setStoredAccessToken(token);
-          removeAccessTokenFromLocation();
           setStoreAuthorized(true);
         } else {
           setSelectedStoreId(null);
@@ -381,6 +368,21 @@ export function StoreSelector() {
     return () => controller.abort();
   }, [notify]);
 
+  useEffect(() => {
+    function onExpired() {
+      setStoreAuthorized(false);
+      setSelectedStoreId(null);
+      setStoredStoreSelection(null);
+      const invitationToken = getAccessTokenFromLocation();
+      setAccessToken(invitationToken);
+      if (invitationToken) return;
+      setIsOpen(false);
+      notify({ body: "Откройте сервис по ссылке с токеном доступа.", title: "Сессия завершена", tone: "error" });
+    }
+    window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
+  }, [notify]);
+
   const selectedStore = useMemo(
     () => state.stores.find((store) => store.id === selectedStoreId) ?? null,
     [selectedStoreId, state.stores]
@@ -388,29 +390,18 @@ export function StoreSelector() {
   const handleClose = useCallback(() => setIsOpen(false), []);
 
   async function handleSelect(store: Store, pin: string) {
-    if (accessToken === null || accessToken === undefined) return false;
-
-    try {
-      const isValid = await pinIsValid(pin);
-      if (!isValid) return false;
-
-      setSelectedStoreId(store.id);
-      setStoredStoreSelection(toStoreSelectionSnapshot(store));
-      setStoreUidForAccessToken(accessToken, store.uid_1c);
-      setStoredAccessToken(accessToken);
-      removeAccessTokenFromLocation();
-      setStoreAuthorized(true);
-      window.localStorage.removeItem(LEGACY_STORAGE_KEY);
-      setIsOpen(false);
-      return true;
-    } catch {
-      notify({
-        body: "Не удалось проверить PIN. Попробуйте ещё раз.",
-        title: "Ошибка проверки PIN",
-        tone: "error"
-      });
-      return false;
+    const token = getAccessTokenFromLocation() ?? accessToken;
+    if (!token) {
+      throw new Error("Нет токена доступа. Откройте сервис по ссылке с токеном доступа.");
     }
+
+    await login(token, pin);
+    setSelectedStoreId(store.id);
+    setStoredStoreSelection(toStoreSelectionSnapshot(store));
+    removeAccessTokenFromLocation();
+    setStoreAuthorized(true);
+    window.localStorage.removeItem(LEGACY_STORAGE_KEY);
+    setIsOpen(false);
   }
 
   return (

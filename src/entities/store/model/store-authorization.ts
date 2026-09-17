@@ -2,11 +2,11 @@
 
 import { useSyncExternalStore } from "react";
 
-const STORE_AUTHORIZATION_SESSION_KEY = "ecom-orders-store-authorized";
+let authorized = false;
 const STORE_AUTHORIZATION_CHANGE_EVENT = "ecom-orders-store-authorization-change";
 
 function getSnapshot() {
-  return window.sessionStorage.getItem(STORE_AUTHORIZATION_SESSION_KEY) === "true";
+  return authorized;
 }
 
 function subscribe(callback: () => void) {
@@ -21,11 +21,7 @@ function subscribe(callback: () => void) {
 export function setStoreAuthorized(isAuthorized: boolean) {
   if (typeof window === "undefined") return;
 
-  if (isAuthorized) {
-    window.sessionStorage.setItem(STORE_AUTHORIZATION_SESSION_KEY, "true");
-  } else {
-    window.sessionStorage.removeItem(STORE_AUTHORIZATION_SESSION_KEY);
-  }
+  authorized = isAuthorized;
   window.dispatchEvent(new Event(STORE_AUTHORIZATION_CHANGE_EVENT));
 }
 

@@ -1,3 +1,4 @@
+import { requireSession } from "@/server/rms/client";
 import { NextResponse } from "next/server";
 import {
   normalizeOneCOrders,
@@ -8,6 +9,8 @@ import { fetchOneCJson } from "@/server/one-c/client";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
+  const authError = await requireSession(request);
+  if (authError) return authError;
   try {
     const requestSearchParams = new URL(request.url).searchParams;
     const storeId = requestSearchParams.get("store")?.trim();

@@ -5,8 +5,7 @@ export const StoreSchema = z.object({
   code: z.string(),
   name: z.string(),
   uid_1c: z.string(),
-  address: z.string(),
-  pin: z.string()
+  address: z.string()
 });
 
 export const StoresResponseSchema = z.object({
