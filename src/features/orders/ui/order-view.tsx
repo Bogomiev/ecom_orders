@@ -30,6 +30,7 @@ export function OrderView({ canEdit: requestedCanEdit = false, isConfirming = fa
 
   if (order === null) return null;
 
+  const comment = order.comment.replace(/^Комментарий:\s*/i, "").trim();
   const orderNumber = `${order.number}${order.external_id ? `/${order.external_id}` : ""}`;
   const total = order.items.reduce(
     (sum, line) => line.canceled || pendingCancellationProductIds.has(line.product_id)
@@ -77,7 +78,7 @@ export function OrderView({ canEdit: requestedCanEdit = false, isConfirming = fa
   return (
     <Dialog
       ariaLabelledBy="order-view-title"
-      className="relative mx-auto flex h-[min(650px,calc(100vh-32px))] w-[min(700px,calc(100vw-32px))] flex-col overflow-hidden rounded-2xl app-surface shadow-2xl [zoom:.83]"
+      className="relative mx-auto flex h-[min(650px,calc(100vh-32px))] w-[min(700px,calc(100vw-32px))] flex-col overflow-hidden rounded-2xl app-surface shadow-2xl"
       closeOnBackdrop={!canEdit}
       onClose={requestClose}
     >
@@ -142,6 +143,10 @@ export function OrderView({ canEdit: requestedCanEdit = false, isConfirming = fa
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="border-b app-border px-5 py-3 text-xs leading-4 app-muted">
+          <span className="font-bold app-text">Комментарий:</span>{" "}
+          <span className="whitespace-pre-wrap [overflow-wrap:anywhere]">{comment || "—"}</span>
+        </div>
         <table className="w-full table-fixed border-collapse text-left">
           <colgroup>
             <col />

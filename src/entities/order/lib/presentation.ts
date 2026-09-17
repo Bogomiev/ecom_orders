@@ -2,7 +2,7 @@ import type { Order } from "../model/types";
 import { parseMoscowDateTime } from "../../../shared/lib/date-time";
 
 export function isOzonOrder(order: Order) {
-  return order.source.trim().toLowerCase() === "яндекс.еда";
+  return order.source.trim().toLowerCase() === "ozon";
 }
 
 export type OrderTone = "blue" | "green" | "red" | "yellow";
