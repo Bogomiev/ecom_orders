@@ -34,6 +34,31 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+### Local development with dev CRM
+
+Set these values in `.env.local` (preserve any existing secrets):
+
+```dotenv
+RMS_API_URL=http://51.250.48.55:8082
+APP_ORIGIN=http://localhost:3000
+ONE_C_API_URL=http://dev.1c.ikorniysrv.ru:85/eshop/hs/PAPI/v1
+```
+
+Set `RMS_SIGNING_KEY` to the same secret used by dev CRM (at least 32 bytes);
+an independently generated key will not work. On dev CRM, include
+`http://localhost:3000` in `app_origins` / `RMS_APP_ORIGINS`, preserving other origins.
+Keep `.env.local` out of Git.
+
+Run `npm install` if dependencies are missing, then `npm run dev -- --hostname localhost --port 3000`.
+Restart the development server after changing environment variables. Open
+`http://localhost:3000/?user_token=<dev-user-token>`, choose a store, and enter
+that user's five-digit PIN. Obtain the invitation and PIN from the dev CRM administrator.
+Orders and reference data still use the separate dev 1C backend above.
+
+To check the CRM connection through Next.js, run
+`curl -i http://localhost:3000/api/auth/session`. Without session cookies,
+HTTP 401 is expected; HTTP 502 indicates a proxy/upstream failure.
+
 ## RMS authentication
 
 Copy `.env.example` to `.env.local` for local development (or `.env` for Docker Compose):
