@@ -217,10 +217,15 @@ update: ## Обновить код из git (git init+pull на месте, БЕ
 		printf "$(CYAN)▸ Обновляю код из %s...$(RESET)\n" "$(REPO_URL)"; \
 		BRANCH=$$(git rev-parse --abbrev-ref HEAD 2>/dev/null); \
 		git fetch origin --quiet; \
+		SENSITIVE=$$(git diff --name-only HEAD "origin/$$BRANCH" 2>/dev/null | grep -E '^(Makefile|Dockerfile|docker-compose\.yml|nginx/|scripts/)' || true); \
+		if [ -n "$$SENSITIVE" ]; then \
+			printf "$(YELLOW)⚠ origin/%s меняет файлы деплоя — они выполняются на хосте (в т.ч. от root через cron-автодеплой):$(RESET)\n" "$$BRANCH"; \
+			echo "$$SENSITIVE" | sed 's/^/$(YELLOW)    /'; \
+			printf "$(RESET)$(YELLOW)  Убедитесь, что это действительно ваши изменения, прежде чем продолжать.$(RESET)\n"; \
+		fi; \
 		if ! git pull --ff-only 2>/dev/null; then \
 			printf "$(YELLOW)⚠ Быстрая перемотка невозможна (есть локальные правки/расхождение).$(RESET)\n"; \
-			printf "$(YELLOW)  Делаю git reset --hard origin/%s — ЛОКАЛЬНЫЕ ИЗМЕНЕНИЯ КОДА ИЗ РЕПОЗИТОРИЯ БУДУТ ПОТЕРЯНЫ$(RESET)\n" "$$BRANCH"; \
-			printf "$(YELLOW)  (файлы деплоя — Makefile, docker-compose.yml, nginx/, certbot/, .env — не входят в репозиторий и не тронутся).$(RESET)\n"; \
+			printf "$(YELLOW)  Делаю git reset --hard origin/%s — ЛОКАЛЬНЫЕ ИЗМЕНЕНИЯ (включая Makefile/docker-compose.yml/nginx/scripts — они тоже в репозитории) БУДУТ ПОТЕРЯНЫ$(RESET)\n" "$$BRANCH"; \
 			read -p "Продолжить? [y/N] " CONFIRM; \
 			if [ "$$CONFIRM" = "y" ] || [ "$$CONFIRM" = "Y" ]; then \
 				git reset --hard origin/$$BRANCH; \
@@ -239,7 +244,7 @@ update: ## Обновить код из git (git init+pull на месте, БЕ
 		git checkout -f -B $$BRANCH origin/$$BRANCH; \
 		git branch --set-upstream-to=origin/$$BRANCH $$BRANCH 2>/dev/null || true; \
 	fi
-	$(call ok,Код обновлён. Файлы деплоя (Makefile/docker-compose.yml/nginx/certbot/.env) не затронуты.)
+	$(call ok,Код обновлён.)
 	@printf "$(DIM)Что изменилось: git log -1 --stat$(RESET)\n"
 
 ##@ 🌿 Ветка деплоя (dev / master)
