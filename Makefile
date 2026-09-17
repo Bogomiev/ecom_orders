@@ -15,7 +15,13 @@ REPO_URL     := https://github.com/Bogomiev/ecom_orders
 AUTODEPLOY_SCRIPT := scripts/autodeploy.sh
 DEPLOY_LOG         := deploy.log
 CRON_SCHEDULE       := 0 * * * *
+CRON_MARKER         := lk_ecom_orders autodeploy
 PROJECT_DIR         := $(abspath .)
+
+# Ветка, с которой сейчас работает репозиторий на этой машине — именно за ней
+# следит `make autodeploy` (cron). Переключается через `make branch-dev` /
+# `make branch-master` (см. секцию "Ветка деплоя" ниже).
+CURRENT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "?")
 
 # ---------------------------------------------------------------------------
 # Цвета для вывода (ANSI). Отключаются автоматически, если вывод не в терминал.
@@ -46,7 +52,8 @@ endef
 .PHONY: help install ssl ssl-request ssl-test https no-https build all \
         status logs logs-app logs-nginx logs-certbot restart down \
         update check-docker ask-domain render-http render-https _render-domain-check up \
-        autodeploy autodeploy-off check-cron
+        autodeploy autodeploy-off check-cron _cron-sync-comment \
+        branch branch-dev branch-master _checkout-branch
 
 # Голый `make` (без аргумента) выполняет первую цель в файле — пусть это
 # будет безобидный help, а не install, чтобы ничего не запускалось случайно.
@@ -62,6 +69,8 @@ help:
 	@printf "\n$(BOLD)$(MAGENTA)══════════════════════════════════════════════════════════════════$(RESET)\n"
 	@printf "$(BOLD)  Makefile проекта $(CYAN)$(PROJECT_NAME)$(RESET)$(BOLD) — Docker + nginx + Let's Encrypt$(RESET)\n"
 	@printf "$(BOLD)$(MAGENTA)══════════════════════════════════════════════════════════════════$(RESET)\n"
+	@printf "  $(DIM)Репозиторий:$(RESET) %s\n" "$(REPO_URL)"
+	@printf "  $(DIM)Текущая ветка деплоя:$(RESET) $(BOLD)$(GREEN)%s$(RESET)  $(DIM)(cron автодеплоя следит именно за ней)$(RESET)\n" "$(CURRENT_BRANCH)"
 	@awk 'BEGIN {FS = ":.*##"} \
 		/^[a-zA-Z0-9_-]+:.*##/ { printf "  $(GREEN)%-16s$(RESET) %s\n", $$1, $$2 } \
 		/^##@/ { printf "\n$(BOLD)$(YELLOW)%s$(RESET)\n", substr($$0, 5) }' \
@@ -233,21 +242,86 @@ update: ## Обновить код из git (git init+pull на месте, БЕ
 	$(call ok,Код обновлён. Файлы деплоя (Makefile/docker-compose.yml/nginx/certbot/.env) не затронуты.)
 	@printf "$(DIM)Что изменилось: git log -1 --stat$(RESET)\n"
 
+##@ 🌿 Ветка деплоя (dev / master)
+
+branch: ## Показать текущую ветку деплоя и её статус относительно GitHub
+	@printf "$(BOLD)Репозиторий:$(RESET) %s\n" "$(REPO_URL)"
+	@printf "$(BOLD)Текущая ветка:$(RESET) $(GREEN)%s$(RESET)\n" "$(CURRENT_BRANCH)"
+	@git fetch origin --quiet 2>/dev/null || true; \
+	if git rev-parse --verify "origin/$(CURRENT_BRANCH)" >/dev/null 2>&1; then \
+		LOCAL=$$(git rev-parse HEAD); REMOTE=$$(git rev-parse "origin/$(CURRENT_BRANCH)"); \
+		if [ "$$LOCAL" = "$$REMOTE" ]; then \
+			printf "$(GREEN)✔ синхронизирована с origin/$(CURRENT_BRANCH)$(RESET)\n"; \
+		else \
+			printf "$(YELLOW)⚠ отличается от origin/$(CURRENT_BRANCH) (подтянется автодеплоем по cron, либо сейчас: make update)$(RESET)\n"; \
+		fi; \
+	else \
+		printf "$(YELLOW)⚠ origin/$(CURRENT_BRANCH) не найдена в %s$(RESET)\n" "$(REPO_URL)"; \
+	fi
+	@if sudo crontab -l 2>/dev/null | grep -q -F "$(AUTODEPLOY_SCRIPT)"; then \
+		printf "$(DIM)Автодеплой (cron) включён и следит за этой веткой.$(RESET)\n"; \
+	else \
+		printf "$(DIM)Автодеплой (cron) выключен — включить: make autodeploy$(RESET)\n"; \
+	fi
+
+branch-master: ## Переключить деплой на ветку master (прод) — cron автодеплоя пойдёт за ней
+	@$(MAKE) --no-print-directory _checkout-branch BRANCH=master
+
+branch-dev: ## Переключить деплой на ветку dev — cron автодеплоя пойдёт за ней
+	@$(MAKE) --no-print-directory _checkout-branch BRANCH=dev
+
+_checkout-branch:
+	@if [ -z "$(BRANCH)" ]; then printf "$(RED)✘ Не указана ветка (BRANCH=...)$(RESET)\n"; exit 1; fi
+	@printf "$(CYAN)▸ Переключение на ветку %s...$(RESET)\n" "$(BRANCH)"
+	@git fetch origin "$(BRANCH)" --quiet
+	@if ! git rev-parse --verify "origin/$(BRANCH)" >/dev/null 2>&1; then \
+		printf "$(RED)✘ Ветка origin/%s не найдена в %s$(RESET)\n" "$(BRANCH)" "$(REPO_URL)"; exit 1; \
+	fi
+	@if [ -n "$$(git status --porcelain)" ]; then \
+		printf "$(YELLOW)⚠ Есть незакоммиченные локальные изменения.$(RESET)\n"; \
+		read -p "Продолжить и сбросить их (git checkout -B --force)? [y/N] " CONFIRM; \
+		if [ "$$CONFIRM" != "y" ] && [ "$$CONFIRM" != "Y" ]; then \
+			printf "$(RED)✘ Отменено.$(RESET)\n"; exit 1; \
+		fi; \
+	fi
+	@git checkout -B "$(BRANCH)" "origin/$(BRANCH)" --quiet -f
+	@git branch --set-upstream-to="origin/$(BRANCH)" "$(BRANCH)" >/dev/null 2>&1 || true
+	$(call ok,Переключено на ветку $(BRANCH). Автодеплой (cron) теперь следит за origin/$(BRANCH).)
+	@if sudo crontab -l 2>/dev/null | grep -q -F "$(AUTODEPLOY_SCRIPT)"; then \
+		( sudo crontab -l 2>/dev/null | grep -v -F "$(AUTODEPLOY_SCRIPT)" | grep -v -F "$(CRON_MARKER)" ; \
+		  echo "# $(CRON_MARKER) — ветка: $(BRANCH)" ; \
+		  echo "$(CRON_SCHEDULE) \"$(PROJECT_DIR)/$(AUTODEPLOY_SCRIPT)\" >> \"$(PROJECT_DIR)/$(DEPLOY_LOG)\" 2>&1" ) | sudo crontab -; \
+		printf "$(DIM)cron автодеплоя обновлён: теперь следит за веткой $(BRANCH).$(RESET)\n"; \
+	fi
+	@printf "$(DIM)Подсказка: выполните make build, чтобы сразу пересобрать контейнеры под эту ветку.$(RESET)\n"
+
 ##@ 🔁 Автодеплой
 
-autodeploy: check-cron ## Включить автодеплой: раз в час проверять GitHub и применять изменения
+autodeploy: check-cron ## Включить автодеплой: раз в час проверять GitHub (текущую ветку) и применять изменения
 	@chmod +x "$(PROJECT_DIR)/$(AUTODEPLOY_SCRIPT)"
 	@sudo git config --global --add safe.directory "$(PROJECT_DIR)" >/dev/null 2>&1 || true
-	@( sudo crontab -l 2>/dev/null | grep -v -F "$(PROJECT_DIR)/$(AUTODEPLOY_SCRIPT)" ; \
+	@( sudo crontab -l 2>/dev/null | grep -v -F "$(AUTODEPLOY_SCRIPT)" | grep -v -F "$(CRON_MARKER)" ; \
+	   echo "# $(CRON_MARKER) — ветка: $(CURRENT_BRANCH)" ; \
 	   echo "$(CRON_SCHEDULE) \"$(PROJECT_DIR)/$(AUTODEPLOY_SCRIPT)\" >> \"$(PROJECT_DIR)/$(DEPLOY_LOG)\" 2>&1" ) | sudo crontab -
-	$(call ok,Автодеплой включён: проверка GitHub каждый час. Лог изменений: $(DEPLOY_LOG))
+	$(call ok,Автодеплой включён: проверка ветки $(CURRENT_BRANCH) на GitHub каждый час. Лог изменений: $(DEPLOY_LOG))
 
 autodeploy-off: ## Отключить автодеплой (удалить cron-задачу)
-	@if sudo crontab -l 2>/dev/null | grep -q -F "$(PROJECT_DIR)/$(AUTODEPLOY_SCRIPT)"; then \
-		( sudo crontab -l 2>/dev/null | grep -v -F "$(PROJECT_DIR)/$(AUTODEPLOY_SCRIPT)" ) | sudo crontab -; \
+	@if sudo crontab -l 2>/dev/null | grep -q -F "$(AUTODEPLOY_SCRIPT)"; then \
+		( sudo crontab -l 2>/dev/null | grep -v -F "$(AUTODEPLOY_SCRIPT)" | grep -v -F "$(CRON_MARKER)" ) | sudo crontab -; \
 		printf "$(GREEN)✔ Автодеплой отключён.$(RESET)\n"; \
 	else \
 		printf "$(YELLOW)⚠ Автодеплой не был включён — нечего отключать.$(RESET)\n"; \
+	fi
+
+# Обновляет только комментарий-метку над cron-задачей автодеплоя, чтобы в
+# `crontab -l` сразу было видно, какую ветку он сейчас деплоит — не трогает
+# расписание и ничего не делает, если автодеплой выключен.
+_cron-sync-comment:
+	@if sudo crontab -l 2>/dev/null | grep -q -F "$(AUTODEPLOY_SCRIPT)"; then \
+		( sudo crontab -l 2>/dev/null | grep -v -F "$(AUTODEPLOY_SCRIPT)" | grep -v -F "$(CRON_MARKER)" ; \
+		  echo "# $(CRON_MARKER) — ветка: $(CURRENT_BRANCH)" ; \
+		  echo "$(CRON_SCHEDULE) \"$(PROJECT_DIR)/$(AUTODEPLOY_SCRIPT)\" >> \"$(PROJECT_DIR)/$(DEPLOY_LOG)\" 2>&1" ) | sudo crontab -; \
+		printf "$(DIM)cron автодеплоя обновлён: теперь следит за веткой $(CURRENT_BRANCH).$(RESET)\n"; \
 	fi
 
 check-cron:
