@@ -13,7 +13,10 @@ TEMPLATES    := $(NGINX_DIR)/templates
 # Это принципиально для автодеплоя — cron запускает его от обычного
 # пользователя (не от root), и sudo в неинтерактивной сессии cron не спросит
 # пароль, а просто зависнет/упадёт.
-COMPOSE      := docker compose -p $(PROJECT_NAME) --env-file $(ENV_FILE)
+# compose.sh оборачивает `docker compose` и гарантирует существование внешней
+# сети rms-ecom-shared перед любой командой (build/up/restart/...) — см. её
+# комментарий. Без этого отдельные таргеты легко забыть подстраховать.
+COMPOSE      := scripts/compose.sh -p $(PROJECT_NAME) --env-file $(ENV_FILE)
 REPO_URL     := https://github.com/Bogomiev/ecom_orders
 
 AUTODEPLOY_SCRIPT := scripts/autodeploy.sh
@@ -176,7 +179,6 @@ _render-domain-check:
 
 up:
 	$(call log,Запуск контейнеров проекта $(PROJECT_NAME)...)
-	@docker network inspect rms-ecom-shared >/dev/null 2>&1 || docker network create rms-ecom-shared >/dev/null
 	@$(COMPOSE) up -d --build app nginx
 	$(call ok,Контейнеры запущены:)
 	@$(COMPOSE) ps
