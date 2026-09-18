@@ -9,13 +9,22 @@ PROJECT_NAME := lk_ecom_orders
 ENV_FILE     := .env
 NGINX_DIR    := nginx/conf.d
 TEMPLATES    := $(NGINX_DIR)/templates
-COMPOSE      := sudo docker compose -p $(PROJECT_NAME) --env-file $(ENV_FILE)
+# Без sudo: требует, чтобы пользователь был в группе docker (см. check-docker).
+# Это принципиально для автодеплоя — cron запускает его от обычного
+# пользователя (не от root), и sudo в неинтерактивной сессии cron не спросит
+# пароль, а просто зависнет/упадёт.
+COMPOSE      := docker compose -p $(PROJECT_NAME) --env-file $(ENV_FILE)
 REPO_URL     := https://github.com/Bogomiev/ecom_orders
 
 AUTODEPLOY_SCRIPT := scripts/autodeploy.sh
+CRON_SCHEDULE_SCRIPT := scripts/cron-schedule.sh
 DEPLOY_LOG         := deploy.log
-CRON_SCHEDULE       := 0 * * * *
 CRON_MARKER         := lk_ecom_orders autodeploy
+# Интервал автодеплоя (в минутах) хранится в .env (AUTODEPLOY_INTERVAL_MIN),
+# чтобы `_checkout-branch` / `_cron-sync-comment` могли пересобрать
+# cron-строку с тем же интервалом, который выбрали при `make autodeploy`,
+# а не откатывали его обратно на дефолтный час.
+AUTODEPLOY_INTERVAL_DEFAULT := 60
 PROJECT_DIR         := $(abspath .)
 
 # Ветка, с которой сейчас работает репозиторий на этой машине — именно за ней
@@ -53,7 +62,8 @@ endef
         status logs logs-app logs-nginx logs-certbot restart down \
         update check-docker ask-domain render-http render-https _render-domain-check up \
         autodeploy autodeploy-off check-cron _cron-sync-comment \
-        branch branch-dev branch-master _checkout-branch
+        branch branch-dev branch-master _checkout-branch \
+        rms
 
 # Голый `make` (без аргумента) выполняет первую цель в файле — пусть это
 # будет безобидный help, а не install, чтобы ничего не запускалось случайно.
@@ -86,7 +96,7 @@ help:
 
 ##@ 🚀 Установка
 
-install: check-docker ask-domain render-http up ## Установить Docker, спросить домен/email, поднять контейнеры (HTTP)
+install: check-docker ask-domain rms render-http up ## Установить Docker, спросить домен/email/RMS, поднять контейнеры (HTTP)
 
 check-docker:
 	$(call log,Проверка и обновление списка пакетов...)
@@ -120,8 +130,8 @@ check-docker:
 		printf "\n$(YELLOW)$(BOLD)  ВАЖНО:$(RESET) $(YELLOW)право работать с docker без sudo вступит в силу\n"; \
 		printf "  только в НОВОЙ сессии. Прямо сейчас выполните в этом терминале:$(RESET)\n\n"; \
 		printf "      $(BOLD)newgrp docker$(RESET)\n\n"; \
-		printf "  $(DIM)(или переподключитесь по SSH). Сам Makefile использует sudo и$(RESET)\n"; \
-		printf "  $(DIM)в перелогине не нуждается.$(RESET)\n\n"; \
+		printf "  $(DIM)(или переподключитесь по SSH) — без этого другие команды Makefile$(RESET)\n"; \
+		printf "  $(DIM)(make up/build/status/...) не смогут обратиться к docker.$(RESET)\n\n"; \
 	else \
 		printf "$(GREEN)Пользователь %s уже в группе docker.$(RESET)\n" "$$USER"; \
 	fi
@@ -169,6 +179,36 @@ up:
 	@$(COMPOSE) up -d --build app nginx
 	$(call ok,Контейнеры запущены:)
 	@$(COMPOSE) ps
+
+##@ 🔗 Интеграция с RMS
+
+# Спрашивает по очереди RMS_API_URL / APP_ORIGIN / RMS_SIGNING_KEY: показывает
+# текущее значение из .env (или дефолт, если переменной ещё нет) и предлагает
+# его подтвердить Enter'ом либо ввести новое. Меняет .env только для тех
+# переменных, значение которых реально отличается от того, что там уже было.
+rms: ## Настроить интеграцию с RMS (RMS_API_URL, APP_ORIGIN, RMS_SIGNING_KEY) в .env
+	@touch $(ENV_FILE)
+	@ask_var() { \
+		VAR_NAME="$$1"; DEFAULT_VAL="$$2"; LABEL="$$3"; \
+		CURRENT=$$(grep "^$$VAR_NAME=" $(ENV_FILE) 2>/dev/null | head -n1 | cut -d '=' -f2-); \
+		if [ -z "$$CURRENT" ] && ! grep -q "^$$VAR_NAME=" $(ENV_FILE) 2>/dev/null; then \
+			CURRENT="$$DEFAULT_VAL"; \
+		fi; \
+		read -p "$$(printf '$(BOLD)%s$(RESET) $(DIM)[%s]$(RESET): ' "$$LABEL" "$$CURRENT")" INPUT; \
+		if [ -z "$$INPUT" ]; then VALUE="$$CURRENT"; else VALUE="$$INPUT"; fi; \
+		if [ "$$VALUE" != "$$CURRENT" ]; then \
+			sed -i "/^$$VAR_NAME=/d" $(ENV_FILE); \
+			echo "$$VAR_NAME=$$VALUE" >> $(ENV_FILE); \
+			printf "$(GREEN)  ✔ %s=%s (обновлено)$(RESET)\n" "$$VAR_NAME" "$$VALUE"; \
+		else \
+			grep -q "^$$VAR_NAME=" $(ENV_FILE) 2>/dev/null || echo "$$VAR_NAME=$$VALUE" >> $(ENV_FILE); \
+			printf "$(DIM)  = %s=%s (без изменений)$(RESET)\n" "$$VAR_NAME" "$$VALUE"; \
+		fi; \
+	}; \
+	ask_var RMS_API_URL "http://localhost:8082" "RMS_API_URL (адрес API RMS)"; \
+	ask_var APP_ORIGIN "http://localhost:3000" "APP_ORIGIN (адрес этого приложения)"; \
+	ask_var RMS_SIGNING_KEY "" "RMS_SIGNING_KEY (ключ подписи запросов к RMS)"
+	$(call ok,Интеграция с RMS сохранена в $(ENV_FILE).)
 
 ##@ 🔐 SSL / HTTPS
 
@@ -263,8 +303,10 @@ branch: ## Показать текущую ветку деплоя и её ст�
 	else \
 		printf "$(YELLOW)⚠ origin/$(CURRENT_BRANCH) не найдена в %s$(RESET)\n" "$(REPO_URL)"; \
 	fi
-	@if sudo crontab -l 2>/dev/null | grep -q -F "$(AUTODEPLOY_SCRIPT)"; then \
-		printf "$(DIM)Автодеплой (cron) включён и следит за этой веткой.$(RESET)\n"; \
+	@if crontab -l 2>/dev/null | grep -q -F "$(AUTODEPLOY_SCRIPT)"; then \
+		MIN=$$(grep '^AUTODEPLOY_INTERVAL_MIN=' $(ENV_FILE) 2>/dev/null | cut -d '=' -f2-); \
+		MIN=$${MIN:-$(AUTODEPLOY_INTERVAL_DEFAULT)}; \
+		printf "$(DIM)Автодеплой (cron) включён и следит за этой веткой (интервал: %s мин).$(RESET)\n" "$$MIN"; \
 	else \
 		printf "$(DIM)Автодеплой (cron) выключен — включить: make autodeploy$(RESET)\n"; \
 	fi
@@ -292,27 +334,47 @@ _checkout-branch:
 	@git checkout -B "$(BRANCH)" "origin/$(BRANCH)" --quiet -f
 	@git branch --set-upstream-to="origin/$(BRANCH)" "$(BRANCH)" >/dev/null 2>&1 || true
 	$(call ok,Переключено на ветку $(BRANCH). Автодеплой (cron) теперь следит за origin/$(BRANCH).)
-	@if sudo crontab -l 2>/dev/null | grep -q -F "$(AUTODEPLOY_SCRIPT)"; then \
-		( sudo crontab -l 2>/dev/null | grep -v -F "$(AUTODEPLOY_SCRIPT)" | grep -v -F "$(CRON_MARKER)" ; \
-		  echo "# $(CRON_MARKER) — ветка: $(BRANCH)" ; \
-		  echo "$(CRON_SCHEDULE) \"$(PROJECT_DIR)/$(AUTODEPLOY_SCRIPT)\" >> \"$(PROJECT_DIR)/$(DEPLOY_LOG)\" 2>&1" ) | sudo crontab -; \
-		printf "$(DIM)cron автодеплоя обновлён: теперь следит за веткой $(BRANCH).$(RESET)\n"; \
+	@if crontab -l 2>/dev/null | grep -q -F "$(AUTODEPLOY_SCRIPT)"; then \
+		MIN=$$(grep '^AUTODEPLOY_INTERVAL_MIN=' $(ENV_FILE) 2>/dev/null | cut -d '=' -f2-); \
+		MIN=$${MIN:-$(AUTODEPLOY_INTERVAL_DEFAULT)}; \
+		SCHEDULE=$$("$(CRON_SCHEDULE_SCRIPT)" "$$MIN" 2>/dev/null) || { MIN=$(AUTODEPLOY_INTERVAL_DEFAULT); SCHEDULE=$$("$(CRON_SCHEDULE_SCRIPT)" "$$MIN"); }; \
+		( crontab -l 2>/dev/null | grep -v -F "$(AUTODEPLOY_SCRIPT)" | grep -v -F "$(CRON_MARKER)" ; \
+		  echo "# $(CRON_MARKER) — ветка: $(BRANCH), интервал: $${MIN} мин" ; \
+		  echo "$$SCHEDULE * * \"$(PROJECT_DIR)/$(AUTODEPLOY_SCRIPT)\" >> \"$(PROJECT_DIR)/$(DEPLOY_LOG)\" 2>&1" ) | crontab -; \
+		printf "$(DIM)cron автодеплоя обновлён: теперь следит за веткой $(BRANCH) (интервал прежний: %s мин).$(RESET)\n" "$$MIN"; \
 	fi
 	@printf "$(DIM)Подсказка: выполните make build, чтобы сразу пересобрать контейнеры под эту ветку.$(RESET)\n"
 
 ##@ 🔁 Автодеплой
 
-autodeploy: check-cron ## Включить автодеплой: раз в час проверять GitHub (текущую ветку) и применять изменения
-	@chmod +x "$(PROJECT_DIR)/$(AUTODEPLOY_SCRIPT)"
-	@sudo git config --global --add safe.directory "$(PROJECT_DIR)" >/dev/null 2>&1 || true
-	@( sudo crontab -l 2>/dev/null | grep -v -F "$(AUTODEPLOY_SCRIPT)" | grep -v -F "$(CRON_MARKER)" ; \
-	   echo "# $(CRON_MARKER) — ветка: $(CURRENT_BRANCH)" ; \
-	   echo "$(CRON_SCHEDULE) \"$(PROJECT_DIR)/$(AUTODEPLOY_SCRIPT)\" >> \"$(PROJECT_DIR)/$(DEPLOY_LOG)\" 2>&1" ) | sudo crontab -
-	$(call ok,Автодеплой включён: проверка ветки $(CURRENT_BRANCH) на GitHub каждый час. Лог изменений: $(DEPLOY_LOG))
+autodeploy: check-cron ## Включить автодеплой: спросить интервал (в минутах) проверки GitHub и применять изменения
+	@chmod +x "$(PROJECT_DIR)/$(AUTODEPLOY_SCRIPT)" "$(PROJECT_DIR)/$(CRON_SCHEDULE_SCRIPT)"
+	@git config --global --add safe.directory "$(PROJECT_DIR)" >/dev/null 2>&1 || true
+# Разовая миграция со старой схемы (задача стояла в root-crontab): убираем
+# её оттуда, иначе после переезда на пользовательский crontab деплой будет
+# запускаться дважды — от root по старой записи и от пользователя по новой.
+	@if sudo -n true 2>/dev/null || [ -t 0 ]; then \
+		sudo crontab -l 2>/dev/null | grep -v -F "$(AUTODEPLOY_SCRIPT)" | grep -v -F "$(CRON_MARKER)" | sudo crontab - 2>/dev/null || true; \
+	fi
+	@touch $(ENV_FILE)
+	@CURRENT=$$(grep '^AUTODEPLOY_INTERVAL_MIN=' $(ENV_FILE) 2>/dev/null | cut -d '=' -f2-); \
+	CURRENT=$${CURRENT:-$(AUTODEPLOY_INTERVAL_DEFAULT)}; \
+	while :; do \
+		read -p "$$(printf '$(BOLD)Интервал проверки GitHub, в минутах$(RESET) $(DIM)[%s]$(RESET) (<60 — каждые N минут; кратно 60 — каждые N/60 часов): ' "$$CURRENT")" MIN_INPUT; \
+		MIN=$${MIN_INPUT:-$$CURRENT}; \
+		if SCHEDULE=$$("$(CRON_SCHEDULE_SCRIPT)" "$$MIN" 2>&1); then break; fi; \
+		printf "$(RED)✘ %s$(RESET)\n" "$$SCHEDULE"; \
+	done; \
+	sed -i '/^AUTODEPLOY_INTERVAL_MIN=/d' $(ENV_FILE); \
+	echo "AUTODEPLOY_INTERVAL_MIN=$$MIN" >> $(ENV_FILE); \
+	( crontab -l 2>/dev/null | grep -v -F "$(AUTODEPLOY_SCRIPT)" | grep -v -F "$(CRON_MARKER)" ; \
+	  echo "# $(CRON_MARKER) — ветка: $(CURRENT_BRANCH), интервал: $${MIN} мин" ; \
+	  echo "$$SCHEDULE * * \"$(PROJECT_DIR)/$(AUTODEPLOY_SCRIPT)\" >> \"$(PROJECT_DIR)/$(DEPLOY_LOG)\" 2>&1" ) | crontab -; \
+	printf "$(GREEN)✔ Автодеплой включён: проверка ветки $(CURRENT_BRANCH) на GitHub каждые %s мин. Лог изменений: $(DEPLOY_LOG)$(RESET)\n" "$$MIN"
 
 autodeploy-off: ## Отключить автодеплой (удалить cron-задачу)
-	@if sudo crontab -l 2>/dev/null | grep -q -F "$(AUTODEPLOY_SCRIPT)"; then \
-		( sudo crontab -l 2>/dev/null | grep -v -F "$(AUTODEPLOY_SCRIPT)" | grep -v -F "$(CRON_MARKER)" ) | sudo crontab -; \
+	@if crontab -l 2>/dev/null | grep -q -F "$(AUTODEPLOY_SCRIPT)"; then \
+		( crontab -l 2>/dev/null | grep -v -F "$(AUTODEPLOY_SCRIPT)" | grep -v -F "$(CRON_MARKER)" ) | crontab -; \
 		printf "$(GREEN)✔ Автодеплой отключён.$(RESET)\n"; \
 	else \
 		printf "$(YELLOW)⚠ Автодеплой не был включён — нечего отключать.$(RESET)\n"; \
@@ -322,11 +384,14 @@ autodeploy-off: ## Отключить автодеплой (удалить cron-
 # `crontab -l` сразу было видно, какую ветку он сейчас деплоит — не трогает
 # расписание и ничего не делает, если автодеплой выключен.
 _cron-sync-comment:
-	@if sudo crontab -l 2>/dev/null | grep -q -F "$(AUTODEPLOY_SCRIPT)"; then \
-		( sudo crontab -l 2>/dev/null | grep -v -F "$(AUTODEPLOY_SCRIPT)" | grep -v -F "$(CRON_MARKER)" ; \
-		  echo "# $(CRON_MARKER) — ветка: $(CURRENT_BRANCH)" ; \
-		  echo "$(CRON_SCHEDULE) \"$(PROJECT_DIR)/$(AUTODEPLOY_SCRIPT)\" >> \"$(PROJECT_DIR)/$(DEPLOY_LOG)\" 2>&1" ) | sudo crontab -; \
-		printf "$(DIM)cron автодеплоя обновлён: теперь следит за веткой $(CURRENT_BRANCH).$(RESET)\n"; \
+	@if crontab -l 2>/dev/null | grep -q -F "$(AUTODEPLOY_SCRIPT)"; then \
+		MIN=$$(grep '^AUTODEPLOY_INTERVAL_MIN=' $(ENV_FILE) 2>/dev/null | cut -d '=' -f2-); \
+		MIN=$${MIN:-$(AUTODEPLOY_INTERVAL_DEFAULT)}; \
+		SCHEDULE=$$("$(CRON_SCHEDULE_SCRIPT)" "$$MIN" 2>/dev/null) || { MIN=$(AUTODEPLOY_INTERVAL_DEFAULT); SCHEDULE=$$("$(CRON_SCHEDULE_SCRIPT)" "$$MIN"); }; \
+		( crontab -l 2>/dev/null | grep -v -F "$(AUTODEPLOY_SCRIPT)" | grep -v -F "$(CRON_MARKER)" ; \
+		  echo "# $(CRON_MARKER) — ветка: $(CURRENT_BRANCH), интервал: $${MIN} мин" ; \
+		  echo "$$SCHEDULE * * \"$(PROJECT_DIR)/$(AUTODEPLOY_SCRIPT)\" >> \"$(PROJECT_DIR)/$(DEPLOY_LOG)\" 2>&1" ) | crontab -; \
+		printf "$(DIM)cron автодеплоя обновлён: теперь следит за веткой $(CURRENT_BRANCH) (интервал прежний: %s мин).$(RESET)\n" "$$MIN"; \
 	fi
 
 check-cron:
