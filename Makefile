@@ -191,7 +191,14 @@ up:
 # переменных, значение которых реально отличается от того, что там уже было.
 rms: ## Настроить интеграцию с RMS (RMS_API_URL, APP_ORIGIN, RMS_SIGNING_KEY) в .env
 	@touch $(ENV_FILE)
-	@ask_var() { \
+	@printf "$(BOLD)RMS_API_URL — какой адрес указывать:$(RESET)\n"; \
+	printf "  $(DIM)•$(RESET) rms и ecom_orders $(BOLD)на одном сервере$(RESET) — $(GREEN)http://rms-app:8082$(RESET)\n"; \
+	printf "    (это имя контейнера rms в общей сети rms-ecom-shared, см. docker-compose.yml;\n"; \
+	printf "    $(BOLD)НЕ$(RESET) localhost/127.0.0.1 — внутри контейнера ecom_orders это указывает сам на себя)\n"; \
+	printf "  $(DIM)•$(RESET) rms $(BOLD)на другом сервере$(RESET) — его реальный публичный адрес, например https://rms.example.com\n\n"
+	@DOMAIN_VAL=$$(grep '^DOMAIN=' $(ENV_FILE) 2>/dev/null | head -n1 | cut -d '=' -f2-); \
+	if [ -n "$$DOMAIN_VAL" ]; then APP_ORIGIN_DEFAULT="https://$$DOMAIN_VAL"; else APP_ORIGIN_DEFAULT="http://localhost:3000"; fi; \
+	ask_var() { \
 		VAR_NAME="$$1"; DEFAULT_VAL="$$2"; LABEL="$$3"; \
 		CURRENT=$$(grep "^$$VAR_NAME=" $(ENV_FILE) 2>/dev/null | head -n1 | cut -d '=' -f2-); \
 		if [ -z "$$CURRENT" ] && ! grep -q "^$$VAR_NAME=" $(ENV_FILE) 2>/dev/null; then \
@@ -208,9 +215,15 @@ rms: ## Настроить интеграцию с RMS (RMS_API_URL, APP_ORIGIN,
 			printf "$(DIM)  = %s=%s (без изменений)$(RESET)\n" "$$VAR_NAME" "$$VALUE"; \
 		fi; \
 	}; \
-	ask_var RMS_API_URL "http://rms-app:8082" "RMS_API_URL (адрес API RMS в сети rms-ecom-shared)"; \
-	ask_var APP_ORIGIN "http://localhost:3000" "APP_ORIGIN (адрес этого приложения)"; \
-	ask_var RMS_SIGNING_KEY "" "RMS_SIGNING_KEY (ключ подписи запросов к RMS)"
+	ask_var RMS_API_URL "http://rms-app:8082" "RMS_API_URL (адрес API RMS)"; \
+	ask_var APP_ORIGIN "$$APP_ORIGIN_DEFAULT" "APP_ORIGIN (публичный адрес этого приложения; в проде — https, совпадает с DOMAIN)"; \
+	ask_var RMS_SIGNING_KEY "" "RMS_SIGNING_KEY (ключ подписи запросов к RMS — тот же, что и в rms/.env)"
+	@APP_ORIGIN_SAVED=$$(grep '^APP_ORIGIN=' $(ENV_FILE) 2>/dev/null | head -n1 | cut -d '=' -f2-); \
+	printf "\n$(YELLOW)⚠ Не забудьте на сервере rms:$(RESET)\n"; \
+	printf "  1) добавить $(BOLD)%s$(RESET) в RMS_APP_ORIGINS (rms/.env) — командой $(BOLD)make rms-key$(RESET) в каталоге rms;\n" "$$APP_ORIGIN_SAVED"; \
+	printf "     app_origins в config/local.yaml сам по себе не работает — docker-compose.yml всегда\n"; \
+	printf "     передаёт RMS_APP_ORIGINS в контейнер, и она имеет приоритет над yaml.\n"; \
+	printf "  2) использовать тот же RMS_SIGNING_KEY, что указан там.\n"
 	$(call ok,Интеграция с RMS сохранена в $(ENV_FILE).)
 
 ##@ 🔐 SSL / HTTPS
