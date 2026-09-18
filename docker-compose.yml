@@ -16,6 +16,7 @@ services:
       - "3000"
     networks:
       - webnet
+      - rms-ecom-shared
 
   nginx:
     image: nginx:1.27-alpine
@@ -51,3 +52,7 @@ services:
 networks:
   webnet:
     driver: bridge
+  # Общая сеть с rms (только сервис app, nginx/certbot сюда не подключаются).
+  # Создаётся заранее: docker network create rms-ecom-shared
+  rms-ecom-shared:
+    external: true

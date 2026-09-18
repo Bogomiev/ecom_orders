@@ -176,6 +176,7 @@ _render-domain-check:
 
 up:
 	$(call log,Запуск контейнеров проекта $(PROJECT_NAME)...)
+	@docker network inspect rms-ecom-shared >/dev/null 2>&1 || docker network create rms-ecom-shared >/dev/null
 	@$(COMPOSE) up -d --build app nginx
 	$(call ok,Контейнеры запущены:)
 	@$(COMPOSE) ps
@@ -205,7 +206,7 @@ rms: ## Настроить интеграцию с RMS (RMS_API_URL, APP_ORIGIN,
 			printf "$(DIM)  = %s=%s (без изменений)$(RESET)\n" "$$VAR_NAME" "$$VALUE"; \
 		fi; \
 	}; \
-	ask_var RMS_API_URL "http://localhost:8082" "RMS_API_URL (адрес API RMS)"; \
+	ask_var RMS_API_URL "http://rms-app:8082" "RMS_API_URL (адрес API RMS в сети rms-ecom-shared)"; \
 	ask_var APP_ORIGIN "http://localhost:3000" "APP_ORIGIN (адрес этого приложения)"; \
 	ask_var RMS_SIGNING_KEY "" "RMS_SIGNING_KEY (ключ подписи запросов к RMS)"
 	$(call ok,Интеграция с RMS сохранена в $(ENV_FILE).)
