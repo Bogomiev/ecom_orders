@@ -356,7 +356,7 @@ _checkout-branch:
 		SCHEDULE=$$("$(CRON_SCHEDULE_SCRIPT)" "$$MIN" 2>/dev/null) || { MIN=$(AUTODEPLOY_INTERVAL_DEFAULT); SCHEDULE=$$("$(CRON_SCHEDULE_SCRIPT)" "$$MIN"); }; \
 		( crontab -l 2>/dev/null | grep -v -F "$(AUTODEPLOY_SCRIPT)" | grep -v -F "$(CRON_MARKER)" ; \
 		  echo "# $(CRON_MARKER) — ветка: $(BRANCH), интервал: $${MIN} мин" ; \
-		  echo "$$SCHEDULE * * \"$(PROJECT_DIR)/$(AUTODEPLOY_SCRIPT)\" >> \"$(PROJECT_DIR)/$(DEPLOY_LOG)\" 2>&1" ) | crontab -; \
+		  echo "$$SCHEDULE * * * \"$(PROJECT_DIR)/$(AUTODEPLOY_SCRIPT)\" >> \"$(PROJECT_DIR)/$(DEPLOY_LOG)\" 2>&1" ) | crontab -; \
 		printf "$(DIM)cron автодеплоя обновлён: теперь следит за веткой $(BRANCH) (интервал прежний: %s мин).$(RESET)\n" "$$MIN"; \
 	fi
 	@printf "$(DIM)Подсказка: выполните make build, чтобы сразу пересобрать контейнеры под эту ветку.$(RESET)\n"
@@ -385,7 +385,7 @@ autodeploy: check-cron ## Включить автодеплой: спросит�
 	echo "AUTODEPLOY_INTERVAL_MIN=$$MIN" >> $(ENV_FILE); \
 	( crontab -l 2>/dev/null | grep -v -F "$(AUTODEPLOY_SCRIPT)" | grep -v -F "$(CRON_MARKER)" ; \
 	  echo "# $(CRON_MARKER) — ветка: $(CURRENT_BRANCH), интервал: $${MIN} мин" ; \
-	  echo "$$SCHEDULE * * \"$(PROJECT_DIR)/$(AUTODEPLOY_SCRIPT)\" >> \"$(PROJECT_DIR)/$(DEPLOY_LOG)\" 2>&1" ) | crontab -; \
+	  echo "$$SCHEDULE * * * \"$(PROJECT_DIR)/$(AUTODEPLOY_SCRIPT)\" >> \"$(PROJECT_DIR)/$(DEPLOY_LOG)\" 2>&1" ) | crontab -; \
 	printf "$(GREEN)✔ Автодеплой включён: проверка ветки $(CURRENT_BRANCH) на GitHub каждые %s мин. Лог изменений: $(DEPLOY_LOG)$(RESET)\n" "$$MIN"
 
 autodeploy-off: ## Отключить автодеплой (удалить cron-задачу)
@@ -406,7 +406,7 @@ _cron-sync-comment:
 		SCHEDULE=$$("$(CRON_SCHEDULE_SCRIPT)" "$$MIN" 2>/dev/null) || { MIN=$(AUTODEPLOY_INTERVAL_DEFAULT); SCHEDULE=$$("$(CRON_SCHEDULE_SCRIPT)" "$$MIN"); }; \
 		( crontab -l 2>/dev/null | grep -v -F "$(AUTODEPLOY_SCRIPT)" | grep -v -F "$(CRON_MARKER)" ; \
 		  echo "# $(CRON_MARKER) — ветка: $(CURRENT_BRANCH), интервал: $${MIN} мин" ; \
-		  echo "$$SCHEDULE * * \"$(PROJECT_DIR)/$(AUTODEPLOY_SCRIPT)\" >> \"$(PROJECT_DIR)/$(DEPLOY_LOG)\" 2>&1" ) | crontab -; \
+		  echo "$$SCHEDULE * * * \"$(PROJECT_DIR)/$(AUTODEPLOY_SCRIPT)\" >> \"$(PROJECT_DIR)/$(DEPLOY_LOG)\" 2>&1" ) | crontab -; \
 		printf "$(DIM)cron автодеплоя обновлён: теперь следит за веткой $(CURRENT_BRANCH) (интервал прежний: %s мин).$(RESET)\n" "$$MIN"; \
 	fi
 
