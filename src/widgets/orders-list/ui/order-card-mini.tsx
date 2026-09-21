@@ -111,7 +111,7 @@ function OrderCardMiniComponent({
             <button className="order-primary-button min-h-[2.125rem] rounded-lg bg-emerald-600 text-xs font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60" disabled={areActionsDisabled || isAwaitingPayment} type="button" onClick={handlePrimaryAction}>
               {isActionPending
                 ? <LoadingDots label="Обработка заказа" />
-                : isReady || isAwaitingPayment ? "Выдать" : isConfirmation ? "Подтвердить заказ" : "Собрать"}
+                : isReady || isAwaitingPayment ? "Выдать" : isConfirmation ? "Открыть заказ" : "Собрать"}
             </button>
         </div>
       ) : null}

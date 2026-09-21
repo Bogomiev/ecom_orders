@@ -123,7 +123,7 @@ function OrderCardComponent({
                 : isReady || isAwaitingPayment
                   ? "Выдать"
                   : isConfirmation
-                  ? "Подтвердить заказ"
+                  ? "Открыть заказ"
                   : "Собрать"}
             </button>
         </div>
