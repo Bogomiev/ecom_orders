@@ -11,6 +11,8 @@ import { OrdersPageHeader } from "@/widgets/orders-screen-header";
 import { PricePrinting } from "@/widgets/price-printing";
 import { ServiceDesk } from "@/widgets/service-desk";
 
+import { ServiceDashboard } from "./service-dashboard";
+
 export function HomePage() {
   const [ordersCount, setOrdersCount] = useState(0);
   const [notificationOrdersCount, setNotificationOrdersCount] = useState(0);
@@ -22,10 +24,10 @@ export function HomePage() {
       <div className="flex h-full min-h-0 flex-col">
         <OrdersPageHeader ordersCount={notificationOrdersCount} />
 
-        <div className="dashboard-grid grid min-h-0 flex-1 items-start overflow-hidden md:grid-cols-2 xl:grid-cols-5">
+        <ServiceDashboard>
         <WidgetPanel
           accent="blue"
-          className="orders-widget h-full min-h-0 self-stretch md:col-span-2 xl:col-span-1"
+          className="orders-widget h-full min-h-0 self-stretch"
           count={ordersCount}
           description="Обработка и сборка"
           icon="cart"
@@ -62,7 +64,7 @@ export function HomePage() {
         <PricePrinting />
         <ServiceDesk />
         <KeyIndicators />
-        </div>
+        </ServiceDashboard>
       </div>
     </PageShell>
   );

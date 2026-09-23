@@ -14,7 +14,7 @@ type WidgetPanelProps = {
   title?: string;
 };
 
-function WidgetIcon({ name }: { name: WidgetIconName }) {
+export function WidgetIcon({ name }: { name: WidgetIconName }) {
   const paths: Record<WidgetIconName, ReactNode> = {
     cart: (
       <>
