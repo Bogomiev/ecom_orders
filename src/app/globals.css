@@ -390,3 +390,9 @@ button {
   .dashboard-grid { grid-template-columns: 1fr; }
   .widget-panel { min-height: 0; }
 }
+
+.goods-widget > .widget-content {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
