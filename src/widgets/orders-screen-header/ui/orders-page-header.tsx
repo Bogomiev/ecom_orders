@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { StoreSelector } from "@/features/store-selector";
 import { SellerSelector } from "@/features/seller-selector";
 import { playNotificationSound } from "@/shared/lib/notification-sound";
@@ -41,7 +42,7 @@ export function OrdersPageHeader({ ordersCount }: OrdersPageHeaderProps) {
     <>
       <header className="top-header flex min-h-[4.5rem] items-center justify-between gap-4 border-b app-border app-surface px-3 py-2">
         <div className="header-identity flex min-w-0 flex-1 items-center gap-3">
-          <div className="brand-mark grid h-8 w-8 shrink-0 place-items-center rounded-lg text-base font-black text-white">Р</div>
+          <Image src="/icon.svg" alt="Икорный: Сборка" width={32} height={32} className="brand-mark" unoptimized />
           <div className="header-selectors flex min-w-0 flex-1 flex-wrap gap-2">
             <StoreSelector />
             <SellerSelector />

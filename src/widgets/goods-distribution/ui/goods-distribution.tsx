@@ -1,5 +1,8 @@
 "use client";
 
+import { useIsStoreAuthorized, useSelectedStore } from "@/entities/store";
+import { ProductInfoDialog } from "./product-info-dialog";
+import { ProductInfoIcon } from "./product-info-icon";
 import { useState } from "react";
 import type { ProductsResponse } from "@/entities/product";
 import { WidgetPanel } from "@/shared/ui/widget-panel";
@@ -8,6 +11,9 @@ import { GoodsReceipts } from "@/widgets/goods-receipts/ui/goods-receipts";
 import { ProductCountingDialog } from "./product-counting-dialog";
 
 export function GoodsDistribution() {
+  const store = useSelectedStore();
+  const authorized = useIsStoreAuthorized();
+  const [infoOpen, setInfoOpen] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -37,8 +43,13 @@ export function GoodsDistribution() {
           </span>
           <span>Подсчет товара</span>
         </button>
+        <button className="mt-2 flex w-full items-center gap-3 rounded-xl border app-border app-surface-muted px-3 py-3 text-left text-sm font-extrabold app-text transition hover:border-teal-400 hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-400" type="button" onClick={() => setInfoOpen(true)}>
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-teal-100 text-teal-700"><ProductInfoIcon /></span>
+          <span>Информация о товаре</span>
+        </button>
         <GoodsReceipts />
       </WidgetPanel>
+      {infoOpen ? <ProductInfoDialog key={`${authorized}-${store?.id}`} storeId={authorized ? store?.id : undefined} onClose={() => setInfoOpen(false)} /> : null}
       {isOpen ? <ProductCountingDialog isLoading={isLoading} isOpen loadError={loadError} products={products} onClose={() => setIsOpen(false)} /> : null}
     </>
   );

@@ -437,3 +437,15 @@ button {
   .document-lines tbody td[data-label]::before { content: attr(data-label); display: block; margin-bottom: 4px; font-size: 10px; font-weight: 500; color: var(--muted); text-decoration: none; }
   .document-lines tbody td:nth-child(5) { grid-column: 1 / -1; text-align: right; }
 }
+
+.product-info-result:hover,
+.product-info-result:focus {
+  background-color: #ccfbf1;
+  color: #134e4a;
+}
+
+:root[data-theme="dark"] .product-info-result:hover,
+:root[data-theme="dark"] .product-info-result:focus {
+  background-color: #115e59;
+  color: #f0fdfa;
+}
