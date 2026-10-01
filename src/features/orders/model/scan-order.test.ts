@@ -89,6 +89,69 @@ describe("parseScannedCode", () => {
 });
 
 describe("applyBarcodeToOrder", () => {
+  const scannedMark = "010001622990644321serial";
+
+  it.each(["016229906443", "0016229906443", "00016229906443"])(
+    "находит марку по GTIN %s и сохраняет её в заказе",
+    (barcode) => {
+      const markedProduct = {
+        ...product,
+        barcodes: [{ ...product.barcodes[0], barcode }]
+      };
+      const markedOrder = {
+        ...order,
+        items: [{ ...order.items[0], marking_product: true }]
+      };
+      const index = createBarcodeIndex([markedProduct]);
+      const result = applyBarcodeToOrder(markedOrder, index, scannedMark);
+
+      expect(result.status).toBe("success");
+      if (result.status === "success") {
+        expect(result.order.items[0].quantity_fact).toBe(1);
+        expect(result.order.controlledItems[0].mark).toBe(scannedMark);
+        expect(applyBarcodeToOrder(result.order, index, scannedMark)).toMatchObject({
+          status: "error",
+          code: "mark-already-scanned"
+        });
+      }
+    }
+  );
+
+  it.each([scannedMark, "00016229906443", "0016229906443"])(
+    "сохраняет приоритет прежнего совпадения %s перед дополнением нулями",
+    (barcode) => {
+      const fallbackProduct = {
+        ...product,
+        uid: "fallback-product",
+        barcodes: [{ ...product.barcodes[0], barcode: "016229906443" }]
+      };
+      const preferredProduct = {
+        ...product,
+        barcodes: [{ ...product.barcodes[0], barcode }]
+      };
+      const result = applyBarcodeToOrder(
+        order,
+        createBarcodeIndex([fallbackProduct, preferredProduct]),
+        scannedMark
+      );
+
+      expect(result).toMatchObject({ status: "success", product: preferredProduct });
+    }
+  );
+
+  it("не дополняет нулями обычный штрихкод при поиске", () => {
+    const paddedProduct = {
+      ...product,
+      barcodes: [{ ...product.barcodes[0], barcode: "00016229906443" }]
+    };
+
+    expect(applyBarcodeToOrder(
+      order,
+      createBarcodeIndex([paddedProduct]),
+      "016229906443"
+    )).toMatchObject({ status: "error", code: "barcode-not-found" });
+  });
+
   it("увеличивает фактическое количество найденного товара", () => {
     const result = applyBarcodeToOrder(
       order,

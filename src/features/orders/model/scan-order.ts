@@ -108,10 +108,24 @@ export function applyBarcodeToOrder(
   const barcode = scannedBarcode.trim();
   const parsedCode = parseScannedCode(barcode);
   const exactBarcodeMatch = barcodeIndex.get(barcode);
-  const barcodeMatch = exactBarcodeMatch ?? parsedCode.lookupBarcodes
+  let barcodeMatch = exactBarcodeMatch ?? parsedCode.lookupBarcodes
     .filter((lookupBarcode) => lookupBarcode !== barcode)
     .map((lookupBarcode) => barcodeIndex.get(lookupBarcode))
     .find((match) => match !== undefined);
+
+  if (barcodeMatch === undefined && parsedCode.isMark) {
+    const gtin = parsedCode.lookupBarcodes[0];
+
+    for (const [productBarcode, entry] of barcodeIndex) {
+      if (
+        /^(?:\d{8}|\d{12}|\d{13}|\d{14})$/.test(productBarcode) &&
+        productBarcode.padStart(14, "0") === gtin
+      ) {
+        barcodeMatch = entry;
+        break;
+      }
+    }
+  }
 
   if (barcodeMatch === undefined) {
     return { status: "error", code: "barcode-not-found", barcode };
