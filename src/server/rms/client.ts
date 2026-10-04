@@ -44,11 +44,12 @@ export async function requireSession(request: Request): Promise<NextResponse | n
   }
 }
 
-export async function proxyRMS(request: Request, path: string, checkOrigin = false) {
+export async function proxyRMS(request: Request, path: string, checkOrigin = false, timeoutMs = 15_000) {
   try {
     if (checkOrigin && !trustedOrigin(request)) return authError(403, 1002, "Недопустимый источник запроса");
     const response = await fetchRMS(path, {
       method: request.method, headers: rmsHeaders(request),
+      signal: AbortSignal.timeout(timeoutMs),
       body: ["GET", "HEAD"].includes(request.method) ? undefined : await request.text()
     });
     const headers = new Headers({ "Content-Type": response.headers.get("Content-Type") ?? "application/json", "Cache-Control": "no-store" });

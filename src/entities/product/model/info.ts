@@ -14,7 +14,8 @@ const ProductReceiptSchema = z.object({
   number: z.string(),
   supplier: z.string(),
   store_id: z.string(),
-  product_id: z.string()
+  product_id: z.string(),
+  quantity: z.number().optional()
 });
 const ProductReceiptsSchema = z.array(ProductReceiptSchema).nullish().transform((value) => value ?? []);
 
@@ -36,6 +37,11 @@ export const ProductInfoSchema = z.object({
   images: z.array(ProductImageSchema).nullish().transform((images) => images ?? []),
   price: z.number(),
   stock: z.number(),
+  sold_yesterday_quantity: z.number().optional(),
+  sold_week_quantity: z.number().optional(),
+  receipts_yesterday_quantity: z.number().optional(),
+  receipts_week_quantity: z.number().optional(),
+  stock_days: z.number().optional(),
   price_eshop: z.number(),
   price_ozon: z.number(),
   price_yandex_eats: z.number(),

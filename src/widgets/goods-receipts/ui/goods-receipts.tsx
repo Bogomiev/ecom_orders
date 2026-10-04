@@ -100,19 +100,19 @@ function GoodsReceiptsService({ storeId }: { storeId?: string }) {
   }
 
   return (
-    <section className="mt-3 min-h-0">
-      <button type="button" aria-expanded={expanded} aria-controls="goods-receipts-list" disabled={pending !== null} onClick={() => setExpanded((value) => !value)} className="flex w-full items-center gap-3 rounded-xl border app-border app-surface-muted px-3 py-3 text-left text-sm font-extrabold app-text transition hover:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-60">
+    <section className="mt-3 min-h-0 rounded-xl border app-border app-surface-muted">
+      <button type="button" aria-expanded={expanded} aria-controls="goods-receipts-list" disabled={pending !== null} onClick={() => setExpanded((value) => !value)} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-extrabold app-text transition focus:outline-none focus:ring-2 focus:ring-inset focus:ring-teal-400 disabled:opacity-60">
         <span aria-hidden="true" className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-teal-100 text-teal-700">↓</span>
         <span className="flex-1">Приемка</span>
         <span className="grid h-8 min-w-8 place-items-center rounded-full bg-indigo-100 text-xs font-black text-indigo-600">{data?.totalItems ?? 0}</span>
         <span aria-hidden="true">{expanded ? "⌃" : "⌄"}</span>
       </button>
-      <div id="goods-receipts-list" hidden={!expanded} className="mt-3 space-y-3">
+      <div id="goods-receipts-list" hidden={!expanded} className="space-y-3 px-3 pb-3">
         {!storeId ? <p className="text-sm app-muted">Выберите торговую точку</p> : null}
         {isLoading || pending === "opening" ? <LoadingDots label="Загрузка приемок" /> : null}
         {error ? <p role="alert" className="text-sm text-red-500">{error}</p> : null}
         {data?.items.length === 0 ? <p className="text-sm app-muted">Нет приходов</p> : null}
-        {data?.items.map((item) => <article key={item.id} className="order-full-card order-full-card-blue w-full rounded-xl border-2 border-blue-500 app-surface-muted p-2.5">
+        {data?.items.map((item) => <article key={item.id} className="w-full rounded-xl app-surface p-2.5 shadow-[0_2px_8px_rgb(0_0_0/12%)]">
           <div className="order-card-header flex items-center gap-2.5">
             <button type="button" disabled={pending !== null} onClick={() => void openReceipt(item)} className="min-w-0 flex-1 break-words text-left text-xs font-semibold app-text hover:underline">{item.number} ↗</button>
           </div>

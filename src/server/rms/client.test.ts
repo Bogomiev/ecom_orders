@@ -1,5 +1,5 @@
 import { createHmac } from "node:crypto";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { proxyRMS, requireSession } from "./client";
 const secret = "01234567890123456789012345678901";
 function token() {
@@ -10,6 +10,7 @@ function token() {
 beforeEach(() => {
   vi.stubEnv("RMS_SIGNING_KEY", secret); vi.stubEnv("RMS_API_URL", "http://rms.test"); vi.stubEnv("APP_ORIGIN", "https://app.test");
 });
+afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 describe("RMS proxy and Route Handler guard", () => {
   it("rejects unauthenticated and CSRF requests before contacting RMS or 1C", async () => {
     const fetch = vi.fn(); vi.stubGlobal("fetch", fetch);
@@ -40,6 +41,14 @@ describe("RMS proxy and Route Handler guard", () => {
     expect(init.body).toBe('{"user_token":"invite","password":"12345"}');
     expect(new Headers(init.headers).get("Origin")).toBe("https://app.test");
     expect(init.redirect).toBe("error");
+  });
+  it("allows a longer timeout for product info while keeping the default for auth", async () => {
+    const timeout = vi.spyOn(AbortSignal, "timeout");
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(() => Promise.resolve(new Response("{}"))));
+    await proxyRMS(new Request("https://app.test/api/entities/product/info"), "/product_info", false, 90_000);
+    expect(timeout).toHaveBeenLastCalledWith(90_000);
+    await proxyRMS(new Request("https://app.test/api/auth/session"), "/auth/session");
+    expect(timeout).toHaveBeenLastCalledWith(15_000);
   });
   it("blocks missing/foreign Origin on login and refresh without requiring access", async () => {
     const fetch = vi.fn(); vi.stubGlobal("fetch", fetch);

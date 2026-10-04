@@ -9,5 +9,5 @@ export async function GET(request: Request) {
   if (!storeId || fields.length !== 1) return authError(400, 1, "Укажите магазин и одно условие поиска товара");
   const field = fields[0];
   const query = new URLSearchParams({ store_id: storeId, [field]: params.get(field)!.trim() });
-  return proxyRMS(request, `/product_info?${query}`);
+  return proxyRMS(request, `/product_info?${query}`, false, 90_000);
 }

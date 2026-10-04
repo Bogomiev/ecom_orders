@@ -51,3 +51,12 @@ describe("product receipts", () => {
     expect(formatReceiptDate(input)).toBe(expected);
   });
 });
+
+it("preserves sales, receipt counts, stock days and incoming quantities including zero", () => {
+  const metrics = { sold_yesterday_quantity: 0, sold_week_quantity: 8.56, receipts_yesterday_quantity: 0, receipts_week_quantity: 64, stock_days: 16 };
+  const receipt = { type: "Перемещение", date: "2026-09-22T00:00:00", number: "ИКЦБ-000528", supplier: "101_Сочи_РЦб", store_id: "store", product_id: product.id, quantity: 12.5 };
+  const response = ProductInfoResponseSchema.parse({ resultCode: 0, receipts: [receipt], data: [{ ...product, ...metrics, receipts: [{ ...receipt, quantity: 0 }] }] });
+  expect(response.data[0]).toMatchObject(metrics);
+  expect(response.receipts[0].quantity).toBe(12.5);
+  expect(response.data[0].receipts[0].quantity).toBe(0);
+});

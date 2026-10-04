@@ -49,7 +49,7 @@ export function GoodsDistribution() {
         </button>
         <GoodsReceipts />
       </WidgetPanel>
-      {infoOpen ? <ProductInfoDialog key={`${authorized}-${store?.id}`} storeId={authorized ? store?.id : undefined} onClose={() => setInfoOpen(false)} /> : null}
+      {infoOpen ? <ProductInfoDialog key={`${authorized}-${store?.id}`} storeId={authorized ? store?.id : undefined} unavailableReason={store && !authorized ? "Доступ к торговой точке не подтверждён. Дождитесь завершения входа или выберите точку заново в настройках." : undefined} onClose={() => setInfoOpen(false)} /> : null}
       {isOpen ? <ProductCountingDialog isLoading={isLoading} isOpen loadError={loadError} products={products} onClose={() => setIsOpen(false)} /> : null}
     </>
   );

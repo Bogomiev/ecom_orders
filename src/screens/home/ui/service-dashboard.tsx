@@ -1,9 +1,8 @@
 "use client";
 
-import { Children, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { Children, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { WidgetIcon } from "@/shared/ui/widget-panel";
 
-const MOBILE_QUERY = "(max-width: 659px)";
 const services = [
   { title: "Интернет-заказы", icon: "cart", accent: "blue" },
   { title: "Товары", icon: "cube", accent: "teal" },
@@ -12,14 +11,8 @@ const services = [
   { title: "Дашборд", icon: "chart", accent: "cyan" }
 ] as const;
 
-function subscribe(callback: () => void) {
-  const query = window.matchMedia(MOBILE_QUERY);
-  query.addEventListener("change", callback);
-  return () => query.removeEventListener("change", callback);
-}
-
 export function ServiceDashboard({ children }: { children: ReactNode }) {
-  const mobile = useSyncExternalStore(subscribe, () => window.matchMedia(MOBILE_QUERY).matches, () => false);
+  const [visibleCount, setVisibleCount] = useState(1);
   const [active, setActive] = useState(0);
   const viewport = useRef<HTMLDivElement>(null);
   const activeRef = useRef(active);
@@ -29,9 +22,15 @@ export function ServiceDashboard({ children }: { children: ReactNode }) {
     const element = viewport.current;
     if (!element) return;
     const observer = new ResizeObserver(() => {
-      if (window.matchMedia(MOBILE_QUERY).matches) {
-        element.scrollTo({ left: activeRef.current * element.clientWidth, behavior: "instant" });
-      }
+      const count = window.matchMedia("(max-width: 659px)").matches ? 1
+        : Math.max(1, Math.min(services.length, Math.floor((element.clientWidth + 10) / 250)));
+      const first = Math.min(activeRef.current, services.length - count);
+      element.style.setProperty("--visible-services", String(count));
+      setVisibleCount(count);
+      setActive(first);
+      activeRef.current = first;
+      const step = (element.clientWidth + 10) / count;
+      element.scrollTo({ left: first * step, behavior: "instant" });
     });
     observer.observe(element);
     return () => observer.disconnect();
@@ -40,16 +39,17 @@ export function ServiceDashboard({ children }: { children: ReactNode }) {
   function select(index: number) {
     const element = viewport.current;
     if (!element) return;
-    element.scrollTo({ left: index * element.clientWidth, behavior: "instant" });
-    setActive(index);
+    const first = index < active ? index : index >= active + visibleCount ? index - visibleCount + 1 : active;
+    element.scrollTo({ left: first * (element.clientWidth + 10) / visibleCount, behavior: "instant" });
+    setActive(first);
   }
 
   return (
     <>
-      <div className="service-tabs" role="tablist" aria-label="Сервисы">
+      <div className="service-tabs" role="tablist" aria-label="Сервисы" aria-multiselectable="true" hidden={visibleCount === services.length}>
         {services.map((service, index) => (
           <button key={service.icon} id={`service-tab-${index}`} type="button" role="tab"
-            aria-label={service.title} title={service.title} aria-selected={active === index}
+            aria-label={service.title} title={service.title} aria-selected={index >= active && index < active + visibleCount}
             aria-controls={`service-panel-${index}`} tabIndex={active === index ? 0 : -1}
             className={`service-tab widget-accent-${service.accent}`}
             onClick={() => select(index)}
@@ -66,15 +66,14 @@ export function ServiceDashboard({ children }: { children: ReactNode }) {
           </button>
         ))}
       </div>
-      <div ref={viewport} className="dashboard-grid" onScroll={(event) => {
-        if (!mobile) return;
+      <div ref={viewport} className="dashboard-grid" style={{ "--visible-services": visibleCount } as CSSProperties} onScroll={(event) => {
         const element = event.currentTarget;
-        setActive(Math.max(0, Math.min(services.length - 1, Math.round(element.scrollLeft / element.clientWidth))));
+        setActive(Math.max(0, Math.min(services.length - visibleCount, Math.round(element.scrollLeft / ((element.clientWidth + 10) / visibleCount)))));
       }}>
         {Children.toArray(children).map((child, index) => (
           <div key={services[index].icon} id={`service-panel-${index}`} className="service-panel"
-            role={mobile ? "tabpanel" : undefined} aria-labelledby={mobile ? `service-tab-${index}` : undefined}
-            inert={mobile && active !== index}>
+            role="tabpanel" aria-labelledby={`service-tab-${index}`}
+            inert={index < active || index >= active + visibleCount}>
             {child}
           </div>
         ))}

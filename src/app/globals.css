@@ -369,25 +369,35 @@ button {
 }
 
 
-/* Keep five services side by side while each panel has at least 240px. */
+/* A single full-height row; the viewport determines how many services fit. */
 .home-page-shell { height: 100dvh; min-height: 0; padding-bottom: 12px; }
-.top-header { flex-shrink: 0; flex-wrap: wrap; }
+.top-header { flex-shrink: 0; }
 .header-identity { min-width: 0; }
 .header-selectors > * { max-width: 100%; }
-.header-selectors > button { flex: 1 1 220px; width: auto; }
 .header-actions { flex-shrink: 0; }
 .dashboard-grid {
-  min-height: 0;
-  flex: 1;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  grid-auto-rows: minmax(320px, 1fr);
-  overflow-y: auto;
-  gap: 10px;
+  display: flex; align-items: stretch; min-height: 0; flex: 1; gap: 10px;
+  overflow-x: auto; overflow-y: hidden;
+  scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none;
 }
-.service-panel { min-width: 0; min-height: 0; height: 100%; container-type: inline-size; }
-.service-panel > .widget-panel { max-height: 100%; }
+.dashboard-grid::-webkit-scrollbar { display: none; }
+.service-panel {
+  flex: 0 0 calc((100% - (var(--visible-services, 1) - 1) * 10px) / var(--visible-services, 1));
+  min-width: 0; min-height: 0; height: 100%; container-type: inline-size;
+  scroll-snap-align: start; scroll-snap-stop: always;
+}
+.service-panel > .widget-panel { width: 100%; height: 100%; max-height: 100%; }
 .service-panel .widget-header { flex-shrink: 0; }
-.service-tabs { display: none; }
+.service-panel .widget-content { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.service-panel .orders-widget > .widget-content { overflow: hidden; }
+.service-tabs { display: flex; gap: 6px; flex-shrink: 0; padding-top: 8px; }
+.service-tabs[hidden] { display: none; }
+.service-tab {
+  display: grid; place-items: center; flex: 1; min-width: 0; min-height: 44px;
+  border-radius: 10px; border: 1px solid var(--border); background: var(--panel); color: var(--muted);
+}
+.service-tab[aria-selected="true"] { color: var(--accent); background: var(--accent-soft); border-color: var(--accent); }
+.service-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .document-dialog { max-height: calc(100dvh - 24px); }
 .document-header, .document-footer { flex-shrink: 0; }
 .document-lines td { overflow-wrap: anywhere; }
@@ -404,24 +414,8 @@ button {
   .home-page-shell { padding: 0 12px 12px; }
   .home-page-shell .top-header { margin-inline: -12px; padding: 8px 12px; gap: 8px; }
   .home-page-shell .brand-mark { display: none; }
-  .header-identity { flex-basis: 100%; }
-  .header-selectors { display: grid; grid-template-columns: minmax(0, 1fr); }
-  .header-selectors > * { width: 100%; min-width: 0; }
+  .header-selectors > * { min-width: 0; }
   .header-actions { margin-left: auto; }
-  .service-tabs { display: flex; gap: 6px; flex-shrink: 0; padding-block: 8px; }
-  .service-tab {
-    display: grid; place-items: center; flex: 1; min-width: 0; min-height: 44px;
-    border-radius: 10px; border: 1px solid var(--border); background: var(--panel); color: var(--muted);
-  }
-  .service-tab[aria-selected="true"] { color: var(--accent); background: var(--accent-soft); border-color: var(--accent); }
-  .service-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .dashboard-grid {
-    display: flex; gap: 0; padding-top: 0; overflow-x: auto; overflow-y: hidden;
-    scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none;
-  }
-  .dashboard-grid::-webkit-scrollbar { display: none; }
-  .service-panel { flex: 0 0 100%; scroll-snap-align: start; scroll-snap-stop: always; overflow-y: auto; }
-  .service-panel > .widget-panel { width: 100%; }
   .document-dialog { width: 100%; height: calc(100dvh - 24px); border-radius: 12px; }
   .document-header { flex-wrap: wrap; gap: 10px; padding: 12px; }
   .document-header > :first-child { flex: 1 1 100%; }
@@ -449,3 +443,22 @@ button {
   background-color: #115e59;
   color: #f0fdfa;
 }
+
+.product-info-metrics { background: #eaf7f1; border-color: #bfe5d3; }
+.product-info-metrics-heading { color: #047857; }
+.product-info-metrics-muted { color: #4a6a5f; }
+.product-info-metrics-divider { border-color: #bfe5d3; }
+:root[data-theme="dark"] .product-info-metrics { background: #0f2a24; border-color: #1d5a49; }
+:root[data-theme="dark"] .product-info-metrics-heading { color: #6ee7b7; }
+:root[data-theme="dark"] .product-info-metrics-muted { color: #a7c4ba; }
+:root[data-theme="dark"] .product-info-metrics-divider { border-color: #1d5a49; }
+.product-carousel-arrow { background: rgb(15 22 38 / 30%); transition: background 160ms ease; }
+.product-carousel-arrow:hover, .product-carousel-arrow:focus-visible { background: rgb(15 22 38 / 60%); }
+.product-carousel-arrow:focus-visible { outline: 2px solid #047857; outline-offset: 2px; }
+.product-info-barcode > div { min-width: 0; width: 100%; overflow: hidden; }
+.product-info-barcode svg { width: 100%; max-width: 100%; height: auto; }
+.product-info-skeleton-fill { background-color: #282828; }
+.product-info-skeleton-fill.aspect-square { background-color: #242424; }
+@keyframes product-info-skeleton-pulse { 0%, 100% { opacity: .85; } 50% { opacity: 1; } }
+.product-info-skeleton { animation: product-info-skeleton-pulse 2.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .product-info-skeleton { animation: none; } }

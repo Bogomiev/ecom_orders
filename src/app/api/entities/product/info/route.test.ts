@@ -7,7 +7,7 @@ beforeEach(() => { vi.resetAllMocks(); vi.mocked(requireSession).mockResolvedVal
 it("forwards the current store and only the search field to RMS", async () => {
   const request = new Request("http://app.test/api/entities/product/info?store_id=store&code=123&ignored=x");
   await GET(request);
-  expect(proxyRMS).toHaveBeenCalledWith(request, "/product_info?store_id=store&code=123");
+  expect(proxyRMS).toHaveBeenCalledWith(request, "/product_info?store_id=store&code=123", false, 90_000);
 });
 it("requires an authenticated session", async () => {
   vi.mocked(requireSession).mockResolvedValue(new NextResponse(null, { status: 401 }));
