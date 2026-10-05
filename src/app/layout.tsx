@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   referrer: "no-referrer",
-  title: "Икорный: Сборка",
+  title: "Личный кабинет магазина",
   description: "Order management dashboard for ecommerce teams"
 };
 

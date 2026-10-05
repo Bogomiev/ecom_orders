@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { playNotificationSound } from "@/shared/lib/notification-sound";
 import { showSystemNotification } from "@/shared/lib/system-notification";
 
-const NOTIFICATION_TITLE = "Икорный: сборка";
+const NOTIFICATION_TITLE = "Личный кабинет магазина";
 const INTERVAL_MS = 60_000;
 
 function getOrderCountLabel(count: number) {

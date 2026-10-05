@@ -66,8 +66,9 @@ mobile layout and saved order control.
 The Contacts tile opens the contact memo based on the supplied mobile and tablet
 mockups. It uses one column below 768px and two columns on tablet/desktop, with
 phone links in both layouts. The tablet/desktop Print memo button opens the
-browser print dialog. The print stylesheet produces an A4 memo containing all
-contacts, without the application background, controls or scroll clipping.
+original two-page PDF memo in the document viewer, where Print sends the PDF to
+the printer without recreating its layout in HTML. The source PDF is stored at
+`public/documents/contacts-memo.pdf`; replace this file to update the printed memo.
 Contact details are maintained in `src/widgets/service-desk/ui/contacts-dialog.tsx`.
 
 ### Production deployment

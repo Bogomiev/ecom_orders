@@ -16,7 +16,7 @@ import { useClock } from "@/shared/lib/use-clock";
 import { useTheme } from "@/shared/lib/use-theme";
 import { useActiveOrdersNotification } from "../model/use-active-orders-notification";
 
-const NOTIFICATION_TITLE = "Икорный: сборка";
+const NOTIFICATION_TITLE = "Личный кабинет магазина";
 const TEST_NOTIFICATION_BODY = "Проверка уведомлений для экрана сборки.";
 
 type OrdersPageHeaderProps = {
@@ -49,7 +49,7 @@ export function OrdersPageHeader({ ordersCount }: OrdersPageHeaderProps) {
     <>
       <header className="top-header flex min-h-[4.5rem] items-center justify-between gap-4 border-b app-border app-surface px-3 py-2">
         <div className="header-identity flex min-w-0 flex-1 items-center gap-3">
-          <Image src="/icon.svg" alt="Икорный: Сборка" width={32} height={32} className="brand-mark" unoptimized />
+          <Image src="/icon.svg" alt="Личный кабинет магазина" width={32} height={32} className="brand-mark" unoptimized />
           <div className="header-selectors flex min-w-0 flex-1 flex-wrap gap-2">
             <SellerSelector />
           </div>

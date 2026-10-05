@@ -3,8 +3,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { Dialog } from "./dialog";
 
-type PdfDialogProps = {
-  base64: string;
+type PdfDialogProps = ({ base64: string; src?: never } | { src: string; base64?: never }) & {
   onClose: () => void;
   title?: string;
 };
@@ -21,15 +20,16 @@ function createPdfUrl(base64: string) {
 
 export function PdfDialog({
   base64,
+  src,
   onClose,
   title = "Просмотр PDF"
 }: PdfDialogProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const pdfUrl = useMemo(() => createPdfUrl(base64), [base64]);
+  const pdfUrl = useMemo(() => base64 !== undefined ? createPdfUrl(base64) : src, [base64, src]);
 
   useEffect(() => {
-    return () => URL.revokeObjectURL(pdfUrl);
-  }, [pdfUrl]);
+    if (base64 !== undefined) return () => URL.revokeObjectURL(pdfUrl);
+  }, [base64, pdfUrl]);
 
   function handlePrint() {
     iframeRef.current?.contentWindow?.print();

@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { PdfDialog } from "@/shared/ui/pdf-dialog";
 import { Dialog } from "@/shared/ui/dialog";
 import "./contacts.css";
 
@@ -78,12 +80,13 @@ function ContactRow({ label, phone }: { label: string; phone: string }) {
 }
 
 export function ContactsDialog({ onClose }: { onClose: () => void }) {
-  return <Dialog ariaLabelledBy="contacts-title" onClose={onClose} className="contacts-dialog">
+  const [memoOpen, setMemoOpen] = useState(false);
+  return <><Dialog ariaLabelledBy="contacts-title" onClose={onClose} className="contacts-dialog">
     <header className="contacts-header">
       <div className="contacts-heading"><h2 id="contacts-title">Контакты</h2><p>Магазины «Икорный» — быстрый доступ</p></div>
       <div className="contacts-actions">
         <button type="button" aria-label="Закрыть" className="contacts-close-button" onClick={onClose}>×</button>
-        <button type="button" className="contacts-print-button" onClick={() => window.print()}><ContactSymbol type="print" />Печать памятки</button>
+        <button type="button" className="contacts-print-button" onClick={() => setMemoOpen(true)}><ContactSymbol type="print" />Печать памятки</button>
       </div>
     </header>
     <div className="contacts-scroll">
@@ -115,5 +118,7 @@ export function ContactsDialog({ onClose }: { onClose: () => void }) {
         <Phone phone="+7 (495) 744-39-53" />
       </footer>
     </div>
-  </Dialog>;
+  </Dialog>
+    {memoOpen ? <PdfDialog src="/documents/contacts-memo.pdf" title="Памятка: служебный телефон и контакты" onClose={() => setMemoOpen(false)} /> : null}
+  </>;
 }
