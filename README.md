@@ -39,7 +39,9 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ### Instruction screenshots
 
 The user guide at `/instructions` is split by service and subservice. Book buttons
-with the letter «И» in service headers open the corresponding guide. The guide
+with a lowercase «i» in service headers open the corresponding guide. They are
+shown only for services with a published guide. General instructions live at
+`/instructions/general` and open from the book button left of Settings. The guide
 uses screenshots of the current UI with explicitly labelled demonstration data
 for store 1116.
 
@@ -58,6 +60,15 @@ confirmation, cancellation and issue; RMS and 1C receive no actions.
 The script also checks shared receipt counts, resetting on store changes,
 instruction links, product alignment, light/dark skeletons, carousel sizes,
 mobile layout and saved order control.
+
+### Service desk contacts
+
+The Contacts tile opens the contact memo based on the supplied mobile and tablet
+mockups. It uses one column below 768px and two columns on tablet/desktop, with
+phone links in both layouts. The tablet/desktop Print memo button opens the
+browser print dialog. The print stylesheet produces an A4 memo containing all
+contacts, without the application background, controls or scroll clipping.
+Contact details are maintained in `src/widgets/service-desk/ui/contacts-dialog.tsx`.
 
 ### Production deployment
 

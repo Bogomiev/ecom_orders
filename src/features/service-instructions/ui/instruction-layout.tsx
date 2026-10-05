@@ -9,7 +9,7 @@ export function Screenshot({ alt, src }: { alt: string; src: string }) {
 }
 
 export function Guide({ children, id, title }: { children: ReactNode; id: string; title: string }) {
-  return <section id={id} className="widget-panel scroll-mt-6 overflow-hidden">
+  return <section id={id} className="widget-panel scroll-mt-28 overflow-hidden">
     <h3 className="border-b app-border px-5 py-4 text-lg font-black app-text sm:px-6">{title}</h3>
     <div className="space-y-4 px-5 py-5 text-sm leading-6 app-text sm:px-6">{children}</div>
   </section>;

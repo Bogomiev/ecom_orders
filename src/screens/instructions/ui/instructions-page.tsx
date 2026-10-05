@@ -10,7 +10,7 @@ export function InstructionsPage({ variant = "services" }: { variant?: "services
 
   return (
     <PageShell>
-      <header className="top-header flex min-h-[4.5rem] items-center justify-between gap-4 border-b app-border app-surface px-3 py-2">
+      <header className="top-header sticky top-0 z-30 flex min-h-[4.5rem] items-center justify-between gap-4 border-b app-border app-surface px-3 py-2">
         <Link className="flex min-w-0 items-center gap-3 rounded-lg app-text focus:outline-none focus:ring-2 focus:ring-blue-500" href="/">
           <span className="header-icon-button grid h-9 w-9 place-items-center rounded-lg border app-border app-surface-muted">
             <svg aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24">
@@ -20,18 +20,18 @@ export function InstructionsPage({ variant = "services" }: { variant?: "services
           <span className="truncate text-sm font-extrabold">На главный экран</span>
         </Link>
         <div className="flex items-center gap-3">
-        <Link href={variant === "general" ? "/instructions" : "/instructions/general"} className="text-sm font-semibold text-blue-600 hover:underline">{variant === "general" ? "Инструкции сервисов" : "Общие инструкции"}</Link>
-        <button
-          aria-label={isDark ? "Включить светлую тему" : "Включить тёмную тему"}
-          className="header-icon-button grid h-9 w-9 place-items-center rounded-lg border app-border app-surface-muted"
-          type="button"
-          onClick={toggleTheme}
-        >
-          <svg aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="8" />
-            {isDark ? <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2" /> : <path d="M12 4a8 8 0 0 0 0 16V4Z" fill="currentColor" stroke="none" />}
-          </svg>
-        </button>
+          <Link href={variant === "general" ? "/instructions" : "/instructions/general"} className="text-sm font-semibold text-blue-600 hover:underline">{variant === "general" ? "Инструкции сервисов" : "Общие инструкции"}</Link>
+          <button
+            aria-label={isDark ? "Включить светлую тему" : "Включить тёмную тему"}
+            className="header-icon-button grid h-9 w-9 place-items-center rounded-lg border app-border app-surface-muted"
+            type="button"
+            onClick={toggleTheme}
+          >
+            <svg aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="8" />
+              {isDark ? <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2" /> : <path d="M12 4a8 8 0 0 0 0 16V4Z" fill="currentColor" stroke="none" />}
+            </svg>
+          </button>
         </div>
       </header>
       {variant === "general" ? <GeneralInstructions /> : <ServiceInstructions />}

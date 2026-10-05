@@ -43,7 +43,7 @@
 .contacts-heading p { margin: 4px 0 0; color: var(--contacts-muted); font-size: 13px; line-height: 1.4; }
 .contacts-actions { display: flex; flex-shrink: 0; gap: 8px; }
 .contacts-close-button, .contacts-print-button { border: 1px solid var(--contacts-border); border-radius: 9px; background: var(--contacts-card); color: var(--contacts-text); }
-.contacts-close-button { display: grid; width: 36px; height: 36px; place-items: center; font-size: 24px; line-height: 1; }
+.contacts-close-button { order: 1; display: grid; width: 36px; height: 36px; place-items: center; font-size: 24px; line-height: 1; }
 .contacts-print-button { display: none; min-height: 36px; align-items: center; gap: 8px; padding: 0 12px; font-size: 13px; font-weight: 700; }
 .contacts-actions button:focus-visible, .contacts-phone:focus-visible { outline: 2px solid var(--contacts-link); outline-offset: 3px; }
 .contacts-actions button:hover { border-color: var(--contacts-link); }

@@ -82,8 +82,8 @@ export function ContactsDialog({ onClose }: { onClose: () => void }) {
     <header className="contacts-header">
       <div className="contacts-heading"><h2 id="contacts-title">Контакты</h2><p>Магазины «Икорный» — быстрый доступ</p></div>
       <div className="contacts-actions">
-        <button type="button" className="contacts-print-button" onClick={() => window.print()}><ContactSymbol type="print" />Печать памятки</button>
         <button type="button" aria-label="Закрыть" className="contacts-close-button" onClick={onClose}>×</button>
+        <button type="button" className="contacts-print-button" onClick={() => window.print()}><ContactSymbol type="print" />Печать памятки</button>
       </div>
     </header>
     <div className="contacts-scroll">

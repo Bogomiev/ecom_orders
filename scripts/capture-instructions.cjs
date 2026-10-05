@@ -99,6 +99,8 @@ const paginate = items => ({ page: 1, perPage: items.length, totalPages: items.l
     await page.goto(baseURL);
     await goods.locator('.widget-count').filter({ hasText: /^2$/ }).waitFor({ timeout: 10000 }).catch(async error => { console.log(await page.locator('body').innerText()); throw error; });
     assert.equal(await goods.locator('.widget-count').innerText(), '2');
+    assert.equal(await page.locator('.widget-header').getByRole('link', { name: /Инструкции:/ }).count(), 2);
+    assert.equal(await page.getByRole('link', { name: 'Общие инструкции', exact: true }).getAttribute('href'), '/instructions/general');
     const enableAlerts = page.getByRole('button', { name: 'Включить оповещения', exact: true });
     if (await enableAlerts.isVisible()) await enableAlerts.click();
     await page.getByRole('button', { name: /Продавец не указан/ }).click();
@@ -232,6 +234,11 @@ const paginate = items => ({ page: 1, perPage: items.length, totalPages: items.l
     assert.equal(await page.locator('[id="goods-info"]').count(), 1);
     assert.equal(await page.locator('[id="goods-receipts"]').count(), 1);
 
+    await page.getByRole('link', { name: 'Общие инструкции', exact: true }).click();
+    await page.waitForURL('**/instructions/general');
+    await page.getByRole('heading', { name: 'Вход и выбор магазина', exact: true }).waitFor();
+    const generalImage = await context.request.get(`${baseURL}/instructions/orders/services-current.png`);
+    assert.equal(generalImage.status(), 200);
     await page.getByRole('link', { name: 'На главный экран' }).click();
     if (await enableAlerts.isVisible()) await enableAlerts.click();
     await goods.locator('.widget-count').filter({ hasText: /^2$/ }).waitFor();

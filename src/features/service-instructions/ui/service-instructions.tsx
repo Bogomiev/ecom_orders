@@ -18,11 +18,11 @@ export function ServiceInstructions() {
     <nav aria-label="Оглавление инструкций" className="mt-4 grid gap-3 sm:grid-cols-2">
       {contents.map(({ id, title, sections }) => <div key={id} className="widget-panel p-4">
         <a href={`#${id}`} className="font-black app-text hover:text-blue-600">{title}</a>
-        {sections.length ? <ul className="mt-3 space-y-2 text-sm">{sections.map(([sectionId, label]) => <li key={sectionId}><a className="app-muted hover:text-blue-600 hover:underline" href={`#${sectionId}`}>{label}</a></li>)}</ul> : <p className="mt-3 text-xs app-muted">Рабочие подсервисы пока не доступны.</p>}
+        <ul className="mt-3 space-y-2 text-sm">{sections.map(([sectionId, label]) => <li key={sectionId}><a className="app-muted hover:text-blue-600 hover:underline" href={`#${sectionId}`}>{label}</a></li>)}</ul>
       </div>)}
     </nav>
 
-    <article id="orders" className="mt-8 scroll-mt-6 space-y-4">
+    <article id="orders" className="mt-8 scroll-mt-28 space-y-4">
       <h2 className="px-1 text-2xl font-black app-text">Интернет-заказы</h2>
       <Guide id="orders-start" title="Список заказов">
         <p>В сервисе <strong>«Интернет-заказы»</strong> найдите заказ. Карточка показывает источник, способ получения, статус, число позиций и срок сборки. Нажмите карточку для подробностей или номер заказа для просмотра состава, суммы и комментария.</p>
@@ -63,7 +63,7 @@ export function ServiceInstructions() {
       </Guide>
     </article>
 
-    <article id="goods" className="mt-8 scroll-mt-6 space-y-4">
+    <article id="goods" className="mt-8 scroll-mt-28 space-y-4">
       <h2 className="px-1 text-2xl font-black app-text">Товары</h2>
       <p className="px-1 text-sm leading-6 app-muted">Счётчик сервиса суммирует активные задания подсервисов. Сейчас задания поступают из «Приемки»: например, две приемки дают значение 2 и в подсервисе, и в заголовке «Товары». Просмотр информации и подсчёт товара не создают задания.</p>
       <Guide id="goods-counting" title="Подсчет товара">
