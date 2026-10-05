@@ -11,7 +11,7 @@ export function ServiceInstructions() {
       <div className="border-l-4 border-blue-600 px-5 py-5 sm:px-7">
         <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-600">Справка</p>
         <h1 className="mt-1 text-2xl font-black app-text sm:text-3xl">Инструкции по сервисам и подсервисам</h1>
-        <p className="mt-2 text-sm leading-6 app-muted">Выберите сервис, затем нужный раздел. Инструкции сервиса открываются по значку книги с «i» слева от его счётчика. Вход, выбор продавца и общие настройки описаны в общей инструкции.</p>
+        <p className="mt-2 text-sm leading-6 app-muted">Выберите сервис, затем нужный раздел. Инструкции сервиса открываются по значку книги с «?» слева от его счётчика. Вход, выбор продавца и общие настройки описаны в общей инструкции.</p>
         <p className="mt-2 text-xs leading-5 app-muted">Скриншоты показывают текущий интерфейс на демонстрационных данных магазина 1116.</p>
       </div>
     </section>
