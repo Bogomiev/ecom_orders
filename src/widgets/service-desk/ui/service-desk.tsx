@@ -5,6 +5,7 @@ export function ServiceDesk() {
     <WidgetPanel
       accent="orange"
       count={0}
+      instructionsHref="/instructions#service-desk"
       description="Обращения поддержки"
       icon="message"
       title="Сервис-деск"

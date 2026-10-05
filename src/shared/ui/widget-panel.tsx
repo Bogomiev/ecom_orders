@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 type WidgetIconName = "cart" | "chart" | "check" | "cube" | "message";
@@ -10,6 +11,7 @@ type WidgetPanelProps = {
   description?: string;
   icon?: WidgetIconName;
   headerAction?: ReactNode;
+  instructionsHref?: string;
   showHeader?: boolean;
   title?: string;
 };
@@ -71,6 +73,7 @@ export function WidgetPanel({
   description,
   icon,
   headerAction,
+  instructionsHref,
   showHeader = true,
   title
 }: WidgetPanelProps) {
@@ -95,12 +98,17 @@ export function WidgetPanel({
                 </p>
               ) : null}
             </div>
-            {headerAction}
-            {typeof count === "number" ? (
-              <span className="widget-count grid h-8 min-w-8 place-items-center rounded-full text-xs font-black">
-                {count}
-              </span>
-            ) : null}
+            <div className="widget-header-actions ml-auto flex shrink-0 items-center gap-2">
+              {headerAction}
+              {instructionsHref ? <Link href={instructionsHref} aria-label={`Инструкции: ${title}`} title={`Инструкции: ${title}`} className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border app-border app-surface-muted app-muted transition hover:border-blue-400 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h6a3 3 0 0 1 2 1 3 3 0 0 1 2-1h6v16h-6a3 3 0 0 0-2 1 3 3 0 0 0-2-1H4Z" /><path d="M8 8v8l8-8v8" /></svg>
+              </Link> : null}
+              {typeof count === "number" ? (
+                <span className="widget-count grid h-8 min-w-8 place-items-center rounded-full text-xs font-black">
+                  {count}
+                </span>
+              ) : null}
+            </div>
           </div>
         </header>
       ) : null}

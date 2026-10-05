@@ -29,6 +29,7 @@ export function HomePage() {
           accent="blue"
           className="orders-widget h-full min-h-0 self-stretch"
           count={ordersCount}
+          instructionsHref="/instructions#orders"
           description="Обработка и сборка"
           icon="cart"
           headerAction={(

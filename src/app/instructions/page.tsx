@@ -3,7 +3,7 @@ import { InstructionsPage } from "@/screens/instructions";
 
 export const metadata: Metadata = {
   title: "Инструкции — Икорный: Сборка",
-  description: "Инструкция по работе с сервисом сборки интернет-заказов"
+  description: "Инструкции по интернет-заказам, подсчету товаров, информации о товаре и приемке"
 };
 
 export default function Instructions() {

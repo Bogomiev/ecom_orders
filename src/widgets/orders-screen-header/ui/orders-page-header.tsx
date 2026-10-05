@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Dialog } from "@/shared/ui/dialog";
 import { useOrderHistoryDays, setStoredOrderHistoryDays } from "@/entities/order";
-import Link from "next/link";
 import Image from "next/image";
 import { StoreSelector } from "@/features/store-selector";
 import { SellerSelector } from "@/features/seller-selector";
@@ -101,7 +100,6 @@ export function OrdersPageHeader({ ordersCount }: OrdersPageHeaderProps) {
               }} />
               <span>дней</span>
             </label>
-            <Link className="block text-sm font-bold text-blue-600" href="/instructions">Инструкции</Link>
           </div>
         </Dialog>
       ) : null}

@@ -36,6 +36,29 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+### Instruction screenshots
+
+The user guide at `/instructions` is split by service and subservice. Book buttons
+with the letter «И» in service headers open the corresponding guide. The guide
+uses screenshots of the current UI with explicitly labelled demonstration data
+for store 1116.
+
+To regenerate the screenshots, start the development server and run:
+
+```bash
+npm run screenshots:instructions
+```
+
+The script uses Playwright Core and installed Chrome (`/usr/bin/google-chrome` by
+default). Set `CHROME_PATH` for another Chrome/Chromium executable and
+`SCREENSHOT_BASE_URL` for another local preview URL. It replaces the current
+screenshots in `public/instructions/orders` and `public/instructions/goods`.
+All API calls are intercepted in an isolated browser context, including order
+confirmation, cancellation and issue; RMS and 1C receive no actions.
+The script also checks shared receipt counts, resetting on store changes,
+instruction links, product alignment, light/dark skeletons, carousel sizes,
+mobile layout and saved order control.
+
 ### Production deployment
 
 Production runs as Docker containers (app + nginx + Let's Encrypt) behind a `Makefile` that handles setup, TLS, builds, and auto-deploy from GitHub. Run this on the server, not locally.

@@ -8,11 +8,19 @@ import type { ProductsResponse } from "@/entities/product";
 import { WidgetPanel } from "@/shared/ui/widget-panel";
 import { fetchProducts } from "@/widgets/orders-list/api/orders";
 import { GoodsReceipts } from "@/widgets/goods-receipts/ui/goods-receipts";
+import { useGoodsReceipts } from "@/widgets/goods-receipts/model/use-goods-receipts";
 import { ProductCountingDialog } from "./product-counting-dialog";
 
 export function GoodsDistribution() {
   const store = useSelectedStore();
   const authorized = useIsStoreAuthorized();
+  const storeId = authorized ? store?.id : undefined;
+  const unavailableReason = store && !authorized ? "Доступ к торговой точке не подтверждён. Дождитесь завершения входа или выберите точку заново в настройках." : undefined;
+  return <GoodsDistributionService key={storeId ?? "unauthorized"} storeId={storeId} unavailableReason={unavailableReason} />;
+}
+
+function GoodsDistributionService({ storeId, unavailableReason }: { storeId?: string; unavailableReason?: string }) {
+  const receipts = useGoodsReceipts(storeId);
   const [infoOpen, setInfoOpen] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -36,7 +44,7 @@ export function GoodsDistribution() {
 
   return (
     <>
-      <WidgetPanel className="goods-widget max-h-full min-h-0" accent="teal" count={0} description="Товародвижение · заказы" icon="cube" title="Товары">
+      <WidgetPanel className="goods-widget max-h-full min-h-0" accent="teal" count={receipts.data?.totalItems ?? 0} instructionsHref="/instructions#goods" description="Товародвижение · заказы" icon="cube" title="Товары">
         <button className="flex w-full items-center gap-3 rounded-xl border app-border app-surface-muted px-3 py-3 text-left text-sm font-extrabold app-text transition hover:border-teal-400 hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-400" type="button" onClick={() => void openProductCounting()}>
           <span aria-hidden="true" className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-teal-100 text-teal-700">
             <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M4 7h16M6 3v4m12-4v4M6 11h2m3 0h2m3 0h2M6 15h2m3 0h2m3 0h2M6 19h2m3 0h2" /><rect height="18" rx="2" width="18" x="3" y="3" /></svg>
@@ -47,9 +55,9 @@ export function GoodsDistribution() {
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-teal-100 text-teal-700"><ProductInfoIcon /></span>
           <span>Информация о товаре</span>
         </button>
-        <GoodsReceipts />
+        <GoodsReceipts storeId={storeId} receipts={receipts} />
       </WidgetPanel>
-      {infoOpen ? <ProductInfoDialog key={`${authorized}-${store?.id}`} storeId={authorized ? store?.id : undefined} unavailableReason={store && !authorized ? "Доступ к торговой точке не подтверждён. Дождитесь завершения входа или выберите точку заново в настройках." : undefined} onClose={() => setInfoOpen(false)} /> : null}
+      {infoOpen ? <ProductInfoDialog storeId={storeId} unavailableReason={unavailableReason} onClose={() => setInfoOpen(false)} /> : null}
       {isOpen ? <ProductCountingDialog isLoading={isLoading} isOpen loadError={loadError} products={products} onClose={() => setIsOpen(false)} /> : null}
     </>
   );

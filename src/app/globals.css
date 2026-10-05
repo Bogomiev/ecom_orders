@@ -407,7 +407,6 @@ button {
   .widget-header > div:not(.widget-accent-line) { flex-wrap: wrap; gap: 8px; }
   .widget-header > div > .min-w-0 { flex-basis: calc(100% - 40px); }
   .widget-header h2 { white-space: normal; overflow-wrap: anywhere; }
-  .widget-count { margin-left: auto; }
 }
 
 @media (max-width: 659px) {
@@ -456,9 +455,10 @@ button {
 .product-carousel-arrow:hover, .product-carousel-arrow:focus-visible { background: rgb(15 22 38 / 60%); }
 .product-carousel-arrow:focus-visible { outline: 2px solid #047857; outline-offset: 2px; }
 .product-info-barcode > div { min-width: 0; width: 100%; overflow: hidden; }
-.product-info-barcode svg { width: 100%; max-width: 100%; height: auto; }
-.product-info-skeleton-fill { background-color: #282828; }
-.product-info-skeleton-fill.aspect-square { background-color: #242424; }
+.product-info-barcode > div svg { width: 100%; max-width: 100%; height: auto; }
+.product-info-skeleton-fill { background-color: #e5e7eb; }
+:root[data-theme="dark"] .product-info-skeleton-fill { background-color: #282828; }
+:root[data-theme="dark"] .product-info-skeleton-fill.aspect-square { background-color: #242424; }
 @keyframes product-info-skeleton-pulse { 0%, 100% { opacity: .85; } 50% { opacity: 1; } }
 .product-info-skeleton { animation: product-info-skeleton-pulse 2.4s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .product-info-skeleton { animation: none; } }

@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import type { GoodsReceipt } from "@/entities/goods-receipt";
 import type { Product } from "@/entities/product";
 import { getStoredCurrentSeller } from "@/entities/seller";
-import { useIsStoreAuthorized, useSelectedStore } from "@/entities/store";
 import { formatMoney } from "@/features/orders/ui/order-control/order-control-shared";
 import { usePageNotifications } from "@/shared/lib/use-page-notifications";
 import { LoadingDots } from "@/shared/ui/loading-dots";
@@ -12,18 +11,11 @@ import { PageNotificationStack } from "@/shared/ui/page-notification";
 import { PdfDialog } from "@/shared/ui/pdf-dialog";
 import { useProductsCache } from "@/widgets/orders-list/model/use-products-cache";
 import { confirmInvoice, printInvoice } from "../api/goods-receipts";
-import { useGoodsReceipts } from "../model/use-goods-receipts";
+import type { useGoodsReceipts } from "../model/use-goods-receipts";
 import { GoodsReceiptView } from "./goods-receipt-view";
 
-export function GoodsReceipts() {
-  const store = useSelectedStore();
-  const authorized = useIsStoreAuthorized();
-  const storeId = authorized ? store?.id : undefined;
-  return <GoodsReceiptsService key={storeId ?? "unauthorized"} storeId={storeId} />;
-}
-
-function GoodsReceiptsService({ storeId }: { storeId?: string }) {
-  const { data, error, isLoading, refresh } = useGoodsReceipts(storeId);
+export function GoodsReceipts({ storeId, receipts }: { storeId?: string; receipts: ReturnType<typeof useGoodsReceipts> }) {
+  const { data, error, isLoading, refresh } = receipts;
   const [expanded, setExpanded] = useState(false);
   const [receipt, setReceipt] = useState<GoodsReceipt | null>(null);
   const [products, setProducts] = useState<Product[]>([]);

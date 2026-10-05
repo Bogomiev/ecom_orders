@@ -5,6 +5,7 @@ export function KeyIndicators() {
     <WidgetPanel
       accent="cyan"
       count={0}
+      instructionsHref="/instructions#dashboard"
       description="Показатели за сегодня"
       icon="chart"
       title="Дашборд"
