@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Dialog } from "@/shared/ui/dialog";
 import { useOrderHistoryDays, setStoredOrderHistoryDays } from "@/entities/order";
 import Image from "next/image";
+import Link from "next/link";
+import { InstructionsIcon } from "@/shared/ui/instructions-icon";
 import { StoreSelector } from "@/features/store-selector";
 import { SellerSelector } from "@/features/seller-selector";
 import { playNotificationSound } from "@/shared/lib/notification-sound";
@@ -54,6 +56,7 @@ export function OrdersPageHeader({ ordersCount }: OrdersPageHeaderProps) {
         </div>
         <div className="header-actions flex items-center gap-2.5">
           <span className="header-clock min-w-[4.5rem] text-sm font-extrabold tabular-nums">{currentTime}</span>
+          <Link href="/instructions/general" aria-label="Общие инструкции" title="Общие инструкции" className="header-icon-button grid h-9 w-9 shrink-0 place-items-center rounded-lg border app-border app-surface-muted app-muted focus:outline-none focus:ring-2 focus:ring-blue-500"><InstructionsIcon /></Link>
           <button aria-label="Настройки" title="Настройки" aria-haspopup="dialog" className="header-icon-button grid h-9 w-9 place-items-center rounded-lg border app-border app-surface-muted" type="button" onClick={() => setSettingsOpen(true)}>
             <svg aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24">
               <path d="m9.5 3-.6 2.4-2 .9-2.2-.3-1.5 2.6 1.6 1.8v3.2l-1.6 1.8 1.5 2.6 2.2-.3 2 .9.6 2.4h5l.6-2.4 2-.9 2.2.3 1.5-2.6-1.6-1.8v-3.2l1.6-1.8-1.5-2.6-2.2.3-2-.9L14.5 3Z" />

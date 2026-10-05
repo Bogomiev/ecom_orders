@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { ServiceInstructions } from "@/features/service-instructions";
+import { GeneralInstructions, ServiceInstructions } from "@/features/service-instructions";
 import { useTheme } from "@/shared/lib/use-theme";
 import { PageShell } from "@/shared/ui/page-shell";
 
-export function InstructionsPage() {
+export function InstructionsPage({ variant = "services" }: { variant?: "services" | "general" }) {
   const { isDark, toggleTheme } = useTheme();
 
   return (
@@ -19,6 +19,8 @@ export function InstructionsPage() {
           </span>
           <span className="truncate text-sm font-extrabold">На главный экран</span>
         </Link>
+        <div className="flex items-center gap-3">
+        <Link href={variant === "general" ? "/instructions" : "/instructions/general"} className="text-sm font-semibold text-blue-600 hover:underline">{variant === "general" ? "Инструкции сервисов" : "Общие инструкции"}</Link>
         <button
           aria-label={isDark ? "Включить светлую тему" : "Включить тёмную тему"}
           className="header-icon-button grid h-9 w-9 place-items-center rounded-lg border app-border app-surface-muted"
@@ -30,8 +32,9 @@ export function InstructionsPage() {
             {isDark ? <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2" /> : <path d="M12 4a8 8 0 0 0 0 16V4Z" fill="currentColor" stroke="none" />}
           </svg>
         </button>
+        </div>
       </header>
-      <ServiceInstructions />
+      {variant === "general" ? <GeneralInstructions /> : <ServiceInstructions />}
     </PageShell>
   );
 }

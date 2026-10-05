@@ -1,31 +1,9 @@
-import Image from "next/image";
-import type { ReactNode } from "react";
+import { Guide, Note, Screenshot } from "./instruction-layout";
 
 const contents = [
-  { id: "orders", title: "Интернет-заказы", sections: [["orders-start", "Начало работы"], ["orders-confirm", "Подтверждение и отмена"], ["orders-control", "Сборка"], ["orders-issue", "Выдача, история и печать"]] },
-  { id: "goods", title: "Товары", sections: [["goods-counting", "Подсчет товара"], ["goods-info", "Информация о товаре"], ["goods-receipts", "Приемка"]] },
-  { id: "tasks", title: "Задания", sections: [] },
-  { id: "service-desk", title: "Сервис-деск", sections: [] },
-  { id: "dashboard", title: "Дашборд", sections: [] }
+  { id: "orders", title: "Интернет-заказы", sections: [["orders-start", "Список заказов"], ["orders-confirm", "Подтверждение и отмена"], ["orders-control", "Сборка"], ["orders-issue", "Выдача, история и печать"]] },
+  { id: "goods", title: "Товары", sections: [["goods-counting", "Подсчет товара"], ["goods-info", "Информация о товаре"], ["goods-receipts", "Приемка"]] }
 ] as const;
-
-function Screenshot({ alt, src }: { alt: string; src: string }) {
-  return <figure className="mt-5 overflow-hidden rounded-xl border app-border app-surface-muted">
-    <Image alt={alt} className="h-auto w-full" height={900} src={src} width={1440} />
-    <figcaption className="border-t app-border px-4 py-2.5 text-xs leading-5 app-muted">{alt}</figcaption>
-  </figure>;
-}
-
-function Guide({ children, id, title }: { children: ReactNode; id: string; title: string }) {
-  return <section id={id} className="widget-panel scroll-mt-6 overflow-hidden">
-    <h3 className="border-b app-border px-5 py-4 text-lg font-black app-text sm:px-6">{title}</h3>
-    <div className="space-y-4 px-5 py-5 text-sm leading-6 app-text sm:px-6">{children}</div>
-  </section>;
-}
-
-function Note({ children }: { children: ReactNode }) {
-  return <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-amber-950">{children}</div>;
-}
 
 export function ServiceInstructions() {
   return <div className="mx-auto w-full max-w-6xl py-4">
@@ -33,11 +11,11 @@ export function ServiceInstructions() {
       <div className="border-l-4 border-blue-600 px-5 py-5 sm:px-7">
         <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-600">Справка</p>
         <h1 className="mt-1 text-2xl font-black app-text sm:text-3xl">Инструкции по сервисам и подсервисам</h1>
-        <p className="mt-2 text-sm leading-6 app-muted">Выберите сервис, затем нужный раздел. На главном экране инструкции открываются по значку книги с буквой «И» слева от счётчика активных заданий.</p>
+        <p className="mt-2 text-sm leading-6 app-muted">Выберите сервис, затем нужный раздел. Инструкции сервиса открываются по значку книги с «i» слева от его счётчика. Вход, выбор продавца и общие настройки описаны в общей инструкции.</p>
         <p className="mt-2 text-xs leading-5 app-muted">Скриншоты показывают текущий интерфейс на демонстрационных данных магазина 1116.</p>
       </div>
     </section>
-    <nav aria-label="Оглавление инструкций" className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <nav aria-label="Оглавление инструкций" className="mt-4 grid gap-3 sm:grid-cols-2">
       {contents.map(({ id, title, sections }) => <div key={id} className="widget-panel p-4">
         <a href={`#${id}`} className="font-black app-text hover:text-blue-600">{title}</a>
         {sections.length ? <ul className="mt-3 space-y-2 text-sm">{sections.map(([sectionId, label]) => <li key={sectionId}><a className="app-muted hover:text-blue-600 hover:underline" href={`#${sectionId}`}>{label}</a></li>)}</ul> : <p className="mt-3 text-xs app-muted">Рабочие подсервисы пока не доступны.</p>}
@@ -46,14 +24,9 @@ export function ServiceInstructions() {
 
     <article id="orders" className="mt-8 scroll-mt-6 space-y-4">
       <h2 className="px-1 text-2xl font-black app-text">Интернет-заказы</h2>
-      <Guide id="orders-start" title="Начало работы и список заказов">
-        <ol className="list-decimal space-y-2 pl-5">
-          <li>Откройте сервис по ссылке для входа. Выберите магазин и введите личный пятизначный PIN. Позже сменить магазин можно в <strong>«Настройках»</strong>.</li>
-          <li>Нажмите на блок продавца в верхней панели, выберите <strong>«Отсканировать бейдж»</strong> и отсканируйте штрихкод сотрудника. После входа появятся имя продавца и состояние смены.</li>
-          <li>В сервисе <strong>«Интернет-заказы»</strong> найдите заказ. Карточка показывает источник, способ получения, статус, число позиций и срок сборки. Нажмите карточку для подробностей или номер заказа для просмотра состава, суммы и комментария.</li>
-        </ol>
+      <Guide id="orders-start" title="Список заказов">
+        <p>В сервисе <strong>«Интернет-заказы»</strong> найдите заказ. Карточка показывает источник, способ получения, статус, число позиций и срок сборки. Нажмите карточку для подробностей или номер заказа для просмотра состава, суммы и комментария.</p>
         <p>Действие зависит от статуса: <strong>«Открыть заказ»</strong> — проверка нового заказа, <strong>«Собрать»</strong> — сборка подтверждённого, <strong>«Выдать»</strong> — передача готового заказа. Для заказа, ожидающего оплаты, выдача заблокирована.</p>
-        <Screenshot alt="Главный экран: действия интернет-заказов, инструкции у счётчиков и две приемки в сервисе «Товары»." src="/instructions/orders/services-current.png" />
       </Guide>
       <Guide id="orders-confirm" title="Подтверждение заказа и отмена строк">
         <ol className="list-decimal space-y-2 pl-5">
@@ -124,8 +97,5 @@ export function ServiceInstructions() {
         <p>В текущей версии доступен просмотр и печать приемки. Кнопка принятия документа пока не отображается.</p>
       </Guide>
     </article>
-    {contents.filter(({ sections }) => !sections.length).map(({ id, title }) => <article id={id} key={id} className="mt-8 scroll-mt-6">
-      <Guide id={`${id}-availability`} title={title}><p>На главном экране есть блок «{title}». Рабочие подсервисы пока не доступны, счётчик равен нулю.</p></Guide>
-    </article>)}
   </div>;
 }

@@ -5,7 +5,6 @@ export function PricePrinting() {
     <WidgetPanel
       accent="purple"
       count={0}
-      instructionsHref="/instructions#tasks"
       description="Текущие поручения"
       icon="check"
       title="Задания"
