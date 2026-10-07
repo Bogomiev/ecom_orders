@@ -12,6 +12,7 @@ import { LoadingDots } from "@/shared/ui/loading-dots";
 import { fetchProducts } from "@/widgets/orders-list/api/orders";
 import { findDisplayBarcode, getBarcodeFormat, isNumericBarcode } from "@/shared/lib/barcode-format";
 import { ProductBarcode } from "@/shared/ui/product-barcode";
+import { ProductPriceTag } from "./product-price-tag";
 import { ProductInfoIcon } from "./product-info-icon";
 
 export function ProductInfoDialog({ storeId, unavailableReason = "Выберите торговую точку в настройках, чтобы искать товары.", onClose }: { storeId?: string; unavailableReason?: string; onClose: () => void }) {
@@ -166,7 +167,7 @@ function CarouselControls({ index, count, label, onChange }: { index: number; co
 }
 
 function ProductCard({ product }: { product: ProductInfo }) {
-  const [mobileSection, setMobileSection] = useState<"stock" | "photos">("stock");
+  const [mobileSection, setMobileSection] = useState<"stock" | "price" | "photos">("stock");
   const [imageIndex, setImageIndex] = useState(0);
   const [barcodeIndex, setBarcodeIndex] = useState(0);
   const [failedImages, setFailedImages] = useState<string[]>([]);
@@ -192,11 +193,11 @@ function ProductCard({ product }: { product: ProductInfo }) {
   return <article className="mt-4 app-text">
     <p className="text-sm app-muted">Код: <span className="font-mono app-text">{product.code}</span></p>
     <h3 className="mt-2 flex items-center gap-3 text-lg font-bold leading-tight sm:text-2xl">{product.markingType !== "БезОсобенностейУчета" ? <span className="flex shrink-0 items-center"><HonestSignIcon /></span> : null}<span className="min-w-0 break-words">{product.name}</span></h3>
-    <div className="mt-4 grid grid-cols-2 gap-1 rounded-xl app-surface-muted p-1 md:hidden" role="group" aria-label="Разделы карточки">
-      {([{ id: "stock", label: "Остаток" }, { id: "photos", label: "Фото" }] as const).map((section) => <button key={section.id} type="button" aria-pressed={mobileSection === section.id} aria-controls={`product-info-${section.id}`} className={`h-9 rounded-lg text-sm font-semibold ${mobileSection === section.id ? "app-surface app-text shadow-sm" : "app-muted"}`} onClick={() => setMobileSection(section.id)}>{section.label}</button>)}
+    <div className="mt-4 grid grid-cols-3 gap-1 rounded-xl app-surface-muted p-1 md:hidden" role="group" aria-label="Разделы карточки">
+      {([{ id: "stock", label: "Остаток" }, { id: "price", label: "Ценник" }, { id: "photos", label: "Фото" }] as const).map((section) => <button key={section.id} type="button" aria-pressed={mobileSection === section.id} aria-controls={`product-info-${section.id}`} className={`h-9 rounded-lg text-sm font-semibold ${mobileSection === section.id ? "app-surface app-text shadow-sm" : "app-muted"}`} onClick={() => setMobileSection(section.id)}>{section.label}</button>)}
     </div>
-    <div className="mt-4 grid items-stretch gap-3 md:grid-cols-[minmax(0,1fr)_250px]">
-      <section id="product-info-stock" className={`product-info-metrics rounded-2xl border p-4 ${mobileSection === "stock" ? "" : "hidden md:block"}`} aria-label="Продажи и остаток">
+    <div className="mt-4 grid items-stretch gap-3 md:gap-5 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1.2fr)_minmax(0,1fr)]">
+      <section id="product-info-stock" className={`product-info-metrics min-w-0 rounded-2xl border p-4 lg:p-5 ${mobileSection === "stock" ? "" : "hidden md:block"}`} aria-label="Продажи и остаток">
         <h4 className="product-info-metrics-heading text-sm font-semibold uppercase tracking-wider">Продано</h4>
         <div className="mt-3 grid grid-cols-2 gap-4">
           {sales.map(({ label, sold, receipts }) => <div key={label}>
@@ -212,19 +213,20 @@ function ProductCard({ product }: { product: ProductInfo }) {
           <p className="product-info-metrics-muted mt-1 text-sm">Ориентировочно хватит на {count(product.stock_days)} дн.</p>
         </div>
       </section>
-      <div id="product-info-photos" className={`mx-auto w-full min-w-0 flex-col gap-3 md:max-w-[250px] ${mobileSection === "photos" ? "flex" : "hidden md:flex"}`}>
-        <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-2xl border app-border bg-white p-4">
+      <div id="product-info-price" className={`min-w-0 ${mobileSection === "price" ? "" : "hidden md:block"}`}><ProductPriceTag product={product} /></div>
+      <div id="product-info-photos" className={`mx-auto w-full min-w-0 flex-col gap-3 md:gap-4 ${mobileSection === "photos" ? "flex" : "hidden md:flex"}`}>
+        <div className="relative flex aspect-square shrink-0 items-center justify-center overflow-hidden rounded-2xl border app-border bg-white p-4">
           {photo && !failedImages.includes(photo) ? /* eslint-disable-next-line @next/next/no-img-element */
             <img key={photo} alt={product.name} className="h-full w-full object-contain" decoding="async" height={250} src={photo} width={250} onError={() => setFailedImages((failed) => [...failed, photo])} /> : <span className="text-sm text-slate-500">{photo ? "Фото недоступно" : "Нет фото"}</span>}
           <CarouselControls index={imageIndex} count={photos.length} label="снимок" onChange={setImageIndex} />
         </div>
-        <div className="product-info-barcode relative flex min-h-28 items-center justify-center overflow-hidden rounded-2xl border app-border bg-white px-3 py-4 text-black">
+        <div className="product-info-barcode relative flex min-h-28 md:flex-1 items-center justify-center overflow-hidden rounded-2xl border app-border bg-white px-3 py-4 text-black">
           {barcode ? getBarcodeFormat(barcode) ? <ProductBarcode value={barcode} /> : <span className="break-all px-10 font-mono">{barcode}</span> : <span className="text-sm text-slate-500">Нет штрихкода</span>}
           <CarouselControls index={barcodeIndex} count={barcodes.length} label="штрихкод" onChange={setBarcodeIndex} />
         </div>
       </div>
     </div>
-    <section className="mt-4 flex min-w-0 items-start gap-3 text-sm" aria-labelledby="product-receipts-title">
+    <section className="mt-6 flex min-w-0 items-start gap-3 text-sm" aria-labelledby="product-receipts-title">
       <svg className="mt-1 shrink-0 app-muted" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7" /><circle cx="7" cy="17.5" r="1.8" /><circle cx="17" cy="17.5" r="1.8" /></svg>
       <div className="min-w-0">
       <h4 id="product-receipts-title" className="app-muted">Последнее поступление</h4>
@@ -242,13 +244,14 @@ function ProductCardSkeleton() {
       <div className="h-4 w-36 rounded product-info-skeleton-fill" />
       <div className="mt-3 h-8 w-4/5 rounded product-info-skeleton-fill" />
       <div className="mt-4 h-11 rounded-xl product-info-skeleton-fill md:hidden" />
-      <div className="mt-4 grid items-stretch gap-3 md:grid-cols-[minmax(0,1fr)_250px]">
+      <div className="mt-4 grid items-stretch gap-3 md:gap-5 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1.2fr)_minmax(0,1fr)]">
         <div className="rounded-2xl border app-border p-4">
           <div className="h-4 w-24 rounded product-info-skeleton-fill" />
           <div className="mt-5 grid grid-cols-2 gap-6">{[0, 1].map((item) => <div key={item}><div className="h-4 w-20 rounded product-info-skeleton-fill" /><div className="mt-3 h-9 w-full rounded product-info-skeleton-fill" /><div className="mt-3 h-4 w-24 rounded product-info-skeleton-fill" /></div>)}</div>
           <div className="mt-6 border-t app-border pt-5"><div className="h-4 w-24 rounded product-info-skeleton-fill" /><div className="mt-4 h-9 w-36 rounded product-info-skeleton-fill" /><div className="mt-3 h-4 w-4/5 rounded product-info-skeleton-fill" /></div>
         </div>
-        <div className="mx-auto hidden w-full max-w-[250px] md:block"><div className="aspect-square rounded-2xl product-info-skeleton-fill" /><div className="mt-3 h-28 rounded-2xl product-info-skeleton-fill" /></div>
+        <div className="hidden rounded-2xl border app-border p-4 md:block"><div className="aspect-square rounded-xl product-info-skeleton-fill" /><div className="mt-4 h-10 rounded-lg product-info-skeleton-fill" /></div>
+        <div className="hidden w-full md:block"><div className="aspect-square rounded-2xl product-info-skeleton-fill" /><div className="mt-4 h-28 rounded-2xl product-info-skeleton-fill" /></div>
       </div>
       <div className="mt-6 h-4 w-40 rounded product-info-skeleton-fill" /><div className="mt-3 h-5 w-4/5 rounded product-info-skeleton-fill" />
     </div>

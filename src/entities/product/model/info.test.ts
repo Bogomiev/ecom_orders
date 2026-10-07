@@ -60,3 +60,9 @@ it("preserves sales, receipt counts, stock days and incoming quantities includin
   expect(response.receipts[0].quantity).toBe(12.5);
   expect(response.data[0].receipts[0].quantity).toBe(0);
 });
+
+ it("preserves regular and promotional price fields from RMS", () => {
+  const prices = { price_from: "2026-09-15T00:00:00", price_promo: 849.5, price_promo_from: "2026-09-28T00:00:00", price_promo_to: "2026-10-05T23:59:59" };
+  const response = ProductInfoResponseSchema.parse({ resultCode: 0, data: [{ ...product, ...prices }] });
+  expect(response.data[0]).toMatchObject(prices);
+});
