@@ -144,7 +144,6 @@ button {
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(250px, 1fr));
   align-items: start;
   gap: 16px;
   padding-top: 16px;
@@ -363,30 +362,103 @@ button {
   color: white;
 }
 
-@media (max-width: 1450px) {
-  .dashboard-grid {
-    grid-template-columns: repeat(5, minmax(230px, 1fr));
-    gap: 10px;
-  }
+.goods-widget > .widget-content {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
-@media (max-width: 1199px) {
-  .dashboard-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    overflow-y: auto;
-  }
 
-  .orders-widget { height: min(700px, calc(100vh - 104px)); }
+/* A single full-height row; the viewport determines how many services fit. */
+.home-page-shell { height: 100dvh; min-height: 0; padding-bottom: 12px; }
+.top-header { flex-shrink: 0; }
+.header-identity { min-width: 0; }
+.header-selectors > * { max-width: 100%; }
+.header-actions { flex-shrink: 0; }
+.dashboard-grid {
+  display: flex; align-items: stretch; min-height: 0; flex: 1; gap: 10px;
+  overflow-x: auto; overflow-y: hidden;
+  scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none;
+}
+.dashboard-grid::-webkit-scrollbar { display: none; }
+.service-panel {
+  flex: 0 0 calc((100% - (var(--visible-services, 1) - 1) * 10px) / var(--visible-services, 1));
+  min-width: 0; min-height: 0; height: 100%; container-type: inline-size;
+  scroll-snap-align: start; scroll-snap-stop: always;
+}
+.service-panel > .widget-panel { width: 100%; height: 100%; max-height: 100%; }
+.service-panel .widget-header { flex-shrink: 0; }
+.service-panel .widget-content { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.service-panel .orders-widget > .widget-content { overflow: hidden; }
+.service-tabs { display: flex; gap: 6px; flex-shrink: 0; padding-top: 8px; }
+.service-tabs[hidden] { display: none; }
+.service-tab {
+  display: grid; place-items: center; flex: 1; min-width: 0; min-height: 44px;
+  border-radius: 10px; border: 1px solid var(--border); background: var(--panel); color: var(--muted);
+}
+.service-tab[aria-selected="true"] { color: var(--accent); background: var(--accent-soft); border-color: var(--accent); }
+.service-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.document-dialog { max-height: calc(100dvh - 24px); }
+.document-header, .document-footer { flex-shrink: 0; }
+.document-lines td { overflow-wrap: anywhere; }
+
+/* Wrap header controls before shortening service names in compact columns. */
+@container (max-width: 280px) {
+  .widget-header > div:not(.widget-accent-line) { flex-wrap: wrap; gap: 8px; }
+  .widget-header > div > .min-w-0 { flex-basis: calc(100% - 40px); }
+  .widget-header h2 { white-space: normal; overflow-wrap: anywhere; }
 }
 
-@media (max-width: 700px) {
-  .app-shell { padding-inline: 12px; }
-  .top-header {
-    align-items: flex-start;
-    flex-direction: column;
-    margin-inline: -12px;
-  }
-  .header-actions { align-self: flex-end; }
-  .dashboard-grid { grid-template-columns: 1fr; }
-  .widget-panel { min-height: 0; }
+@media (max-width: 659px) {
+  .home-page-shell { padding: 0 12px 12px; }
+  .home-page-shell .top-header { margin-inline: -12px; padding: 8px 12px; gap: 8px; }
+  .home-page-shell .brand-mark { display: none; }
+  .header-selectors > * { min-width: 0; }
+  .header-actions { margin-left: auto; }
+  .document-dialog { width: 100%; height: calc(100dvh - 24px); border-radius: 12px; }
+  .document-header { flex-wrap: wrap; gap: 10px; padding: 12px; }
+  .document-header > :first-child { flex: 1 1 100%; }
+  .document-header > :last-child { margin-left: auto; }
+  .document-footer { flex-wrap: wrap; gap: 8px; padding: 12px; }
+  .document-footer > div { flex-wrap: wrap; gap: 8px; }
+  .document-lines, .document-lines tbody { display: block; width: 100%; min-width: 0; }
+  .document-lines colgroup { display: none; }
+  .document-lines thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .document-lines tbody tr { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 8px; padding: 14px 12px; border-bottom: 1px solid var(--border); }
+  .document-lines tbody td { min-width: 0; padding: 0; border: 0; text-align: left; }
+  .document-lines tbody td:first-child { grid-column: 1 / -1; }
+  .document-lines tbody td[data-label]::before { content: attr(data-label); display: block; margin-bottom: 4px; font-size: 10px; font-weight: 500; color: var(--muted); text-decoration: none; }
+  .document-lines tbody td:nth-child(5) { grid-column: 1 / -1; text-align: right; }
 }
+
+.product-info-result:hover,
+.product-info-result:focus {
+  background-color: #ccfbf1;
+  color: #134e4a;
+}
+
+:root[data-theme="dark"] .product-info-result:hover,
+:root[data-theme="dark"] .product-info-result:focus {
+  background-color: #115e59;
+  color: #f0fdfa;
+}
+
+.product-info-metrics { background: #eaf7f1; border-color: #bfe5d3; }
+.product-info-metrics-heading { color: #047857; }
+.product-info-metrics-muted { color: #4a6a5f; }
+.product-info-metrics-divider { border-color: #bfe5d3; }
+:root[data-theme="dark"] .product-info-metrics { background: #0f2a24; border-color: #1d5a49; }
+:root[data-theme="dark"] .product-info-metrics-heading { color: #6ee7b7; }
+:root[data-theme="dark"] .product-info-metrics-muted { color: #a7c4ba; }
+:root[data-theme="dark"] .product-info-metrics-divider { border-color: #1d5a49; }
+.product-carousel-arrow { background: rgb(15 22 38 / 30%); transition: background 160ms ease; }
+.product-carousel-arrow:hover, .product-carousel-arrow:focus-visible { background: rgb(15 22 38 / 60%); }
+.product-carousel-arrow:focus-visible { outline: 2px solid #047857; outline-offset: 2px; }
+.product-info-barcode > div { min-width: 0; width: 100%; overflow: hidden; }
+.product-info-barcode > div svg { width: 100%; max-width: 100%; height: auto; }
+.product-info-skeleton-fill { background-color: #e5e7eb; }
+:root[data-theme="dark"] .product-info-skeleton-fill { background-color: #282828; }
+:root[data-theme="dark"] .product-info-skeleton-fill.aspect-square { background-color: #242424; }
+@keyframes product-info-skeleton-pulse { 0%, 100% { opacity: .85; } 50% { opacity: 1; } }
+.product-info-skeleton { animation: product-info-skeleton-pulse 2.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .product-info-skeleton { animation: none; } }

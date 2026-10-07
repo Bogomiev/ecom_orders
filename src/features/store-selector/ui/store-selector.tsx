@@ -1,5 +1,6 @@
 "use client";
 
+import { createPortal } from "react-dom";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Store } from "@/entities/store";
 import {
@@ -297,7 +298,7 @@ function StoreSelectorModal({
   );
 }
 
-export function StoreSelector() {
+export function StoreSelector({ triggerContainer, hideTrigger = false }: { triggerContainer?: HTMLElement | null; hideTrigger?: boolean } = {}) {
   const [isOpen, setIsOpen] = useState(false);
   const [state, setState] = useState<StoresState>(initialStoresState);
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
@@ -404,19 +405,18 @@ export function StoreSelector() {
     setIsOpen(false);
   }
 
+  const pickerButton = (
+    <StorePickerButton
+      disabled={accessToken === null || accessToken === undefined || isCheckingAccessToken || isAccessTokenInvalid}
+      statusText={isCheckingAccessToken ? "Проверка токена..." : undefined}
+      selectedStore={selectedStore}
+      onOpen={() => setIsOpen(true)}
+    />
+  );
+
   return (
     <>
-      <StorePickerButton
-        disabled={
-          accessToken === null ||
-          accessToken === undefined ||
-          isCheckingAccessToken ||
-          isAccessTokenInvalid
-        }
-        statusText={isCheckingAccessToken ? "Проверка токена..." : undefined}
-        selectedStore={selectedStore}
-        onOpen={() => setIsOpen(true)}
-      />
+      {triggerContainer ? createPortal(pickerButton, triggerContainer) : hideTrigger ? null : pickerButton}
       <PageNotificationStack notifications={notifications} onClose={dismiss} />
       {isOpen ? (
         <StoreSelectorModal

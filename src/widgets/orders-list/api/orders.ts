@@ -22,7 +22,7 @@ import { fetchJson } from "@/shared/api/fetch-json";
 
 export const ORDERS_SERVICE_PATH = "/api/orders";
 export const PRODUCTS_SERVICE_PATH = "/api/entities/product";
-export const ORDERS_REFRESH_INTERVAL_SECONDS = 5;
+export const ORDERS_REFRESH_INTERVAL_SECONDS = 10;
 
 export async function printOrder(orderId: string): Promise<string> {
   const response = await authenticatedFetch(

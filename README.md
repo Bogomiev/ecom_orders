@@ -36,6 +36,41 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+### Instruction screenshots
+
+The user guide at `/instructions` is split by service and subservice. Book buttons
+with a lowercase «i» in service headers open the corresponding guide. They are
+shown only for services with a published guide. General instructions live at
+`/instructions/general` and open from the book button left of Settings. The guide
+uses screenshots of the current UI with explicitly labelled demonstration data
+for store 1116.
+
+To regenerate the screenshots, start the development server and run:
+
+```bash
+npm run screenshots:instructions
+```
+
+The script uses Playwright Core and installed Chrome (`/usr/bin/google-chrome` by
+default). Set `CHROME_PATH` for another Chrome/Chromium executable and
+`SCREENSHOT_BASE_URL` for another local preview URL. It replaces the current
+screenshots in `public/instructions/orders` and `public/instructions/goods`.
+All API calls are intercepted in an isolated browser context, including order
+confirmation, cancellation and issue; RMS and 1C receive no actions.
+The script also checks shared receipt counts, resetting on store changes,
+instruction links, product alignment, light/dark skeletons, carousel sizes,
+mobile layout and saved order control.
+
+### Service desk contacts
+
+The Contacts tile opens the contact memo based on the supplied mobile and tablet
+mockups. It uses one column below 768px and two columns on tablet/desktop, with
+phone links in both layouts. The tablet/desktop Print memo button opens the
+original two-page PDF memo in the document viewer, where Print sends the PDF to
+the printer without recreating its layout in HTML. The source PDF is stored at
+`public/documents/contacts-memo.pdf`; replace this file to update the printed memo.
+Contact details are maintained in `src/widgets/service-desk/ui/contacts-dialog.tsx`.
+
 ### Production deployment
 
 Production runs as Docker containers (app + nginx + Let's Encrypt) behind a `Makefile` that handles setup, TLS, builds, and auto-deploy from GitHub. Run this on the server, not locally.

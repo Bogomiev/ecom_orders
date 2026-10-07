@@ -18,9 +18,13 @@ export async function GET(request: Request) {
     const products = await fetchOneCJson(
       "/GetGoods",
       ProductsResponseSchema,
-      shouldRefresh
-        ? { cache: "no-store" }
-        : { next: { revalidate, tags: [PRODUCTS_CACHE_TAG] } }
+      {
+        // The first request builds the full catalog before it can be cached.
+        signal: AbortSignal.timeout(90_000),
+        ...(shouldRefresh
+          ? { cache: "no-store" as const }
+          : { next: { revalidate, tags: [PRODUCTS_CACHE_TAG] } })
+      }
     );
 
     if (shouldRefresh) {

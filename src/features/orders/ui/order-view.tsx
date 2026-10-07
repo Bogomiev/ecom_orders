@@ -78,11 +78,11 @@ export function OrderView({ canEdit: requestedCanEdit = false, isConfirming = fa
   return (
     <Dialog
       ariaLabelledBy="order-view-title"
-      className="relative mx-auto flex h-[min(650px,calc(100vh-32px))] w-[min(700px,calc(100vw-32px))] flex-col overflow-hidden rounded-2xl app-surface shadow-2xl"
+      className="document-dialog relative mx-auto flex h-[min(650px,calc(100vh-32px))] w-[min(700px,calc(100vw-32px))] flex-col overflow-hidden rounded-2xl app-surface shadow-2xl"
       closeOnBackdrop={!canEdit}
       onClose={requestClose}
     >
-      <div className="flex items-center justify-between border-b app-border px-5 py-3.5">
+      <div className="document-header flex items-center justify-between border-b app-border px-5 py-3.5">
         <div className="flex min-w-0 items-center gap-3">
           <div aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
@@ -147,7 +147,7 @@ export function OrderView({ canEdit: requestedCanEdit = false, isConfirming = fa
           <span className="font-bold app-text">Комментарий:</span>{" "}
           <span className="whitespace-pre-wrap [overflow-wrap:anywhere]">{comment || "—"}</span>
         </div>
-        <table className="w-full table-fixed border-collapse text-left">
+        <table className="document-lines w-full table-fixed border-collapse text-left">
           <colgroup>
             <col />
             <col className="w-24" />
@@ -183,13 +183,13 @@ export function OrderView({ canEdit: requestedCanEdit = false, isConfirming = fa
                     </div>
                   </div>
                 </td>
-                <td className={`border-b app-border px-3 py-2.5 text-right text-sm font-bold tabular-nums app-text${isInactive ? " line-through" : ""}`}>
+                <td data-label="Количество" className={`border-b app-border px-3 py-2.5 text-right text-sm font-bold tabular-nums app-text${isInactive ? " line-through" : ""}`}>
                   {formatNumber(line.quantity)}
                 </td>
-                <td className={`border-b app-border px-3 py-2.5 text-right text-sm font-medium tabular-nums app-text${isInactive ? " line-through" : ""}`}>
+                <td data-label="Цена" className={`border-b app-border px-3 py-2.5 text-right text-sm font-medium tabular-nums app-text${isInactive ? " line-through" : ""}`}>
                   {formatMoney(line.price)} ₽
                 </td>
-                <td className={`border-b app-border px-5 py-2.5 text-right text-sm font-bold tabular-nums app-text${isInactive ? " line-through" : ""}`}>
+                <td data-label="Сумма" className={`border-b app-border px-5 py-2.5 text-right text-sm font-bold tabular-nums app-text${isInactive ? " line-through" : ""}`}>
                   {formatMoney(line.amount)} ₽
                 </td>
                 {canEdit ? (
@@ -229,7 +229,7 @@ export function OrderView({ canEdit: requestedCanEdit = false, isConfirming = fa
         </table>
       </div>
 
-      <div className="flex items-center justify-between gap-4 border-t app-border app-surface-muted px-5 py-3 text-sm">
+      <div className="document-footer flex items-center justify-between gap-4 border-t app-border app-surface-muted px-5 py-3 text-sm">
         <span className="font-bold app-text">Итого по заказу</span>
         <div className="flex items-center gap-4">
           <strong className="font-bold tabular-nums app-text">{formatMoney(total)} ₽</strong>
