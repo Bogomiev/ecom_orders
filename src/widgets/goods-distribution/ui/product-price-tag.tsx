@@ -67,7 +67,7 @@ export function ProductPriceTag({ product }: { product: ProductInfo }) {
   }
 
   return <section aria-label="Ценник товара" className="flex h-full min-w-0 flex-col gap-3 rounded-2xl border app-border app-surface-muted p-4">
-    <svg ref={tagRef} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 336 336" className="mx-auto w-full max-w-[336px]" role="img" aria-label={`${promo ? "Акционная" : "Регулярная"} цена ${integer},${fraction} руб. за ${product.isWeight ? "кг" : "шт"}`}>
+    <svg ref={tagRef} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 336 336" className="mx-auto w-full max-w-[336px]" role="img" aria-label={`${promo ? "Акционная" : "Регулярная"} цена ${integer},${fraction} руб. за ${product.isWeight ? "кг" : "шт."}`}>
       <path d="M30 30H324Q336 30 336 42V332Q336 336 332 336H4Q0 336 0 332V60Q0 30 30 30Z" fill={promo ? "#F6E41C" : "none"} stroke={promo ? "#F6E41C" : "var(--border, #94a3b8)"} strokeDasharray={promo ? undefined : "4 3"} />
       <text x="22" y="67" fontFamily="Arial, sans-serif" fontWeight="800" fontSize="24" fill={promo ? "#D93A22" : "var(--text, #374151)"} textLength={promo ? undefined : 244} lengthAdjust="spacingAndGlyphs">{promo ? "СКИДКА" : "РЕГУЛЯРНАЯ ЦЕНА"}</text>
       {promo ? <g><circle cx="298" cy="35" r="32" fill="#c7b919" /><circle cx="298" cy="32" r="32" fill="#F6E41C" /><rect x="278" y="17" width="40" height="30" rx="8" fill="#D93A22" /><text x="298" y="40" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="800" fontSize="24" fill="#F6E41C">%</text><path d="M272 68Q298 81 324 68M280 79Q298 87 316 79" fill="none" stroke="#D93A22" strokeWidth="3" strokeLinecap="round" /></g> : null}
@@ -77,7 +77,7 @@ export function ProductPriceTag({ product }: { product: ProductInfo }) {
         {promo ? <g fontFamily="Impact, Arial Narrow, sans-serif" fontWeight="900"><text x="28" y="193" fontSize="45" textLength={Math.min(105, oldInteger.length * 24)} lengthAdjust="spacingAndGlyphs">{oldInteger}</text><text x={30 + Math.min(105, oldInteger.length * 24)} y="181" fontSize="22" textDecoration="underline">{oldFraction}</text><path d={`M28 195L${60 + Math.min(105, oldInteger.length * 24)} 160`} stroke="black" strokeWidth="3" /></g> : null}
         <text x="272" y="279" textAnchor="end" fontFamily="Impact, Arial Narrow, sans-serif" fontWeight="900" fontSize="94" textLength={Math.min(220, integer.length * 40)} lengthAdjust="spacingAndGlyphs">{integer}</text>
         <text x="278" y="235" fontFamily="Impact, Arial Narrow, sans-serif" fontSize="33" fontWeight="900" textDecoration="underline">{fraction}</text>
-        <text x="293" y="267" textAnchor="middle" fontSize="11" fontWeight="700">РУБ.</text><text x="293" y="280" textAnchor="middle" fontSize="11" fontWeight="700">{product.isWeight ? "КГ" : "ШТ"}</text>
+        <text x="293" y="267" textAnchor="middle" fontSize="11" fontWeight="700">РУБ.</text><text x="293" y="280" textAnchor="middle" fontSize="11" fontWeight="700">{product.isWeight ? "КГ" : "ШТ."}</text>
         {barcode ? <g transform="translate(28 282)"><svg ref={renderBarcode} width="100" height="18" preserveAspectRatio="none" /></g> : null}
         <text x="28" y="310" fontSize="10">{new Intl.DateTimeFormat("ru-RU", { timeZone: "Asia/Vladivostok" }).format(new Date())}</text>
       </g>

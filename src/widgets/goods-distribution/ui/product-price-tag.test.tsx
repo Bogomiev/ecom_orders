@@ -28,7 +28,7 @@ describe("product price tag", () => {
     expect(html).toContain("РЕГУЛЯРНАЯ ЦЕНА");
     expect(html).toContain("999,25");
     expect(html).toContain("с 15.09.2026");
-    expect(html).toContain(">ШТ</text>");
+    expect(html).toContain(">ШТ.</text>");
     expect(html).not.toContain("СКИДКА");
   });
   it("preserves both years for promotions across New Year", () => {

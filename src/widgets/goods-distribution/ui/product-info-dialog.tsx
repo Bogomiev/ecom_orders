@@ -177,9 +177,9 @@ function ProductCard({ product }: { product: ProductInfo }) {
   const photo = photos[imageIndex];
   const barcode = barcodes[barcodeIndex];
   const receipt = product.receipts[0];
-  const unit = product.isWeight ? "кг" : "шт";
-  const quantity = (value: number | undefined) => value === undefined ? "—" : formatNumber(value);
+  const unit = product.isWeight ? "кг" : "шт.";
   const count = (value: number | undefined) => value === undefined ? "—" : new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(value);
+  const quantity = (value: number | undefined) => value === undefined ? "—" : product.isWeight ? formatNumber(value) : count(value);
   const receiptCount = (value: number | undefined) => {
     if (value === undefined) return "— чеков";
     const category = new Intl.PluralRules("ru-RU").select(Math.round(value));
@@ -199,9 +199,9 @@ function ProductCard({ product }: { product: ProductInfo }) {
     <div className="mt-4 grid items-stretch gap-3 md:gap-5 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1.2fr)_minmax(0,1fr)]">
       <section id="product-info-stock" className={`product-info-metrics min-w-0 rounded-2xl border p-4 lg:p-5 ${mobileSection === "stock" ? "" : "hidden md:block"}`} aria-label="Продажи и остаток">
         <h4 className="product-info-metrics-heading text-sm font-semibold uppercase tracking-wider">Продано</h4>
-        <div className="mt-3 grid grid-cols-2 gap-4">
+        <div className="mt-3 grid grid-cols-[minmax(0,1fr)_max-content] gap-3">
           {sales.map(({ label, sold, receipts }) => <div key={label}>
-            <p className="product-info-metrics-muted text-sm">{label}</p>
+            <p className="product-info-metrics-muted whitespace-nowrap text-xs leading-5 xl:text-sm">{label}</p>
             <p className="mt-1 flex flex-wrap items-baseline gap-x-1.5"><strong className="text-2xl tabular-nums">{quantity(sold)}</strong><span className="product-info-metrics-heading">{unit}</span></p>
             <p className="product-info-metrics-muted mt-1 text-sm">{receiptCount(receipts)}</p>
           </div>)}
