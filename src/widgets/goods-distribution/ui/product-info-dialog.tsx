@@ -112,7 +112,7 @@ export function ProductInfoDialog({ storeId, unavailableReason = "Выберит
       <form onSubmit={(event) => { event.preventDefault(); submitSearch(); }}>
         <label htmlFor="product-info-query" className="mb-2 block text-sm font-semibold app-text">Штрихкод, код или наименование товара</label>
         <div className="flex items-start gap-2">
-          <div className="min-w-0 flex-1">
+          <div className="relative min-w-0 flex-1">
             <input
               ref={inputRef} autoFocus autoComplete="off" id="product-info-query"
               aria-controls={resultsOpen ? "product-info-results" : undefined}
@@ -129,7 +129,7 @@ export function ProductInfoDialog({ storeId, unavailableReason = "Выберит
               }}
             />
             {resultsOpen ? (
-              <ul id="product-info-results" aria-label="Результаты поиска товара" className="max-h-64 overflow-y-auto overscroll-contain rounded-b-lg border border-t-0 app-border app-surface shadow-sm">
+              <ul id="product-info-results" aria-label="Результаты поиска товара" className="absolute inset-x-0 top-full z-20 max-h-64 overflow-y-auto overscroll-contain rounded-b-lg border border-t-0 app-border app-surface shadow-lg">
                 {items.map((item) => (
                   <li key={item.id} className="border-b app-border last:border-0">
                     <button
