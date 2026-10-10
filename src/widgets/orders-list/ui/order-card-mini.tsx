@@ -85,7 +85,7 @@ function OrderCardMiniComponent({
     <article
       aria-label={`${marketplace}, заказ ${order.external_id || order.number}, ${statusLabel}`}
       aria-disabled={disabled || isActionPending || cannotOpen}
-      className="order-mini-card w-full rounded-xl border app-border app-surface-muted p-2.5 text-left transition-[border-color,box-shadow] hover:border-slate-400 hover:shadow-[0_0_0_1px_#c5cfde] aria-disabled:cursor-wait aria-disabled:opacity-70"
+      className={`order-mini-card w-full rounded-xl border app-border app-surface-muted p-2.5 text-left transition-[border-color,box-shadow] hover:border-slate-400 hover:shadow-[0_0_0_1px_#c5cfde] aria-disabled:opacity-70 ${cannotOpen ? "cursor-default" : disabled || isActionPending ? "cursor-wait" : "cursor-pointer"}`}
       role="button"
       tabIndex={disabled || isActionPending || cannotOpen ? -1 : 0}
       onClick={() => {

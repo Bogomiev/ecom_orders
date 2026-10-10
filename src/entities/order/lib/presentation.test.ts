@@ -114,6 +114,20 @@ describe("isOrderRequiringAttention", () => {
 });
 
 describe("getOrderTone", () => {
+  it.each(["Сайт", "Яндекс Еда"])(
+    "показывает переданный курьеру заказ %s синим независимо от основного статуса",
+    (source) => {
+      for (const status of ["Отменен", "Нет товара", "Ошибка", "Готов", "Подтвержден"]) {
+        expect(getOrderTone({
+          ...order,
+          source,
+          status,
+          extended_status: "  ПЕРЕДАН КУРЬЕРУ "
+        })).toBe("blue");
+      }
+    }
+  );
+
   it("показывает подтвержденный заказ, ожидающий сборку, как заказ в сборке", () => {
     const tone = getOrderTone({
       ...order,

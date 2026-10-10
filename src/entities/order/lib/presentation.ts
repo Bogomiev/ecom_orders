@@ -40,6 +40,7 @@ export function isOrderUnavailableForOpening(order: Order) {
 }
 
 export function getOrderTone(order: Order): OrderTone {
+  if (isOrderTransferredToCourier(order)) return "blue";
   const status = `${order.status} ${order.extended_status}`.toLowerCase();
   if (status.includes("нет товар") || status.includes("отмен") || status.includes("ошиб")) return "red";
   if (isOrderAwaitingConfirmation(order)) return "blue";
