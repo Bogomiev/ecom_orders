@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { APP_VERSION } from "@/shared/config/app-version";
 import { Dialog } from "@/shared/ui/dialog";
 import { useOrderHistoryDays, setStoredOrderHistoryDays } from "@/entities/order";
 import Image from "next/image";
@@ -103,6 +104,9 @@ export function OrdersPageHeader({ ordersCount }: OrdersPageHeaderProps) {
               }} />
               <span>дней</span>
             </label>
+          </div>
+          <div className="border-t app-border px-5 py-3 text-sm app-muted">
+            Версия: <span className="font-semibold tabular-nums">{APP_VERSION}</span>
           </div>
         </Dialog>
       ) : null}

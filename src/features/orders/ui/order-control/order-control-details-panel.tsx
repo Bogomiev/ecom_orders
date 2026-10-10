@@ -192,7 +192,7 @@ export function OrderControlDetailsPanel({
       const barcodeSearchInput = barcodeSearchInputRef.current;
       const inputBarcode =
         barcodeSearchInput !== null && document.activeElement === barcodeSearchInput
-          ? barcodeSearchInput.value.trim()
+          ? barcodeSearchInput.value
           : "";
       const barcode =
         inputBarcode.length > bufferedBarcode.length
@@ -236,7 +236,7 @@ export function OrderControlDetailsPanel({
       return;
     }
 
-    const result = applyBarcodeToOrder(order, productsByBarcode, barcode);
+    const result = applyBarcodeToOrder(order, productsByBarcode, scannedBarcode);
 
     if (result.status === "success") {
       onOrderChange(result.order);

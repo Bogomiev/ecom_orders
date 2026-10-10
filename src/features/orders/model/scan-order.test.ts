@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Order } from "@/entities/order";
 import type { Product } from "@/entities/product";
+import { getCompleteOrderItems } from "../../../widgets/orders-list/model/complete-order-items";
 import {
   applyBarcodeToOrder,
   createBarcodeIndex,
@@ -89,6 +90,33 @@ describe("parseScannedCode", () => {
 });
 
 describe("applyBarcodeToOrder", () => {
+  it.each([
+    ["010460123456789021йЦуКЁжЭбЮ\u001d91тест\u001d92Ab+/=", "010460123456789021qWeR~;\",>\u001d91ntcn\u001d92Ab+/="],
+    ["]d2010460123456789021Serial\u001d91ABC\u001d92xyz ", "]d2010460123456789021Serial\u001d91ABC\u001d92xyz "],
+    [" 010460123456789021марка ", " 010460123456789021vfhrf "]
+  ])("исправляет раскладку марки без потери спецсимволов: %j", (mark, expectedMark) => {
+    const markedOrder = {
+      ...order,
+      items: [{ ...order.items[0], marking_product: true }]
+    };
+    const index = createBarcodeIndex([product]);
+    const result = applyBarcodeToOrder(markedOrder, index, mark);
+
+    expect(result.status).toBe("success");
+    if (result.status !== "success") throw new Error("Марка не добавлена");
+
+    expect(result.order.controlledItems[0].mark).toBe(expectedMark);
+    expect(getCompleteOrderItems(result.order)[0].mark).toBe(expectedMark);
+    expect(applyBarcodeToOrder(result.order, index, mark)).toMatchObject({
+      status: "error",
+      code: "mark-already-scanned"
+    });
+    expect(applyBarcodeToOrder(result.order, index, expectedMark)).toMatchObject({
+      status: "error",
+      code: "mark-already-scanned"
+    });
+  });
+
   const scannedMark = "010001622990644321serial";
 
   it.each(["016229906443", "0016229906443", "00016229906443"])(
