@@ -91,9 +91,9 @@ describe("parseScannedCode", () => {
 
 describe("applyBarcodeToOrder", () => {
   it.each([
-    ["010460123456789021йЦуКЁжЭбЮ\u001d91тест\u001d92Ab+/=", "010460123456789021qWeR~;\",>\u001d91ntcn\u001d92Ab+/="],
-    ["]d2010460123456789021Serial\u001d91ABC\u001d92xyz ", "]d2010460123456789021Serial\u001d91ABC\u001d92xyz "],
-    [" 010460123456789021марка ", " 010460123456789021vfhrf "]
+    ["010460123456789021йЦуКЁжЭбЮ\u001d91тест\u001d92Ab+/=", "(01)04601234567890(21)qWeR~;\",>"],
+    ["(01)04601234567890(21)Serial", "(01)04601234567890(21)Serial"],
+    [" 010460123456789021марка ", "(01)04601234567890(21)vfhrf"]
   ])("исправляет раскладку марки без потери спецсимволов: %j", (mark, expectedMark) => {
     const markedOrder = {
       ...order,
@@ -136,7 +136,7 @@ describe("applyBarcodeToOrder", () => {
       expect(result.status).toBe("success");
       if (result.status === "success") {
         expect(result.order.items[0].quantity_fact).toBe(1);
-        expect(result.order.controlledItems[0].mark).toBe(scannedMark);
+        expect(result.order.controlledItems[0].mark).toBe("(01)00016229906443(21)serial");
         expect(applyBarcodeToOrder(result.order, index, scannedMark)).toMatchObject({
           status: "error",
           code: "mark-already-scanned"

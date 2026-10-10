@@ -1,6 +1,6 @@
 import type { Order } from "@/entities/order";
 import type { BarcodeInfo, Product } from "@/entities/product";
-import { normalizeScannerLayout } from "../../../shared/lib/normalize-scanner-layout";
+import { formatScannedMark } from "../../../shared/lib/format-scanned-mark";
 
 const EAN_13_PATTERN = /^\d{13}$/;
 export const WEIGHT_QUANTITY_OVERAGE_PERCENT = 20;
@@ -108,7 +108,7 @@ export function applyBarcodeToOrder(
 ): ScanOrderResult {
   const barcode = scannedBarcode.trim();
   const parsedCode = parseScannedCode(barcode);
-  const mark = parsedCode.isMark ? normalizeScannerLayout(scannedBarcode) : scannedBarcode;
+  const mark = parsedCode.isMark ? formatScannedMark(scannedBarcode) : scannedBarcode;
   const exactBarcodeMatch = barcodeIndex.get(barcode);
   let barcodeMatch = exactBarcodeMatch ?? parsedCode.lookupBarcodes
     .filter((lookupBarcode) => lookupBarcode !== barcode)
@@ -153,7 +153,7 @@ export function applyBarcodeToOrder(
 
   if (
     orderItem.marking_product &&
-    order.controlledItems.some((item) => normalizeScannerLayout(item.mark) === mark)
+    order.controlledItems.some((item) => formatScannedMark(item.mark) === mark)
   ) {
     return {
       status: "error",
