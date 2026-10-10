@@ -15,6 +15,7 @@ import {
 import type { ProductsResponse } from "@/entities/product";
 import { PageNotificationStack, type PageNotification } from "@/shared/ui/page-notification";
 import { PdfDialog } from "@/shared/ui/pdf-dialog";
+import { Dialog } from "@/shared/ui/dialog";
 import { usePageNotifications } from "@/shared/lib/use-page-notifications";
 import {
   useHasAccessToken,
@@ -73,6 +74,7 @@ export function OrdersList({
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [openingOrderId, setOpeningOrderId] = useState<string | null>(null);
   const [printingOrderId, setPrintingOrderId] = useState<string | null>(null);
+  const [orderPendingCourierConfirmation, setOrderPendingCourierConfirmation] = useState<Order | null>(null);
   const [printPdf, setPrintPdf] = useState<{ base64: string; title: string } | null>(null);
   const { dismiss, notifications, notify } = usePageNotifications();
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
@@ -275,7 +277,7 @@ export function OrdersList({
     completingOrderId,
     confirm: handleConfirmOrder,
     confirmingOrderId,
-    giveOrderToCourier: handleGiveOrderToCourier,
+    giveOrderToCourier: giveOrderToCourier,
     givingOrderToCourierId
   } = useOrderActions({
     notify: showOrderNotification,
@@ -283,12 +285,28 @@ export function OrdersList({
     refresh: refreshOrders
   });
   const isOrderSelectionLocked =
+    orderPendingCourierConfirmation !== null ||
     cancellingOrderId !== null ||
     completingOrderId !== null ||
     confirmingOrderId !== null ||
     givingOrderToCourierId !== null ||
     openingOrderId !== null ||
     printingOrderId !== null;
+
+  function handleGiveOrderToCourier(order: Order) {
+    if (order.deliveryMethod === "delivery") {
+      setOrderPendingCourierConfirmation(order);
+      return;
+    }
+    void giveOrderToCourier(order);
+  }
+
+  function confirmGiveOrderToCourier() {
+    if (orderPendingCourierConfirmation === null) return;
+    const order = orderPendingCourierConfirmation;
+    setOrderPendingCourierConfirmation(null);
+    void giveOrderToCourier(order);
+  }
   useEffect(() => {
     if (confirmingOrderId === null || state.data === null) return;
 
@@ -453,6 +471,33 @@ export function OrdersList({
         </>
       ) : null}
 
+      {orderPendingCourierConfirmation !== null ? (
+        <Dialog
+          ariaLabelledBy="give-order-to-courier-title"
+          className="w-full max-w-sm rounded-2xl app-surface p-5 shadow-2xl"
+          onClose={() => setOrderPendingCourierConfirmation(null)}
+        >
+          <h2 id="give-order-to-courier-title" className="text-lg font-extrabold app-text">
+            Вы уверены, что отдали заказ курьеру?
+          </h2>
+          <div className="mt-5 flex justify-end gap-2">
+            <button
+              className="rounded-xl border app-border app-surface px-4 py-2 text-sm font-bold app-text focus:outline-none focus:ring-2 focus:ring-blue-500"
+              type="button"
+              onClick={() => setOrderPendingCourierConfirmation(null)}
+            >
+              Нет
+            </button>
+            <button
+              className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              type="button"
+              onClick={confirmGiveOrderToCourier}
+            >
+              Да
+            </button>
+          </div>
+        </Dialog>
+      ) : null}
       <OrderControl
         isOpen={controlOrder !== null}
         isCompleting={completingOrderId === controlOrder?.id}
