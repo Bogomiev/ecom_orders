@@ -59,3 +59,10 @@ describe("RMS proxy and Route Handler guard", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 });
+
+it("preserves successful 204 deletes without constructing a forbidden response body", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 204 })));
+  const response = await proxyRMS(new Request("https://app.test/api/admin/files/id", { method: "DELETE" }), "/files/id");
+  expect(response.status).toBe(204);
+  expect(await response.text()).toBe("");
+});

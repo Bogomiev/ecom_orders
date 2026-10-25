@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
+import { AUTH_CHANGED_EVENT, getCurrentUser } from "@/shared/api/auth";
 import { APP_VERSION } from "@/shared/config/app-version";
 import { Dialog } from "@/shared/ui/dialog";
 import { useOrderHistoryDays, setStoredOrderHistoryDays } from "@/entities/order";
@@ -17,6 +18,17 @@ import { useClock } from "@/shared/lib/use-clock";
 import { useTheme } from "@/shared/lib/use-theme";
 import { useActiveOrdersNotification } from "../model/use-active-orders-notification";
 
+function subscribeToRole(callback: () => void) {
+  window.addEventListener(AUTH_CHANGED_EVENT, callback);
+  window.addEventListener("storage", callback);
+  return () => {
+    window.removeEventListener(AUTH_CHANGED_EVENT, callback);
+    window.removeEventListener("storage", callback);
+  };
+}
+const isAdminSnapshot = () => getCurrentUser()?.role === "admin";
+const serverAdminSnapshot = () => false;
+
 const NOTIFICATION_TITLE = "Личный кабинет магазина";
 const TEST_NOTIFICATION_BODY = "Проверка уведомлений для экрана сборки.";
 
@@ -28,6 +40,7 @@ export function OrdersPageHeader({ ordersCount }: OrdersPageHeaderProps) {
   const { dismiss, notifications, notify } = usePageNotifications(8000);
   const { isDark, toggleTheme } = useTheme();
   const currentTime = useClock();
+  const isAdmin = useSyncExternalStore(subscribeToRole, isAdminSnapshot, serverAdminSnapshot);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [storeTrigger, setStoreTrigger] = useState<HTMLDivElement | null>(null);
   const historyDays = useOrderHistoryDays();
@@ -58,6 +71,13 @@ export function OrdersPageHeader({ ordersCount }: OrdersPageHeaderProps) {
         <div className="header-actions flex items-center gap-2.5">
           <span className="header-clock min-w-[4.5rem] text-sm font-extrabold tabular-nums">{currentTime}</span>
           <Link href="/instructions/general" aria-label="Общие инструкции" title="Общие инструкции" className="header-icon-button grid h-9 w-9 shrink-0 place-items-center rounded-lg border app-border app-surface-muted app-muted focus:outline-none focus:ring-2 focus:ring-blue-500"><InstructionsIcon /></Link>
+          {isAdmin && <Link href="/admin" aria-label="Администрирование" title="Администрирование" className="header-icon-button grid h-9 w-9 shrink-0 place-items-center rounded-lg border app-border app-surface-muted app-muted focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <svg aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24">
+              <path d="M12 3 4 6v6c0 4 4 7 8 9 4-2 8-5 8-9V6Z" />
+              <circle cx="12" cy="10" r="2.5" />
+              <path d="M8 16c.6-2.7 7.4-2.7 8 0" />
+            </svg>
+          </Link>}
           <button aria-label="Настройки" title="Настройки" aria-haspopup="dialog" className="header-icon-button grid h-9 w-9 place-items-center rounded-lg border app-border app-surface-muted" type="button" onClick={() => setSettingsOpen(true)}>
             <svg aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24">
               <path d="m9.5 3-.6 2.4-2 .9-2.2-.3-1.5 2.6 1.6 1.8v3.2l-1.6 1.8 1.5 2.6 2.2-.3 2 .9.6 2.4h5l.6-2.4 2-.9 2.2.3 1.5-2.6-1.6-1.8v-3.2l1.6-1.8-1.5-2.6-2.2.3-2-.9L14.5 3Z" />

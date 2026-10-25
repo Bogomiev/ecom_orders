@@ -1,13 +1,20 @@
 export const CSRF_STORAGE_KEY = "ecom-orders-csrf-token";
 export const SESSION_EXPIRED_EVENT = "ecom-orders-session-expired";
 export const AUTH_CHANGED_EVENT = "ecom-orders-auth-changed";
+export type User = { userToken?: string; name?: string; role: string };
+export const USER_STORAGE_KEY = "ecom-orders-user";
+export function getCurrentUser(): User | null {
+  if (typeof window === "undefined") return null;
+  try { return JSON.parse(window.localStorage.getItem(USER_STORAGE_KEY) ?? "null"); } catch { return null; }
+}
 const REFRESH_LOCK = "ecom-orders-refresh";
 let refreshPromise: Promise<boolean> | null = null;
 
 type AuthResponse = {
   csrfToken?: string;
   userToken?: string;
-  data?: { csrfToken?: string };
+  data?: { csrfToken?: string; role?: string; user?: { role?: string; name?: string; user_token?: string } };
+  role?: string;
   resultCode?: number;
   result_code?: number;
   messages?: string[];
@@ -22,11 +29,16 @@ function saveCSRF(data: AuthResponse) {
   const csrf = data.csrfToken ?? data.data?.csrfToken;
   if (typeof csrf !== "string" || !csrf) throw new Error("RMS не вернул CSRF-токен");
   window.localStorage.setItem(CSRF_STORAGE_KEY, csrf);
+  const role = data.data?.role ?? data.data?.user?.role ?? data.role;
+  if (role !== undefined) window.localStorage.setItem(USER_STORAGE_KEY, JSON.stringify({
+    ...getCurrentUser(), ...data.data?.user, userToken: data.userToken ?? data.data?.user?.user_token ?? getCurrentUser()?.userToken, role
+  }));
   window.dispatchEvent(new Event(AUTH_CHANGED_EVENT));
 }
 
 function expireSession() {
   window.localStorage.removeItem(CSRF_STORAGE_KEY);
+  window.localStorage.removeItem(USER_STORAGE_KEY);
   window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
   window.dispatchEvent(new Event(AUTH_CHANGED_EVENT));
 }
@@ -100,5 +112,5 @@ export async function restoreSession() {
   const data = await response.json() as AuthResponse;
   saveCSRF(data);
   if (!data.userToken) throw new Error("RMS не вернул пользователя сессии");
-  return { userToken: data.userToken };
+  return { userToken: data.userToken, role: getCurrentUser()?.role ?? "" };
 }

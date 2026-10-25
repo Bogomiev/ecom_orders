@@ -176,3 +176,17 @@ Routes: `/api/auth/login`, `/api/auth/refresh`, `/api/auth/session`, `/api/auth/
 The fifth wrong PIN returns HTTP 401, `result_code: 1001` (also `resultCode` for RMS compatibility), `messages` and ISO `blockedUntil`. The UI displays the server message with the unblock time formatted in the browser's timezone. RMS controls the attempt limit and duration; client-side delays are not the security boundary.
 
 Verification: `npm run lint`, `npx tsc --noEmit --incremental false`, `npm test`, `npm run build`. Security behavior follows the [OWASP CSRF guidance](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html) and uses [Next.js Route Handler responses](https://nextjs.org/docs/app/api-reference/functions/next-response) to forward cookies.
+
+### Администрирование файлов
+
+Страница `/admin` доступна пользователю с ролью `admin`. Роль пользователя
+сохраняется при входе и обновлении сессии из `data.user.role` (также поддерживается
+`data.role`). Серверные `/api/admin/files` проверяют действующую сессию RMS,
+CSRF для изменений и подписанный признак администратора `is_admin`.
+
+Вкладка «Файлы» использует сервис `src/entities/file/api/files.ts` и API `/files/`
+RMS: создание каталогов и загрузка файлов, редактирование названия, приоритета,
+иконки и содержимого, навигация по каталогам, поиск в текущем каталоге,
+мягкое и окончательное удаление. Иконки: PNG/JPEG/WebP/GIF до 1 Мб;
+файлы только PDF (.pdf) и HTML (.html), до 35 Мб. Для записи должен быть настроен S3 в RMS.
+Удаление непустого каталога и восстановление записей API RMS не поддерживает.

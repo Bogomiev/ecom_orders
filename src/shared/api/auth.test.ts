@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { authenticatedFetch, CSRF_STORAGE_KEY, login, restoreSession, SESSION_EXPIRED_EVENT } from "./auth";
+import { authenticatedFetch, CSRF_STORAGE_KEY, login, restoreSession, SESSION_EXPIRED_EVENT, getCurrentUser } from "./auth";
 const values = new Map<string, string>();
 const events = vi.fn();
 function json(body: unknown, status = 200) { return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } }); }
@@ -12,6 +12,18 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 describe("cookie authentication", () => {
+  it("saves the user role from login data", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json({ csrfToken: "csrf", data: { user: { role: "admin", user_token: "invite" } } })));
+    await login("invite", "12345");
+    expect(getCurrentUser()).toMatchObject({ role: "admin", userToken: "invite" });
+  });
+  it("replaces the role during refresh", async () => {
+    values.set(CSRF_STORAGE_KEY, "old");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(json({ resultCode: 1003 }, 401)).mockResolvedValueOnce(json({ csrfToken: "new", data: { role: "user" } })).mockResolvedValueOnce(json({})));
+    await authenticatedFetch("/api/orders");
+    expect(getCurrentUser()?.role).toBe("user");
+  });
+
   it("preserves the server explanation for a rejected login", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json({ messages: ["Токен доступа недействителен"] }, 401)));
     await expect(login("invalid", "12345")).rejects.toThrow("Токен доступа недействителен");

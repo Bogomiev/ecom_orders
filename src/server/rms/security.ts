@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 export type AccessClaims = {
   purpose: "access";
+  is_admin?: boolean;
   id: number;
   user_token: string;
   sid: string;

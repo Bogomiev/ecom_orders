@@ -55,7 +55,7 @@ export async function proxyRMS(request: Request, path: string, checkOrigin = fal
     const headers = new Headers({ "Content-Type": response.headers.get("Content-Type") ?? "application/json", "Cache-Control": "no-store" });
     // Preserve both HttpOnly cookies, including their separate expiry/flags.
     for (const cookie of response.headers.getSetCookie()) headers.append("Set-Cookie", cookie);
-    return new NextResponse(await response.arrayBuffer(), { status: response.status, headers });
+    return new NextResponse([204, 205, 304].includes(response.status) || request.method === "HEAD" ? null : await response.arrayBuffer(), { status: response.status, headers });
   } catch {
     return authError(502, 1, "Нет связи с сервером RMS");
   }
