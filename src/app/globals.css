@@ -462,3 +462,9 @@ button {
 @keyframes product-info-skeleton-pulse { 0%, 100% { opacity: .85; } 50% { opacity: 1; } }
 .product-info-skeleton { animation: product-info-skeleton-pulse 2.4s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .product-info-skeleton { animation: none; } }
+
+/* Keep the Bitrix24 support launcher close to the viewport corner. */
+.b24-widget-button-wrapper.b24-widget-button-position-bottom-right {
+  right: max(12px, env(safe-area-inset-right, 0px)) !important;
+  bottom: max(12px, env(safe-area-inset-bottom, 0px)) !important;
+}
