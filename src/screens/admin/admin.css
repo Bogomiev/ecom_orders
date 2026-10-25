@@ -47,3 +47,12 @@ html:has(.admin-page){scrollbar-gutter:stable}
   .files-table .admin-actions{gap:4px}
   .admin-panel .files-table button.row-action{width:28px;height:28px;padding:4px;border-radius:6px}
 }
+.files-table{--tree-step:22px;--tree-line:color-mix(in srgb,var(--blue) 24%,var(--panel))}
+.files-table .tree-name{padding-left:calc(var(--tree-depth,0) * var(--tree-step));isolation:isolate}
+.tree-guides{position:absolute;inset:-5px 0;pointer-events:none;z-index:-1}
+.tree-guides>span{position:absolute;top:0;bottom:0;left:calc(var(--guide-depth) * var(--tree-step) + 12px);width:2px;background:var(--tree-line)}
+.files-table .file-icon{color:var(--blue);background:color-mix(in srgb,var(--blue) 14%,var(--panel));border-radius:7px;padding:4px}
+.admin-panel button.tree-toggle{display:grid;place-items:center;color:var(--muted);width:26px;height:28px;padding:0;background:transparent}
+.tree-chevron{transition:transform .15s}.tree-chevron.expanded{transform:rotate(90deg)}
+@media(max-width:700px){.files-table{--tree-step:10px}.tree-guides{top:-4px;bottom:-4px}.tree-guides>span{left:calc(var(--guide-depth) * var(--tree-step) + 7px)}.admin-panel button.tree-toggle{width:18px}.tree-toggle-space{width:18px}.files-table .file-icon{padding:2px}.files-table .file-icon svg{width:16px;height:16px}}
+@media(prefers-reduced-motion:reduce){.tree-chevron{transition:none}}

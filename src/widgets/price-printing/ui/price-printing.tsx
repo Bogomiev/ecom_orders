@@ -1,3 +1,4 @@
+import { Documents } from "@/widgets/documents";
 import { WidgetPanel } from "@/shared/ui/widget-panel";
 
 export function PricePrinting() {
@@ -8,6 +9,8 @@ export function PricePrinting() {
       description="Текущие поручения"
       icon="check"
       title="Задания"
-    />
+    >
+      <Documents />
+    </WidgetPanel>
   );
 }
