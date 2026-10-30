@@ -8,6 +8,7 @@ import {
   isOrderAwaitingAssembly,
   isOrderAwaitingConfirmation,
   isOrderReady,
+  isOrderHandedOver,
   isOrderRequiringAttention,
   isOrderUnavailableForOpening
 } from "./presentation";
@@ -115,15 +116,17 @@ describe("isOrderRequiringAttention", () => {
 
 describe("getOrderTone", () => {
   it.each(["Сайт", "Яндекс Еда"])(
-    "показывает переданный курьеру заказ %s синим независимо от основного статуса",
+    "показывает выданный заказ %s синим независимо от основного статуса",
     (source) => {
-      for (const status of ["Отменен", "Нет товара", "Ошибка", "Готов", "Подтвержден"]) {
-        expect(getOrderTone({
-          ...order,
-          source,
-          status,
-          extended_status: "  ПЕРЕДАН КУРЬЕРУ "
-        })).toBe("blue");
+      for (const extendedStatus of ["  ПЕРЕДАН КУРЬЕРУ ", "  ПЕРЕДАН ПОКУПАТЕЛЮ "]) {
+        for (const status of ["Отменен", "Нет товара", "Ошибка", "Готов", "Подтвержден"]) {
+          expect(getOrderTone({
+            ...order,
+            source,
+            status,
+            extended_status: extendedStatus
+          })).toBe("blue");
+        }
       }
     }
   );
@@ -171,9 +174,10 @@ describe("новые расширенные статусы", () => {
     expect(getOrderStatusLabel(unavailableOrder)).toBe("Отменен");
   });
 
-  it("разрешает открывать заказ, переданный курьеру", () => {
-    const courierOrder = { ...order, extended_status: "Передан курьеру" };
+  it.each(["Передан курьеру", "Передан покупателю"])("разрешает открывать выданный заказ: %s", (extendedStatus) => {
+    const courierOrder = { ...order, extended_status: extendedStatus };
+    expect(isOrderHandedOver(courierOrder)).toBe(true);
     expect(isOrderUnavailableForOpening(courierOrder)).toBe(false);
-    expect(getOrderStatusLabel(courierOrder)).toBe("Передан курьеру");
+    expect(getOrderStatusLabel(courierOrder)).toBe(extendedStatus);
   });
 });

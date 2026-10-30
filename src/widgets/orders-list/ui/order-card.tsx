@@ -7,7 +7,7 @@ import {
   isOrderAwaitingConfirmation,
   isOrderAwaitingPayment,
   isOrderReady,
-  isOrderTransferredToCourier,
+  isOrderHandedOver,
   isOrderUnavailableForOpening,
   type Order
 } from "@/entities/order";
@@ -55,7 +55,7 @@ function OrderCardComponent({
   const isConfirmation = isOrderAwaitingConfirmation(order);
   const isReady = isOrderReady(order);
   const isAwaitingPayment = isOrderAwaitingPayment(order);
-  const isTransferredToCourier = isOrderTransferredToCourier(order);
+  const isHandedOver = isOrderHandedOver(order);
   const isCanceled = isOrderUnavailableForOpening(order);
   const pickBefore = useMemo(
     () => getOrderPickBefore(order),
@@ -102,7 +102,7 @@ function OrderCardComponent({
       <OrderStatusBadge order={order} tone={tone} />
       <OrderMeta pickBefore={pickBefore} className="mt-2" order={order} />
 
-      {!isCanceled && !isTransferredToCourier ? (
+      {!isCanceled && !isHandedOver ? (
         <div className="order-card-actions mt-3 grid grid-cols-2 gap-2 border-t pt-3">
             <button
               className="order-cancel-button min-h-[2.125rem] rounded-lg border border-slate-300 app-surface text-xs font-extrabold disabled:cursor-wait disabled:opacity-60"

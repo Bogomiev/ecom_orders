@@ -31,8 +31,9 @@ export function isOrderAwaitingPayment(order: Order) {
   return getExtendedStatus(order) === "ожидает оплату";
 }
 
-export function isOrderTransferredToCourier(order: Order) {
-  return getExtendedStatus(order) === "передан курьеру";
+export function isOrderHandedOver(order: Order) {
+  const status = getExtendedStatus(order);
+  return status === "передан курьеру" || status === "передан покупателю";
 }
 
 export function isOrderUnavailableForOpening(order: Order) {
@@ -40,7 +41,7 @@ export function isOrderUnavailableForOpening(order: Order) {
 }
 
 export function getOrderTone(order: Order): OrderTone {
-  if (isOrderTransferredToCourier(order)) return "blue";
+  if (isOrderHandedOver(order)) return "blue";
   const status = `${order.status} ${order.extended_status}`.toLowerCase();
   if (status.includes("нет товар") || status.includes("отмен") || status.includes("ошиб")) return "red";
   if (isOrderAwaitingConfirmation(order)) return "blue";
@@ -57,6 +58,7 @@ export function getOrderStatusLabel(order: Order) {
   if (status === "готов") return "Готов";
   if (status === "отменен") return "Отменен";
   if (status === "передан курьеру") return "Передан курьеру";
+  if (status === "передан покупателю") return "Передан покупателю";
 
   const tone = getOrderTone(order);
   return {

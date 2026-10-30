@@ -43,7 +43,7 @@ export {
   isOrderAwaitingPayment,
   isOrderReady,
   isOrderRequiringAttention,
-  isOrderTransferredToCourier,
+  isOrderHandedOver,
   isOrderUnavailableForOpening,
   isOzonOrder
 } from "./lib/presentation";
