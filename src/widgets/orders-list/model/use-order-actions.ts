@@ -84,12 +84,16 @@ export function useOrderActions({
       const result = await confirmOrder({
         orderId: order.uid_1c,
         seller: seller.userId,
-        items: order.items.map((item) => ({
-          product_id: item.product_id,
-          action: item.canceled || pendingCancellationProductIds.has(item.product_id)
-            ? ConfirmOrderItemAction.CANCELLED
-            : ConfirmOrderItemAction.CONFIRMED
-        }))
+        items: order.items.map((item) => {
+          const isCancelled = item.canceled || item.quantity === 0 || pendingCancellationProductIds.has(item.product_id);
+          return {
+            product_id: item.product_id,
+            quantity: item.quantity,
+            action: isCancelled
+              ? ConfirmOrderItemAction.CANCELLED
+              : ConfirmOrderItemAction.CONFIRMED
+          };
+        })
       });
       notify(
         "Управление заказами",

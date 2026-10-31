@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import type { GoodsReceipt } from "@/entities/goods-receipt";
 import type { Product } from "@/entities/product";
 import { getStoredCurrentSeller } from "@/entities/seller";
-import { formatMoney } from "@/features/orders/ui/order-control/order-control-shared";
 import { usePageNotifications } from "@/shared/lib/use-page-notifications";
 import { LoadingDots } from "@/shared/ui/loading-dots";
 import { PageNotificationStack } from "@/shared/ui/page-notification";
@@ -113,9 +112,8 @@ export function GoodsReceipts({ storeId, receipts }: { storeId?: string; receipt
             <span className="delivery-badge inline-flex min-h-7 items-center rounded-md border app-border app-surface px-2.5 text-xs font-extrabold">{item.type === "RECEIPT" ? "Приобретение" : (item.type === "ACCEPTANCE_ON_CONSIGNMENT" ? "Прием на комиссию" : "Перемещение")}</span>
           </div>
           <div className="mt-1 font-semibold text-xs app-text">{item.sender || "—"}</div>
-          <div className="order-card-meta mt-2 grid grid-cols-2 gap-2">
+          <div className="order-card-meta mt-2 grid gap-2">
             <div><span className="order-meta-label">Позиций</span><strong className="order-meta-value">{item.items.length}</strong></div>
-            <div><span className="order-meta-label">Сумма</span><strong className="order-meta-value">{formatMoney(item.amount)} ₽</strong></div>
           </div>
           <div className="order-card-actions mt-3 border-t app-border pt-3"><button type="button" disabled={pending !== null} onClick={() => void openReceipt(item)} className="order-primary-button min-h-[2.125rem] w-full rounded-lg bg-emerald-600 text-xs font-extrabold text-white disabled:opacity-60">Открыть приемку</button></div>
         </article>)}

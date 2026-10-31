@@ -20,6 +20,7 @@ type OrderViewProps = {
 };
 
 export function OrderView({ canEdit: requestedCanEdit = false, isConfirming = false, isPrinting = false, onClose, onConfirm, onPrint, order, products }: OrderViewProps) {
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [itemPendingCancellation, setItemPendingCancellation] = useState<OrderItem | null>(null);
   const [isDiscardConfirmationOpen, setIsDiscardConfirmationOpen] = useState(false);
   const [pendingCancellationProductIds, setPendingCancellationProductIds] = useState<Set<string>>(new Set());
@@ -35,7 +36,7 @@ export function OrderView({ canEdit: requestedCanEdit = false, isConfirming = fa
   const total = order.items.reduce(
     (sum, line) => line.canceled || pendingCancellationProductIds.has(line.product_id)
       ? sum
-      : sum + line.amount,
+      : sum + (quantities[line.product_id] === undefined ? line.amount : line.price * quantities[line.product_id]),
     0
   );
   const canEdit = requestedCanEdit && isOrderAwaitingConfirmation(order);
@@ -49,7 +50,7 @@ export function OrderView({ canEdit: requestedCanEdit = false, isConfirming = fa
       setIsDiscardConfirmationOpen(false);
       return;
     }
-    if (pendingCancellationProductIds.size > 0) {
+    if (pendingCancellationProductIds.size > 0 || Object.keys(quantities).length > 0) {
       setItemPendingCancellation(null);
       setIsDiscardConfirmationOpen(true);
       return;
@@ -58,6 +59,11 @@ export function OrderView({ canEdit: requestedCanEdit = false, isConfirming = fa
   }
 
   function markItemForCancellation(item: OrderItem) {
+    setQuantities((current) => {
+      const next = { ...current };
+      delete next[item.product_id];
+      return next;
+    });
     setPendingCancellationProductIds((current) => new Set(current).add(item.product_id));
     setItemPendingCancellation(null);
   }
@@ -70,8 +76,29 @@ export function OrderView({ canEdit: requestedCanEdit = false, isConfirming = fa
     });
   }
 
+  function changeQuantity(line: OrderItem, change: number) {
+    if (isConfirming || line.canceled || pendingCancellationProductIds.has(line.product_id)) return;
+    const quantity = Math.min(line.quantity, Math.max(0,
+      Math.round(((quantities[line.product_id] ?? line.quantity) + change) * 1000) / 1000
+    ));
+    if (quantity === 0 && activeLinesCount <= 1) return;
+    if (quantity === 0) {
+      markItemForCancellation(line);
+      return;
+    }
+    setQuantities((current) => ({ ...current, [line.product_id]: quantity }));
+  }
+
   async function confirmOrder() {
-    const isConfirmed = await onConfirm(order!, pendingCancellationProductIds);
+    const updatedOrder = {
+      ...order!,
+      items: order!.items.map((line) => quantities[line.product_id] === undefined || pendingCancellationProductIds.has(line.product_id) ? line : {
+        ...line,
+        quantity: quantities[line.product_id],
+        amount: line.price * quantities[line.product_id]
+      })
+    };
+    const isConfirmed = await onConfirm(updatedOrder, pendingCancellationProductIds);
     if (isConfirmed) onClose();
   }
 
@@ -150,7 +177,7 @@ export function OrderView({ canEdit: requestedCanEdit = false, isConfirming = fa
         <table className="document-lines w-full table-fixed border-collapse text-left">
           <colgroup>
             <col />
-            <col className="w-24" />
+            <col className={canEdit ? "w-40" : "w-24"} />
             <col className="w-24" />
             <col className="w-28" />
             {canEdit ? <col className="w-16" /> : null}
@@ -166,6 +193,8 @@ export function OrderView({ canEdit: requestedCanEdit = false, isConfirming = fa
           </thead>
           <tbody>
             {order.items.map((line) => {
+              const quantity = quantities[line.product_id] ?? line.quantity;
+              const quantityStep = line.is_weight ? 0.1 : 1;
               const isPendingCancellation = pendingCancellationProductIds.has(line.product_id);
               const isInactive = line.canceled || isPendingCancellation;
               return (
@@ -184,13 +213,19 @@ export function OrderView({ canEdit: requestedCanEdit = false, isConfirming = fa
                   </div>
                 </td>
                 <td data-label="Количество" className={`border-b app-border px-3 py-2.5 text-right text-sm font-bold tabular-nums app-text${isInactive ? " line-through" : ""}`}>
-                  {formatNumber(line.quantity)}
+                  {canEdit && !isInactive ? (
+                    <div className="flex flex-wrap items-center justify-start gap-1 min-[660px]:flex-nowrap min-[660px]:justify-end">
+                      <button aria-label={`Уменьшить количество ${line.product_name}`} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border-2 app-border app-surface text-base font-bold disabled:opacity-50" disabled={isConfirming || (quantity <= quantityStep && activeLinesCount <= 1)} type="button" onClick={() => changeQuantity(line, -quantityStep)}>−</button>
+                      <span>{formatNumber(quantity)}</span>
+                      <button aria-label={`Увеличить количество ${line.product_name}`} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border-2 app-border app-surface text-base font-bold disabled:opacity-50" disabled={isConfirming || quantity >= line.quantity} type="button" onClick={() => changeQuantity(line, quantityStep)}>+</button>
+                    </div>
+                  ) : formatNumber(quantity)}
                 </td>
                 <td data-label="Цена" className={`border-b app-border px-3 py-2.5 text-right text-sm font-medium tabular-nums app-text${isInactive ? " line-through" : ""}`}>
                   {formatMoney(line.price)} ₽
                 </td>
                 <td data-label="Сумма" className={`border-b app-border px-5 py-2.5 text-right text-sm font-bold tabular-nums app-text${isInactive ? " line-through" : ""}`}>
-                  {formatMoney(line.amount)} ₽
+                  {formatMoney(quantities[line.product_id] === undefined ? line.amount : line.price * quantity)} ₽
                 </td>
                 {canEdit ? (
                   <td className="border-b app-border px-3 py-2.5 text-center no-underline">

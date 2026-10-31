@@ -8,6 +8,7 @@ import { useOrderHistoryDays, setStoredOrderHistoryDays } from "@/entities/order
 import Image from "next/image";
 import Link from "next/link";
 import { InstructionsIcon } from "@/shared/ui/instructions-icon";
+import { useSelectedStore } from "@/entities/store";
 import { StoreSelector } from "@/features/store-selector";
 import { SellerSelector } from "@/features/seller-selector";
 import { playNotificationSound } from "@/shared/lib/notification-sound";
@@ -40,6 +41,7 @@ export function OrdersPageHeader({ ordersCount }: OrdersPageHeaderProps) {
   const { dismiss, notifications, notify } = usePageNotifications(8000);
   const { isDark, toggleTheme } = useTheme();
   const currentTime = useClock();
+  const selectedStore = useSelectedStore();
   const isAdmin = useSyncExternalStore(subscribeToRole, isAdminSnapshot, serverAdminSnapshot);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [storeTrigger, setStoreTrigger] = useState<HTMLDivElement | null>(null);
@@ -66,6 +68,7 @@ export function OrdersPageHeader({ ordersCount }: OrdersPageHeaderProps) {
           <Image src="/icon.svg" alt="Личный кабинет магазина" width={32} height={32} className="brand-mark" unoptimized />
           <div className="header-selectors flex min-w-0 flex-1 flex-wrap gap-2">
             <SellerSelector />
+            {selectedStore ? <span className="hidden min-[660px]:block min-w-0 self-center truncate text-sm font-bold app-text" title={selectedStore.name}>{selectedStore.name}</span> : null}
           </div>
         </div>
         <div className="header-actions flex items-center gap-2.5">

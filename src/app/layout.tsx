@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AppVersionUpdater } from "@/shared/ui/app-version-updater";
 // import Script from "next/script";
 import "./globals.css";
 
@@ -16,6 +17,7 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <body>
+        <AppVersionUpdater />
         {children}
         {/* Техподдержка временно отключена.
         <Script id="bitrix24-online-assistant" strategy="afterInteractive">

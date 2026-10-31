@@ -61,6 +61,7 @@ export enum ConfirmOrderItemAction {
 
 export const ConfirmOrderItemSchema = z.object({
   product_id: z.string().min(1),
+  quantity: z.number().finite().nonnegative().optional(),
   action: z.enum(ConfirmOrderItemAction)
 });
 
