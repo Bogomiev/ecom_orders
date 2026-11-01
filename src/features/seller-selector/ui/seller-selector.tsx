@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { AUTH_CHANGED_EVENT, getCurrentUser } from "@/shared/api/auth";
 import type { Seller } from "@/entities/seller";
 import {
   clearStoredCurrentSeller,
@@ -12,7 +13,23 @@ import { SellerBarcodeModal } from "./seller-barcode-modal";
 import { SellerMenu } from "./seller-menu";
 import { PersonalAccountDialog } from "./personal-account-dialog";
 
+function subscribeToAuth(callback: () => void) {
+  window.addEventListener(AUTH_CHANGED_EVENT, callback);
+  window.addEventListener("storage", callback);
+  return () => {
+    window.removeEventListener(AUTH_CHANGED_EVENT, callback);
+    window.removeEventListener("storage", callback);
+  };
+}
+const selectionSnapshot = () => getCurrentUser()?.seller_selection_available === true;
+const serverSelectionSnapshot = () => false;
+
 export function SellerSelector() {
+  const available = useSyncExternalStore(subscribeToAuth, selectionSnapshot, serverSelectionSnapshot);
+  return available ? <AvailableSellerSelector /> : null;
+}
+
+function AvailableSellerSelector() {
   const currentSeller = useCurrentSeller();
   const isStoreAuthorized = useIsStoreAuthorized();
   const [isMenuOpen, setIsMenuOpen] = useState(false);

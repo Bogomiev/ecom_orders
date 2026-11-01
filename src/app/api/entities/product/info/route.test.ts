@@ -14,8 +14,8 @@ it("requires an authenticated session", async () => {
   expect((await GET(new Request("http://app.test/api/entities/product/info?store_id=store&name=abc"))).status).toBe(401);
   expect(proxyRMS).not.toHaveBeenCalled();
 });
-it("rejects missing stores and ambiguous searches", async () => {
-  for (const query of ["name=abc", "store_id=store", "store_id=store&code=1&name=abc"]) {
+it("rejects missing and ambiguous search conditions", async () => {
+  for (const query of ["store_id=store", "store_id=store&code=1&name=abc"]) {
     expect((await GET(new Request(`http://app.test/api/entities/product/info?${query}`))).status).toBe(400);
   }
   expect(proxyRMS).not.toHaveBeenCalled();
@@ -29,4 +29,10 @@ it.each(["code", "name"])("preserves dollar signs and Cyrillic when forwarding %
   expect(path).toContain(`${field}=%24%24%24`);
   expect(path).not.toContain("%2524");
   expect(Object.fromEntries(new URL(path, "http://rms.test").searchParams)).toEqual({ store_id: "store", [field]: value });
+});
+
+it.each(["name=abc", "store_id=&name=abc"])("forwards an empty store when none is selected: %s", async (query) => {
+  const request = new Request(`http://app.test/api/entities/product/info?${query}`);
+  expect((await GET(request)).status).toBe(200);
+  expect(proxyRMS).toHaveBeenCalledWith(request, "/product_info?store_id=&name=abc", false, 90_000);
 });

@@ -1,5 +1,7 @@
 "use client";
 
+import { canView } from "@/shared/lib/permissions";
+import { PersonnelManager } from "./personnel-manager";
 import Link from "next/link";
 import { useCallback, useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { AUTH_CHANGED_EVENT, getCurrentUser, restoreSession } from "@/shared/api/auth";
@@ -18,18 +20,19 @@ function Icon({ entry }: { entry: Pick<FileEntry, "icon" | "is_file"> }) {
 }
 export function AdminPage() {
   useTheme();
+  const [tab, setTab] = useState<"files" | "personnel">("personnel");
   const [access, setAccess] = useState("loading");
   const [retry, setRetry] = useState(0);
   useEffect(() => {
     let active = true;
-    const changed = () => { if (active) setAccess(getCurrentUser()?.role === "admin" ? "admin" : "denied"); };
+    const changed = () => { if (active) setAccess(canView(getCurrentUser(), "admin") ? "admin" : "denied"); };
     window.addEventListener(AUTH_CHANGED_EVENT, changed);
     window.addEventListener("storage", changed);
-    restoreSession().then(session => { if (active) setAccess(session?.role === "admin" ? "admin" : "denied"); }).catch(() => { if (active) setAccess("error"); });
+    restoreSession().then(session => { if (active) setAccess(session && canView(getCurrentUser(), "admin") ? "admin" : "denied"); }).catch(() => { if (active) setAccess("error"); });
     return () => { active = false; window.removeEventListener(AUTH_CHANGED_EVENT, changed); window.removeEventListener("storage", changed); };
   }, [retry]);
   return <main className="admin-page"><header className="admin-header"><div><p className="admin-eyebrow">МОЙ МАГАЗИН</p><h1>Администрирование</h1></div><Link href="/">← На главную</Link></header>
-    {access === "loading" ? <p role="status">Проверяем доступ…</p> : access === "error" ? <div role="alert">Не удалось проверить сессию. <button onClick={() => { setAccess("loading"); setRetry(retry + 1); }}>Повторить</button></div> : access !== "admin" ? <section className="admin-panel"><h2>Доступ ограничен</h2><p>Войдите на главной странице под пользователем с ролью admin.</p></section> : <><div role="tablist" aria-label="Разделы администрирования" className="admin-tabs"><button id="files-tab" role="tab" aria-selected="true" aria-controls="files-panel">Файлы</button></div><section id="files-panel" role="tabpanel" aria-labelledby="files-tab"><FileManager /></section></>}
+    {access === "loading" ? <p role="status">Проверяем доступ…</p> : access === "error" ? <div role="alert">Не удалось проверить сессию. <button onClick={() => { setAccess("loading"); setRetry(retry + 1); }}>Повторить</button></div> : access !== "admin" ? <section className="admin-panel"><h2>Доступ ограничен</h2><p>Войдите на главной странице под пользователем с ролью admin.</p></section> : <><div role="tablist" aria-label="Разделы администрирования" className="admin-tabs"><button id="personnel-tab" role="tab" aria-selected={tab === "personnel"} aria-controls="personnel-panel" onClick={() => setTab("personnel")}>Пользователи и роли</button><button id="files-tab" role="tab" aria-selected={tab === "files"} aria-controls="files-panel" onClick={() => setTab("files")}>Файлы</button></div>{tab === "files" ? <section id="files-panel" role="tabpanel" aria-labelledby="files-tab"><FileManager /></section> : <section id="personnel-panel" role="tabpanel" aria-labelledby="personnel-tab"><PersonnelManager /></section>}</>}
   </main>;
 }
 function CreateIcon({ file = false }: { file?: boolean }) {

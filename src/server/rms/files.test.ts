@@ -11,7 +11,7 @@ function request(admin: boolean, method = "GET", csrf = "csrf", body = '{"name":
 beforeEach(() => { vi.stubEnv("RMS_SIGNING_KEY", secret); vi.stubEnv("RMS_API_URL", "http://rms.test"); });
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 it("rejects regular users without contacting files", async () => {
-  const fetch = vi.fn().mockResolvedValue(new Response("{}")); vi.stubGlobal("fetch", fetch);
+  const fetch = vi.fn().mockResolvedValue(Response.json({data:{user:{role:"seller"}}})); vi.stubGlobal("fetch", fetch);
   expect((await handleFiles(request(false))).status).toBe(403);
   expect(fetch).toHaveBeenCalledTimes(1);
 });
@@ -22,18 +22,18 @@ it("rejects forged client roles and missing CSRF", async () => {
   expect(fetch).not.toHaveBeenCalled();
 });
 it("proxies admin writes with original body and query", async () => {
-  const fetch = vi.fn().mockImplementation(() => Promise.resolve(new Response("{}"))); vi.stubGlobal("fetch", fetch);
+  const fetch = vi.fn().mockImplementation(() => Promise.resolve(Response.json({data:{user:{role:"admin"}}}))); vi.stubGlobal("fetch", fetch);
   expect((await handleFiles(request(true, "POST"))).status).toBe(200);
   expect(fetch).toHaveBeenLastCalledWith("http://rms.test/files/?include_deleted=true", expect.objectContaining({ method: "POST", body: '{"name":"docs"}' }));
 });
 
 it("rejects unsupported file formats before forwarding to RMS files", async () => {
-  const fetch = vi.fn().mockImplementation(() => Promise.resolve(new Response("{}"))); vi.stubGlobal("fetch", fetch);
+  const fetch = vi.fn().mockImplementation(() => Promise.resolve(Response.json({data:{user:{role:"admin"}}}))); vi.stubGlobal("fetch", fetch);
   expect((await handleFiles(request(true, "POST", "csrf", JSON.stringify({ is_file: true, name: "report.docx" })))).status).toBe(400);
   expect(fetch).toHaveBeenCalledTimes(1);
 });
 it.each(["report.pdf", "page.html", "REPORT.PDF"])("accepts supported file %s", async name => {
-  const fetch = vi.fn().mockImplementation(() => Promise.resolve(new Response("{}"))); vi.stubGlobal("fetch", fetch);
+  const fetch = vi.fn().mockImplementation(() => Promise.resolve(Response.json({data:{user:{role:"admin"}}}))); vi.stubGlobal("fetch", fetch);
   expect((await handleFiles(request(true, "POST", "csrf", JSON.stringify({ is_file: true, name })))).status).toBe(200);
   expect(fetch).toHaveBeenCalledTimes(2);
 });
@@ -41,7 +41,7 @@ it.each(["report.pdf", "page.html", "REPORT.PDF"])("accepts supported file %s", 
 const directoryId = "a7954397-4aee-48e1-8b90-d5bbca8bf5f3";
 const directory = { id: directoryId, name: "Updated", priority: 12, parent_id: null, is_file: false, icon: null };
 it("confirms a committed directory update after RMS loses the write response", async () => {
-  const fetch = vi.fn().mockResolvedValueOnce(new Response("{}"))
+  const fetch = vi.fn().mockResolvedValueOnce(Response.json({data:{user:{role:"admin"}}}))
     .mockRejectedValueOnce(new TypeError("fetch failed"))
     .mockResolvedValueOnce(Response.json({ ...directory, deleted_at: null }));
   vi.stubGlobal("fetch", fetch);
@@ -58,15 +58,28 @@ it.each([
   { ...directory, parent_id: "another-folder" },
   { ...directory, deleted_at: "2026-10-25" }
 ])("keeps the failure when read-back does not confirm the saved directory: %j", async saved => {
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(new Response("{}"))
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(Response.json({data:{user:{role:"admin"}}}))
     .mockRejectedValueOnce(new TypeError("fetch failed"))
     .mockResolvedValueOnce(Response.json(saved)));
   expect((await handleFiles(request(true, "PUT", "csrf", JSON.stringify(directory)), directoryId)).status).toBe(502);
 });
 it("does not hide RMS validation conflicts", async () => {
-  const fetch = vi.fn().mockResolvedValueOnce(new Response("{}"))
+  const fetch = vi.fn().mockResolvedValueOnce(Response.json({data:{user:{role:"admin"}}}))
     .mockResolvedValueOnce(Response.json({ error: "conflict" }, { status: 409 }));
   vi.stubGlobal("fetch", fetch);
   expect((await handleFiles(request(true, "PUT", "csrf", JSON.stringify(directory)), directoryId)).status).toBe(409);
   expect(fetch).toHaveBeenCalledTimes(2);
+});
+
+it("uses current RMS permissions for an existing non-admin token", async () => {
+ const fetch=vi.fn().mockResolvedValueOnce(Response.json({data:{user:{role:"admin",position:null,roles:[]}}})).mockResolvedValueOnce(Response.json([]));
+ vi.stubGlobal("fetch",fetch);
+ expect((await handleFiles(request(false))).status).toBe(200);
+ expect(fetch).toHaveBeenCalledTimes(2);
+});
+it("denies an old admin token when current RMS permissions were removed", async () => {
+ const fetch=vi.fn().mockResolvedValueOnce(Response.json({data:{user:{role:"seller",position:2,roles:[{name:"order"}]}}}));
+ vi.stubGlobal("fetch",fetch);
+ expect((await handleFiles(request(true))).status).toBe(403);
+ expect(fetch).toHaveBeenCalledTimes(1);
 });

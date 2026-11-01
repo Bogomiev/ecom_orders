@@ -1,7 +1,8 @@
 export const CSRF_STORAGE_KEY = "ecom-orders-csrf-token";
 export const SESSION_EXPIRED_EVENT = "ecom-orders-session-expired";
 export const AUTH_CHANGED_EVENT = "ecom-orders-auth-changed";
-export type User = { userToken?: string; name?: string; role: string };
+export type Role = { id: number; name: string };
+export type User = { userToken?: string; name?: string; role: string; seller_selection_available?: boolean; store_selection_available?: boolean; store_selection_required?: boolean; position?: number | null; position_name?: string | null; roles?: Role[] };
 export const USER_STORAGE_KEY = "ecom-orders-user";
 export function getCurrentUser(): User | null {
   if (typeof window === "undefined") return null;
@@ -13,7 +14,7 @@ let refreshPromise: Promise<boolean> | null = null;
 type AuthResponse = {
   csrfToken?: string;
   userToken?: string;
-  data?: { csrfToken?: string; role?: string; user?: { role?: string; name?: string; user_token?: string } };
+  data?: { csrfToken?: string; role?: string; user?: { role?: string; name?: string; user_token?: string; seller_selection_available?: boolean; store_selection_available?: boolean; store_selection_required?: boolean; position?: number | null; position_name?: string | null; roles?: Role[] } };
   role?: string;
   resultCode?: number;
   result_code?: number;
@@ -31,7 +32,7 @@ function saveCSRF(data: AuthResponse) {
   window.localStorage.setItem(CSRF_STORAGE_KEY, csrf);
   const role = data.data?.role ?? data.data?.user?.role ?? data.role;
   if (role !== undefined) window.localStorage.setItem(USER_STORAGE_KEY, JSON.stringify({
-    ...getCurrentUser(), ...data.data?.user, userToken: data.userToken ?? data.data?.user?.user_token ?? getCurrentUser()?.userToken, role
+    ...getCurrentUser(), ...data.data?.user, seller_selection_available: data.data?.user?.seller_selection_available ?? false, store_selection_available: data.data?.user?.store_selection_available ?? false, store_selection_required: data.data?.user?.store_selection_required ?? false, roles: data.data?.user?.roles ?? [], position: data.data?.user?.position ?? null, position_name: data.data?.user?.position_name ?? null, userToken: data.userToken ?? data.data?.user?.user_token ?? getCurrentUser()?.userToken, role
   }));
   window.dispatchEvent(new Event(AUTH_CHANGED_EVENT));
 }
@@ -112,5 +113,5 @@ export async function restoreSession() {
   const data = await response.json() as AuthResponse;
   saveCSRF(data);
   if (!data.userToken) throw new Error("RMS не вернул пользователя сессии");
-  return { userToken: data.userToken, role: getCurrentUser()?.role ?? "" };
+  return { ...getCurrentUser(), userToken: data.userToken, role: getCurrentUser()?.role ?? "" };
 }

@@ -1,17 +1,22 @@
 "use client";
 
 import { Children, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { usePermissions, type Service } from "@/shared/lib/permissions";
 import { WidgetIcon } from "@/shared/ui/widget-panel";
 
-const services = [
-  { title: "Интернет-заказы", icon: "cart", accent: "blue" },
-  { title: "Товары", icon: "cube", accent: "teal" },
-  { title: "Задания", icon: "check", accent: "purple" },
-  { title: "Сервис-деск", icon: "message", accent: "orange" },
-  { title: "Дашборд", icon: "chart", accent: "cyan" }
+const allServices = [
+  { permission: "orders", title: "Интернет-заказы", icon: "cart", accent: "blue" },
+  { permission: "goods", title: "Товары", icon: "cube", accent: "teal" },
+  { permission: "tasks", title: "Задания", icon: "check", accent: "purple" },
+  { permission: "serviceDesk", title: "Сервис-деск", icon: "message", accent: "orange" },
+  { permission: "dashboard", title: "Дашборд", icon: "chart", accent: "cyan" }
 ] as const;
 
 export function ServiceDashboard({ children }: { children: ReactNode }) {
+  const can = usePermissions();
+  const childrenArray = Children.toArray(children);
+  const services = allServices.map((service,index) => ({...service, child:childrenArray[index]})).filter(service => can(service.permission as Service));
+  const serviceCount = services.length;
   const [visibleCount, setVisibleCount] = useState(1);
   const [active, setActive] = useState(0);
   const viewport = useRef<HTMLDivElement>(null);
@@ -23,8 +28,8 @@ export function ServiceDashboard({ children }: { children: ReactNode }) {
     if (!element) return;
     const observer = new ResizeObserver(() => {
       const count = window.matchMedia("(max-width: 659px)").matches ? 1
-        : Math.max(1, Math.min(services.length, Math.floor((element.clientWidth + 10) / 250)));
-      const first = Math.min(activeRef.current, services.length - count);
+        : Math.max(1, Math.min(serviceCount, Math.floor((element.clientWidth + 10) / 250)));
+      const first = Math.max(0, Math.min(activeRef.current, serviceCount - count));
       element.style.setProperty("--visible-services", String(count));
       setVisibleCount(count);
       setActive(first);
@@ -34,7 +39,7 @@ export function ServiceDashboard({ children }: { children: ReactNode }) {
     });
     observer.observe(element);
     return () => observer.disconnect();
-  }, []);
+  }, [serviceCount]);
 
   function select(index: number) {
     const element = viewport.current;
@@ -70,7 +75,7 @@ export function ServiceDashboard({ children }: { children: ReactNode }) {
         const element = event.currentTarget;
         setActive(Math.max(0, Math.min(services.length - visibleCount, Math.round(element.scrollLeft / ((element.clientWidth + 10) / visibleCount)))));
       }}>
-        {Children.toArray(children).map((child, index) => (
+        {services.map(({child}, index) => (
           <div key={services[index].icon} id={`service-panel-${index}`} className="service-panel"
             role="tabpanel" aria-labelledby={`service-tab-${index}`}
             inert={index < active || index >= active + visibleCount}>

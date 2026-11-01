@@ -30,7 +30,7 @@ export function rmsHeaders(request: Request) {
 }
 
 // All protected Route Handlers call this before reading a body or contacting 1C.
-export async function requireSession(request: Request): Promise<NextResponse | null> {
+export async function requireSession(request: Request, adminOnly = false): Promise<NextResponse | null> {
   try {
     const claims = verifyAccessToken(new NextRequest(request.url, { headers: request.headers }).cookies.get("access_token")?.value);
     if (!claims) return authError(401, 1003, "Сессия истекла");
@@ -38,6 +38,10 @@ export async function requireSession(request: Request): Promise<NextResponse | n
     // RMS checks the persisted session, including revocation, on every request.
     const response = await fetchRMS("/auth/session", { headers: rmsHeaders(request) });
     if (!response.ok) return authError(response.status === 401 ? 401 : 502, response.status === 401 ? 1003 : 1, response.status === 401 ? "Сессия завершена" : "Не удалось проверить сессию RMS");
+    if (adminOnly) {
+      const session = await response.json();
+      if (session.data?.user?.role !== "admin") return authError(403, 1, "Доступ только для администратора");
+    }
     return null;
   } catch {
     return authError(502, 1, "Не удалось проверить сессию RMS");

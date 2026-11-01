@@ -1,2 +1,5 @@
 import { AdminPage } from "@/screens/admin/admin-page";
-export default AdminPage;
+
+export default function Admin() {
+  return <AdminPage />;
+}

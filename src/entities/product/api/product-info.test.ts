@@ -63,3 +63,9 @@ it("preserves receipts nested in a product", async () => {
   vi.mocked(fetchJson).mockResolvedValue(result([{ id: "a", receipts: [receipt] }]));
   expect((await fetchProductInfo("store", "code", []))[0].receipts).toEqual([receipt]);
 });
+
+it("searches without a selected store using an empty store_id", async () => {
+  vi.mocked(fetchJson).mockResolvedValue(result([{ id: "a" }]));
+  expect(await fetchProductInfo("", "code", [])).toEqual([{ id: "a", receipts: [] }]);
+  expect(fetchJson).toHaveBeenCalledWith("/api/entities/product/info?store_id=&code=code", expect.anything(), expect.anything());
+});

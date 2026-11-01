@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { FileEntry } from "@/entities/file/api/files";
-import { useIsStoreAuthorized } from "@/entities/store";
+import { usePermissions } from "@/shared/lib/permissions";
 import { Dialog } from "@/shared/ui/dialog";
 import { documentsService } from "../api/documents";
 import { filesInFolder, folderPath, FRESH_DAYS, isFresh, documentTitle } from "../model/documents";
@@ -19,7 +19,7 @@ function ActionIcon({ print = false }: { print?: boolean }) {
   return <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{print ? <><path d="M7 8V3h10v5M7 17H4V9h16v8h-3M7 14h10v7H7z" /><path d="M17 11h.01" /></> : <><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" /></>}</svg>;
 }
 export function Documents() {
-  const authorized = useIsStoreAuthorized();
+  const authorized = usePermissions()("documents");
   const [open, setOpen] = useState(false);
   return <>
     <button type="button" disabled={!authorized} aria-haspopup="dialog" className="docs-launcher" onClick={() => setOpen(true)}><span className="docs-launcher-icon"><DocumentIcon /></span><span><strong>Документы и материалы</strong><small>Бланки, инструкции и справочные материалы</small></span></button>

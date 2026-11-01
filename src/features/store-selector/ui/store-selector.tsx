@@ -13,8 +13,8 @@ import {
   toStoreSelectionSnapshot
 } from "@/entities/store";
 import { getStores } from "@/entities/store/api/get-stores";
-import { accessTokenIsValid } from "@/entities/store/api/access-token-is-valid";
-import { login, restoreSession, SESSION_EXPIRED_EVENT } from "@/shared/api/auth";
+import { getAccessTokenSettings } from "@/entities/store/api/access-token-is-valid";
+import { login, restoreSession, getCurrentUser, AUTH_CHANGED_EVENT, SESSION_EXPIRED_EVENT } from "@/shared/api/auth";
 import { usePageNotifications } from "@/shared/lib/use-page-notifications";
 import { Dialog } from "@/shared/ui/dialog";
 import { PageNotificationStack } from "@/shared/ui/page-notification";
@@ -144,12 +144,17 @@ function PinDots({ pin, hasError }: { pin: string; hasError: boolean }) {
 function StoreSelectorModal({
   onClose,
   onSelect,
+  loginOnly = false,
+  storeRequired = false,
   state
 }: {
   onClose: () => void;
-  onSelect: (store: Store, pin: string) => Promise<void>;
+  loginOnly?: boolean;
+  storeRequired?: boolean;
+  onSelect: (store: StoreSelection, pin: string) => Promise<void>;
   state: StoresState;
 }) {
+  const showStore = !loginOnly || storeRequired;
   const [searchQuery, setSearchQuery] = useState("");
   const [pendingStore, setPendingStore] = useState<StoreSelection>(null);
   const [pin, setPin] = useState("");
@@ -175,11 +180,12 @@ function StoreSelectorModal({
 
   function selectStore(store: Store) {
     setPendingStore(store);
+    setPin("");
     setPinError(null);
   }
 
   async function confirmSelection() {
-    if (pendingStore === null || pin.length !== PIN_LENGTH) return;
+    if ((showStore && pendingStore === null) || (pin.length !== PIN_LENGTH)) return;
 
     setIsVerifyingPin(true);
     setPinError(null);
@@ -199,12 +205,12 @@ function StoreSelectorModal({
       className="flex max-h-[96vh] w-full max-w-xl flex-col overflow-hidden rounded-[2rem] app-surface px-5 py-6 shadow-2xl sm:px-8"
       onClose={onClose}
     >
-        <h2 id="store-selector-title" className="text-center text-2xl font-extrabold app-text">Смена точки</h2>
+        <h2 id="store-selector-title" className="text-center text-2xl font-extrabold app-text">{loginOnly ? "Вход" : "Смена точки"}</h2>
         <p className="mt-3 text-center text-base app-muted">
-          Выберите магазин
+          {loginOnly ? storeRequired ? "Выберите магазин и введите PIN для входа" : "Введите PIN для входа" : "Выберите магазин и введите PIN"}
         </p>
 
-        <input
+        {showStore && <><input
           autoFocus
           className="mt-5 h-11 w-full rounded-xl border app-border app-surface-muted px-4 text-sm app-text outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
           placeholder="Поиск магазина по названию или коду"
@@ -251,9 +257,10 @@ function StoreSelectorModal({
           ) : null}
         </div>
 
-        <div className={`mt-5 rounded-2xl px-3 py-4 transition ${pendingStore ? "bg-blue-50/60" : "bg-slate-100 opacity-60"}`}>
-          <div className={`mb-3 text-center text-sm font-semibold ${pendingStore ? "app-text" : "text-slate-500"}`}>
-            {pendingStore ? "Укажите пин" : "Выберите магазин"}
+        </>}
+        <><div className={`mt-5 rounded-2xl px-3 py-4 transition ${(loginOnly || pendingStore) ? "bg-blue-50/60" : "bg-slate-100 opacity-60"}`}>
+          <div className={`mb-3 text-center text-sm font-semibold ${(loginOnly || pendingStore) ? "app-text" : "text-slate-500"}`}>
+            {(loginOnly || pendingStore) ? "Укажите пин" : "Выберите магазин и введите PIN"}
           </div>
           <PinDots hasError={pinError !== null} pin={pin} />
           {pinError ? (
@@ -262,13 +269,13 @@ function StoreSelectorModal({
           {isVerifyingPin ? <div className="mt-2 text-center text-xs font-semibold text-blue-600">Проверяем PIN...</div> : null}
         </div>
 
-        <div className={`mt-5 grid grid-cols-3 gap-2.5 transition ${pendingStore ? "" : "opacity-45"}`}>
+        <div className={`mt-5 grid grid-cols-3 gap-2.5 transition ${(loginOnly || pendingStore) ? "" : "opacity-45"}`}>
           {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((digit) => (
             <button
               className="h-12 rounded-xl border app-border app-surface-muted text-xl font-bold app-text transition hover:bg-slate-100 active:bg-blue-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-300"
               key={digit}
               type="button"
-              disabled={pendingStore === null || isVerifyingPin}
+              disabled={(showStore && pendingStore === null) || isVerifyingPin}
               onClick={() => enterDigit(digit)}
             >
               {digit}
@@ -277,21 +284,22 @@ function StoreSelectorModal({
           <button className="h-12 rounded-xl border app-border app-surface-muted text-sm font-bold app-muted hover:bg-slate-100" disabled={isVerifyingPin} type="button" onClick={onClose}>
             Отмена
           </button>
-          <button className="h-12 rounded-xl border app-border app-surface-muted text-xl font-bold app-text hover:bg-slate-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-300" disabled={pendingStore === null || isVerifyingPin} type="button" onClick={() => enterDigit("0")}>
+          <button className="h-12 rounded-xl border app-border app-surface-muted text-xl font-bold app-text hover:bg-slate-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-300" disabled={(showStore && pendingStore === null) || isVerifyingPin} type="button" onClick={() => enterDigit("0")}>
             0
           </button>
-          <button aria-label="Удалить последнюю цифру" className="h-12 rounded-xl border app-border app-surface-muted text-lg font-bold app-muted hover:bg-slate-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-300" disabled={pendingStore === null || isVerifyingPin} type="button" onClick={() => { setPin((currentPin) => currentPin.slice(0, -1)); setPinError(null); }}>
+          <button aria-label="Удалить последнюю цифру" className="h-12 rounded-xl border app-border app-surface-muted text-lg font-bold app-muted hover:bg-slate-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-300" disabled={(showStore && pendingStore === null) || isVerifyingPin} type="button" onClick={() => { setPin((currentPin) => currentPin.slice(0, -1)); setPinError(null); }}>
             ⌫
           </button>
         </div>
 
+        </>
         <button
           className="mt-4 h-12 w-full rounded-xl bg-blue-600 text-base font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
-          disabled={pendingStore === null || pin.length !== PIN_LENGTH || isVerifyingPin}
+          disabled={(showStore && pendingStore === null) || (pin.length !== PIN_LENGTH) || isVerifyingPin}
           type="button"
           onClick={() => void confirmSelection()}
         >
-          Выбрать
+          {loginOnly ? "Войти" : "Выбрать"}
         </button>
 
     </Dialog>
@@ -300,6 +308,14 @@ function StoreSelectorModal({
 
 export function StoreSelector({ triggerContainer, hideTrigger = false }: { triggerContainer?: HTMLElement | null; hideTrigger?: boolean } = {}) {
   const [isOpen, setIsOpen] = useState(false);
+  const [storeRequired, setStoreRequired] = useState(false);
+  const [loginNeeded, setLoginNeeded] = useState(false);
+  const [selectionAvailable, setSelectionAvailable] = useState(false);
+  useEffect(() => {
+    const changed = () => { const user = getCurrentUser(); setSelectionAvailable(user?.store_selection_available === true); };
+    changed(); window.addEventListener(AUTH_CHANGED_EVENT, changed);
+    return () => window.removeEventListener(AUTH_CHANGED_EVENT, changed);
+  }, []);
   const [state, setState] = useState<StoresState>(initialStoresState);
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
   const [accessToken, setAccessToken] = useState<string | null | undefined>(undefined);
@@ -320,6 +336,7 @@ export function StoreSelector({ triggerContainer, hideTrigger = false }: { trigg
         if (controller.signal.aborted) return;
         const token = urlToken ?? session?.userToken ?? null;
         setAccessToken(token);
+        setLoginNeeded(Boolean(urlToken));
         if (token === null) {
           setIsCheckingAccessToken(false);
           setSelectedStoreId(null);
@@ -328,7 +345,10 @@ export function StoreSelector({ triggerContainer, hideTrigger = false }: { trigg
           notify({ body: "Откройте сервис по ссылке с токеном доступа.", title: "Требуется вход", tone: "error" });
           return;
         }
-        if (urlToken && !await accessTokenIsValid(urlToken, controller.signal)) {
+        const settings = urlToken ? await getAccessTokenSettings(urlToken, controller.signal) : getCurrentUser();
+        if (controller.signal.aborted) return;
+        setStoreRequired(Boolean(settings?.store_selection_required));
+        if (urlToken && !settings) {
           setIsCheckingAccessToken(false);
           setSelectedStoreId(null);
           setStoredStoreSelection(null);
@@ -339,6 +359,7 @@ export function StoreSelector({ triggerContainer, hideTrigger = false }: { trigg
         }
         setIsCheckingAccessToken(false);
         setIsAccessTokenInvalid(false);
+        if (urlToken) setIsOpen(true);
         const data = await getStores(controller.signal, urlToken ?? undefined);
         if (controller.signal.aborted) return;
         setState({ error: null, isLoading: false, stores: data.items });
@@ -352,7 +373,7 @@ export function StoreSelector({ triggerContainer, hideTrigger = false }: { trigg
         } else {
           setSelectedStoreId(null);
           setStoredStoreSelection(null);
-          setIsOpen(true);
+          setIsOpen(Boolean(urlToken || getCurrentUser()?.store_selection_required));
         }
       } catch (error) {
         if (controller.signal.aborted) return;
@@ -390,13 +411,24 @@ export function StoreSelector({ triggerContainer, hideTrigger = false }: { trigg
   );
   const handleClose = useCallback(() => setIsOpen(false), []);
 
-  async function handleSelect(store: Store, pin: string) {
+  async function handleSelect(store: StoreSelection, pin: string) {
     const token = getAccessTokenFromLocation() ?? accessToken;
     if (!token) {
       throw new Error("Нет токена доступа. Откройте сервис по ссылке с токеном доступа.");
     }
 
+    if (loginNeeded && storeRequired && !store) throw new Error("Выберите магазин");
+    if (!/^\d{5}$/.test(pin)) throw new Error("Введите PIN из 5 цифр");
     await login(token, pin);
+    const user = getCurrentUser();
+    setSelectionAvailable(user?.store_selection_available === true);
+    setLoginNeeded(false);
+    setStoreRequired(Boolean(user?.store_selection_required));
+    removeAccessTokenFromLocation();
+    if (!store) {
+      setIsOpen(Boolean(getCurrentUser()?.store_selection_required));
+      return;
+    }
     setSelectedStoreId(store.id);
     setStoredStoreSelection(toStoreSelectionSnapshot(store));
     removeAccessTokenFromLocation();
@@ -407,10 +439,10 @@ export function StoreSelector({ triggerContainer, hideTrigger = false }: { trigg
 
   const pickerButton = (
     <StorePickerButton
-      disabled={accessToken === null || accessToken === undefined || isCheckingAccessToken || isAccessTokenInvalid}
+      disabled={!selectionAvailable || accessToken === null || accessToken === undefined || isCheckingAccessToken || isAccessTokenInvalid}
       statusText={isCheckingAccessToken ? "Проверка токена..." : undefined}
       selectedStore={selectedStore}
-      onOpen={() => setIsOpen(true)}
+      onOpen={() => { if (selectionAvailable) setIsOpen(true); }}
     />
   );
 
@@ -420,6 +452,8 @@ export function StoreSelector({ triggerContainer, hideTrigger = false }: { trigg
       <PageNotificationStack notifications={notifications} onClose={dismiss} />
       {isOpen ? (
         <StoreSelectorModal
+          loginOnly={loginNeeded}
+          storeRequired={storeRequired}
           state={state}
           onClose={handleClose}
           onSelect={handleSelect}

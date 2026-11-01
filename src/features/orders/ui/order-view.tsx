@@ -23,6 +23,7 @@ export function OrderView({ canEdit: requestedCanEdit = false, isConfirming = fa
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [itemPendingCancellation, setItemPendingCancellation] = useState<OrderItem | null>(null);
   const [isDiscardConfirmationOpen, setIsDiscardConfirmationOpen] = useState(false);
+  const [isOrderConfirmationOpen, setIsOrderConfirmationOpen] = useState(false);
   const [pendingCancellationProductIds, setPendingCancellationProductIds] = useState<Set<string>>(new Set());
   const productCodesById = useMemo(
     () => new Map(products.map((product) => [product.uid, product.code])),
@@ -90,6 +91,8 @@ export function OrderView({ canEdit: requestedCanEdit = false, isConfirming = fa
   }
 
   async function confirmOrder() {
+    if (!canEdit || isConfirming) return;
+    setIsOrderConfirmationOpen(false);
     const updatedOrder = {
       ...order!,
       items: order!.items.map((line) => quantities[line.product_id] === undefined || pendingCancellationProductIds.has(line.product_id) ? line : {
@@ -273,13 +276,42 @@ export function OrderView({ canEdit: requestedCanEdit = false, isConfirming = fa
               className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white disabled:cursor-wait disabled:opacity-60"
               disabled={isConfirming}
               type="button"
-              onClick={() => void confirmOrder()}
+              onClick={() => setIsOrderConfirmationOpen(true)}
             >
               {isConfirming ? <LoadingDots label="Подтверждение заказа" /> : "Подтвердить"}
             </button>
           ) : null}
         </div>
       </div>
+
+      {isOrderConfirmationOpen && canEdit ? (
+        <Dialog
+          ariaLabelledBy="confirm-order-title"
+          className="w-full max-w-sm rounded-2xl app-surface p-5 shadow-2xl"
+          onClose={() => setIsOrderConfirmationOpen(false)}
+        >
+          <h2 id="confirm-order-title" className="text-lg font-extrabold app-text">
+            Внимание! Вы подтверждаете наличие всего товара. Если чего-то нет, не подтверждайте, а исправьте количество!
+          </h2>
+          <div className="mt-5 flex justify-end gap-2">
+            <button
+              className="rounded-xl border border-slate-300 app-surface px-4 py-2 text-sm font-bold app-text transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              type="button"
+              onClick={() => setIsOrderConfirmationOpen(false)}
+            >
+              Нет
+            </button>
+            <button
+              className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-60"
+              disabled={isConfirming}
+              type="button"
+              onClick={() => void confirmOrder()}
+            >
+              Да
+            </button>
+          </div>
+        </Dialog>
+      ) : null}
 
       {itemPendingCancellation !== null ? (
         <div

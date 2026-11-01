@@ -15,7 +15,7 @@ import { ProductBarcode } from "@/shared/ui/product-barcode";
 import { ProductPriceTag } from "./product-price-tag";
 import { ProductInfoIcon } from "./product-info-icon";
 
-export function ProductInfoDialog({ storeId, unavailableReason = "Выберите торговую точку в настройках, чтобы искать товары.", onClose }: { storeId?: string; unavailableReason?: string; onClose: () => void }) {
+export function ProductInfoDialog({ storeId, onClose }: { storeId?: string; onClose: () => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const productsRef = useRef<Promise<Product[]> | null>(null);
   const requestRef = useRef<AbortController | null>(null);
@@ -32,7 +32,7 @@ export function ProductInfoDialog({ storeId, unavailableReason = "Выберит
 
   async function search(value: string, scanned = false) {
     const term = value.trim();
-    if (!term || !storeId) return;
+    if (!term) return;
     requestRef.current?.abort();
     const controller = new AbortController();
     requestRef.current = controller;
@@ -58,7 +58,7 @@ export function ProductInfoDialog({ storeId, unavailableReason = "Выберит
           searchById = true;
         }
       }
-      const found = await fetchProductInfo(storeId, lookup, products, searchById, controller.signal);
+      const found = await fetchProductInfo(storeId ?? "", lookup, products, searchById, controller.signal);
       if (controller.signal.aborted) return;
       setItems(found);
       setResultsOpen(found.length > 1);
@@ -145,10 +145,9 @@ export function ProductInfoDialog({ storeId, unavailableReason = "Выберит
               </ul>
             ) : null}
           </div>
-          <button aria-busy={busy} className="h-10 sm:h-11 min-w-20 rounded-lg bg-emerald-700 px-4 text-sm sm:px-5 font-bold text-white hover:bg-emerald-800 disabled:opacity-50" disabled={!storeId || !query.trim() || busy} type="submit">{busy ? <LoadingDots label="Поиск товара" /> : "Найти"}</button>
+          <button aria-busy={busy} className="h-10 sm:h-11 min-w-20 rounded-lg bg-emerald-700 px-4 text-sm sm:px-5 font-bold text-white hover:bg-emerald-800 disabled:opacity-50" disabled={!query.trim() || busy} type="submit">{busy ? <LoadingDots label="Поиск товара" /> : "Найти"}</button>
         </div>
       </form>
-      {!storeId ? <div className="mt-4 rounded-lg app-surface-muted p-4 text-sm app-text"><p>{unavailableReason}</p><button className="mt-3 font-semibold text-teal-600 underline" type="button" onClick={onClose}>Вернуться к выбору точки</button></div> : null}
       <div aria-live="polite" role="status">{busy ? <p className="sr-only">Поиск товара…</p> : message ? <p className="mt-4 rounded-lg app-surface-muted p-4 text-sm app-text">{message}</p> : null}</div>
 
       {selected ? <ProductCard key={selected.id} product={selected} /> : <ProductCardSkeleton />}

@@ -1,5 +1,6 @@
 "use client";
 
+import { canView } from "@/shared/lib/permissions";
 import { useState, useSyncExternalStore } from "react";
 import { AUTH_CHANGED_EVENT, getCurrentUser } from "@/shared/api/auth";
 import { APP_VERSION } from "@/shared/config/app-version";
@@ -27,8 +28,11 @@ function subscribeToRole(callback: () => void) {
     window.removeEventListener("storage", callback);
   };
 }
-const isAdminSnapshot = () => getCurrentUser()?.role === "admin";
+const isAdminSnapshot = () => canView(getCurrentUser(), "admin");
 const serverAdminSnapshot = () => false;
+const userNameSnapshot = () => getCurrentUser()?.name?.trim() || "Не указан";
+const userPositionSnapshot = () => getCurrentUser()?.position_name?.trim() || "Не назначена";
+const serverUserTextSnapshot = () => "—";
 
 const NOTIFICATION_TITLE = "Личный кабинет магазина";
 const TEST_NOTIFICATION_BODY = "Проверка уведомлений для экрана сборки.";
@@ -43,6 +47,8 @@ export function OrdersPageHeader({ ordersCount }: OrdersPageHeaderProps) {
   const currentTime = useClock();
   const selectedStore = useSelectedStore();
   const isAdmin = useSyncExternalStore(subscribeToRole, isAdminSnapshot, serverAdminSnapshot);
+  const userName = useSyncExternalStore(subscribeToRole, userNameSnapshot, serverUserTextSnapshot);
+  const userPosition = useSyncExternalStore(subscribeToRole, userPositionSnapshot, serverUserTextSnapshot);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [storeTrigger, setStoreTrigger] = useState<HTMLDivElement | null>(null);
   const historyDays = useOrderHistoryDays();
@@ -128,8 +134,9 @@ export function OrdersPageHeader({ ordersCount }: OrdersPageHeaderProps) {
               <span>дней</span>
             </label>
           </div>
-          <div className="border-t app-border px-5 py-3 text-sm app-muted">
-            Версия: <span className="font-semibold tabular-nums">{APP_VERSION}</span>
+          <div className="flex items-start justify-between gap-4 border-t app-border px-5 py-3 text-sm app-muted">
+            <p className="shrink-0">Версия: <span className="font-semibold tabular-nums">{APP_VERSION}</span></p>
+            <p className="min-w-0 break-words text-right">{userName} / {userPosition}</p>
           </div>
         </Dialog>
       ) : null}

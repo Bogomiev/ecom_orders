@@ -80,3 +80,16 @@ describe("cookie authentication", () => {
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 });
+
+it("replaces personnel and roles from login and session refresh", async () => {
+ const fetch = vi.fn()
+  .mockResolvedValueOnce(json({csrfToken:"old", data:{user:{role:"admin",position:1,position_name:"admin",seller_selection_available:true,store_selection_available:true,store_selection_required:false,roles:[{id:1,name:"admin"}]}}}))
+  .mockResolvedValueOnce(json({resultCode:1003},401))
+  .mockResolvedValueOnce(json({csrfToken:"new",data:{user:{role:"seller",position:2,position_name:"seller",seller_selection_available:false,store_selection_available:true,store_selection_required:true,roles:[{id:2,name:"order"}]}}}))
+  .mockResolvedValueOnce(json({}));
+ vi.stubGlobal("fetch",fetch);
+ await login("invite","password");
+ expect(getCurrentUser()).toMatchObject({position:1,position_name:"admin",seller_selection_available:true,store_selection_available:true,store_selection_required:false,roles:[{id:1,name:"admin"}]});
+ await authenticatedFetch("/api/orders");
+ expect(getCurrentUser()).toMatchObject({role:"seller",position:2,position_name:"seller",seller_selection_available:false,store_selection_available:true,store_selection_required:true,roles:[{id:2,name:"order"}]});
+});

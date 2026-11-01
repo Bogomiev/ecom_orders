@@ -1,13 +1,9 @@
 import { FILE_FORMAT_ERROR, isAllowedFileName } from "../../entities/file/file-format";
-import { NextRequest } from "next/server";
 import { authError, proxyRMS, requireSession } from "./client";
-import { verifyAccessToken } from "./security";
 
 export async function handleFiles(request: Request, id?: string) {
-  const error = await requireSession(request);
+  const error = await requireSession(request, true);
   if (error) return error;
-  const claims = verifyAccessToken(new NextRequest(request.url, { headers: request.headers }).cookies.get("access_token")?.value);
-  if (claims?.is_admin !== true) return authError(403, 1, "Доступ только для администратора");
   if (id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return authError(400, 1, "Некорректный ID");
   let input: Record<string, unknown> | undefined;
   if (["POST", "PUT"].includes(request.method)) {
