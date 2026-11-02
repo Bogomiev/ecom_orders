@@ -4,13 +4,13 @@ import { canView } from "@/shared/lib/permissions";
 import { TaskManager } from "./task-manager";
 import { PersonnelManager } from "./personnel-manager";
 import Link from "next/link";
-import { useCallback, useEffect, useState, type CSSProperties, type FormEvent } from "react";
+import { useCallback, useEffect, useId, useState, type CSSProperties, type FormEvent } from "react";
 import { AUTH_CHANGED_EVENT, getCurrentUser, restoreSession } from "@/shared/api/auth";
 import { filesService, readBase64, type FileEntry, type FileInput } from "@/entities/file/api/files";
 import { FILE_FORMAT_ERROR, isAllowedFileName } from "@/entities/file/file-format";
 import { creationTarget, treeRows } from "@/entities/file/tree";
 import { useTheme } from "@/shared/lib/use-theme";
-import { AdminDialog as Dialog, RefreshButton } from "./admin-controls";
+import { AdminDialog as Dialog, RefreshButton, SaveActions, shouldCloseAfterSave } from "./admin-controls";
 import "./admin.css";
 
 function Icon({ entry }: { entry: Pick<FileEntry, "icon" | "is_file"> }) {
@@ -90,11 +90,13 @@ function FileManager() {
       {visible.map(({ entry, depth }) => <tr key={entry.id} tabIndex={0} aria-selected={selectedId === entry.id} className={`${entry.deleted_at ? "is-deleted" : ""} ${selectedId === entry.id ? "is-selected" : ""}`} onClick={() => setSelectedId(entry.id)} onKeyDown={e => { if (e.target === e.currentTarget && ["Enter", " "].includes(e.key)) { e.preventDefault(); setSelectedId(entry.id); } }}><td><div className="tree-name" style={{ "--tree-depth": depth } as CSSProperties}><span className="tree-guides" aria-hidden="true">{Array.from({ length: depth }, (_, index) => <span key={index} style={{ "--guide-depth": index } as CSSProperties} />)}</span>{!entry.is_file ? <button className="tree-toggle" aria-label={`${collapsed.has(entry.id) ? "Развернуть" : "Свернуть"} ${entry.name}`} aria-expanded={Boolean(search) || !collapsed.has(entry.id)} onClick={() => toggle(entry.id)}><svg aria-hidden="true" className={!search && collapsed.has(entry.id) ? "tree-chevron" : "tree-chevron expanded"} width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 3 5 5-5 5" /></svg></button> : <span className="tree-toggle-space" />}<span className="file-name" title={entry.name}><Icon entry={entry} /><span>{entry.name}{entry.deleted_at && <small>Удалён</small>}</span></span></div></td><td>{entry.priority}</td><td><div className="admin-actions">{!entry.deleted_at && <button className="row-action" aria-label={`Изменить ${entry.name}`} title="Изменить" onClick={() => edit(entry)}><svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m15 5 4 4M4 20l5-1L20 8a2.8 2.8 0 0 0-4-4L5 15z" /></svg></button>}<button className="row-action danger" aria-label={`${entry.deleted_at ? "Удалить навсегда" : "Удалить"} ${entry.name}`} title={entry.deleted_at ? "Удалить навсегда" : "Удалить"} onClick={() => { setError(""); setRemoving(entry); }}><svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="m6 6 12 12M18 6 6 18" /></svg></button></div></td></tr>)}
       {visible.length === 0 && <tr><td colSpan={3} className="files-empty">{search ? "Ничего не найдено" : "Создайте каталог или добавьте первый файл."}</td></tr>}
     </tbody></table></div>}
-    {editor && <FileEditor entry={editor.entry} isFile={editor.isFile} parent={editor.parent} initialPriority={editor.priority} onClose={() => setEditor(null)} onSaved={() => { setEditor(null); load(); }} />}
-    {removing && <Dialog closeDisabled={busy} title={removing.deleted_at ? "Удалить навсегда?" : "Удалить запись?"} ariaLabel="Удаление записи" onClose={() => { if (!busy) setRemoving(null); }} className="admin-dialog"><p>«{removing.name}»{removing.deleted_at ? " и всё содержимое будут окончательно удалены." : " будет помечен как удалённый. Восстановление сервисом не поддерживается."}</p><p>Каталог должен быть пустым, включая удалённые записи.</p>{error && <p role="alert" className="admin-error">{error}</p>}<div className="admin-actions"><button disabled={busy} onClick={() => setRemoving(null)}>Отмена</button><button className="danger" disabled={busy} onClick={remove}>{busy ? "Удаление…" : "Удалить"}</button></div></Dialog>}
+    {editor && <FileEditor entry={editor.entry} isFile={editor.isFile} parent={editor.parent} initialPriority={editor.priority} onClose={() => setEditor(null)} onSaved={close => { if (close) setEditor(null); load(); }} />}
+    {removing && <Dialog actions={<button className="danger" disabled={busy} onClick={remove}>{busy ? "Удаление…" : "Удалить"}</button>} closeDisabled={busy} title={removing.deleted_at ? "Удалить навсегда?" : "Удалить запись?"} ariaLabel="Удаление записи" onClose={() => { if (!busy) setRemoving(null); }} className="admin-dialog"><p>«{removing.name}»{removing.deleted_at ? " и всё содержимое будут окончательно удалены." : " будет помечен как удалённый. Восстановление сервисом не поддерживается."}</p><p>Каталог должен быть пустым, включая удалённые записи.</p>{error && <p role="alert" className="admin-error">{error}</p>}</Dialog>}
   </div>;
 }
-function FileEditor({ entry, isFile, parent, initialPriority, onClose, onSaved }: { initialPriority: number; entry?: FileEntry; isFile: boolean; parent: string | null; onClose: () => void; onSaved: () => void }) {
+function FileEditor({ entry: initialEntry, isFile, parent, initialPriority, onClose, onSaved }: { initialPriority: number; entry?: FileEntry; isFile: boolean; parent: string | null; onClose: () => void; onSaved: (close: boolean) => void }) {
+  const formID = useId();
+  const [entry, setEntry] = useState(initialEntry);
   const [id] = useState(() => entry?.id ?? crypto.randomUUID());
   const [name, setName] = useState(entry?.name ?? "");
   const [priority, setPriority] = useState(entry?.priority ?? initialPriority);
@@ -104,7 +106,7 @@ function FileEditor({ entry, isFile, parent, initialPriority, onClose, onSaved }
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   async function save(event: FormEvent) {
-    event.preventDefault(); setBusy(true); setError("");
+    event.preventDefault(); const close = shouldCloseAfterSave(event); setBusy(true); setError("");
     try {
       if (!name.trim() || /[/\\]/.test(name) || [".", ".."].includes(name.trim())) throw new Error("Введите название без слешей; точки и '..' недопустимы.");
       if (isFile && !entry && !file) throw new Error("Выберите файл для загрузки.");
@@ -116,15 +118,16 @@ function FileEditor({ entry, isFile, parent, initialPriority, onClose, onSaved }
         nextIcon = await readBase64(iconFile);
       }
       const input: FileInput = { id, name: name.trim(), priority, parent_id: parent, is_file: isFile, icon: nextIcon, ...(file ? { content: await readBase64(file) } : {}) };
-      await (entry ? filesService.update(input) : filesService.create(input));
-      onSaved();
+      const saved = await (entry ? filesService.update(input) : filesService.create(input));
+      setEntry(saved); setFile(null); setIconFile(null); setIcon(nextIcon);
+      onSaved(close);
     } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   }
-  return <Dialog closeDisabled={busy} title={entry ? "Редактирование" : isFile ? "Новый файл" : "Новый каталог"} ariaLabel={entry ? "Редактирование записи" : "Новая запись"} onClose={() => { if (!busy) onClose(); }} className="admin-dialog"><form onSubmit={save}><fieldset disabled={busy}>
+  return <Dialog actions={<SaveActions form={formID} busy={busy} />} closeDisabled={busy} title={entry ? "Редактирование" : isFile ? "Новый файл" : "Новый каталог"} ariaLabel={entry ? "Редактирование записи" : "Новая запись"} onClose={() => { if (!busy) onClose(); }} className="admin-dialog"><form id={formID} onSubmit={save}><fieldset disabled={busy}>
     {isFile && <label>{entry ? "Заменить содержимое (необязательно)" : "Файл"}<input type="file" accept=".pdf,.html,application/pdf,text/html" required={!entry} onChange={e => { const selected = e.target.files?.[0] ?? null; if (selected && !isAllowedFileName(selected.name)) { setError(FILE_FORMAT_ERROR); setFile(null); e.target.value = ""; return; } setError(""); setFile(selected); if (selected && !name) setName(selected.name); }} /><small>Только PDF и HTML, до 35 Мб. {entry && "Без загрузки содержимое сохранится."}</small></label>}
     <label>Название<input required maxLength={255} value={name} onChange={e => setName(e.target.value)} placeholder={isFile ? "Например, инструкция.pdf" : "Например, Инструкции"} /></label>
     <label>Приоритет<input type="number" required step="1" min={-2147483648} max={2147483647} value={priority} onChange={e => setPriority(Number(e.target.value))} /><small>Меньшее число отображается раньше.</small></label>
     <div className="icon-editor"><Icon entry={{ icon, is_file: isFile }} /><div><label>Иконка<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={async e => { const selected = e.target.files?.[0]; if (!selected) return; if (!["image/png", "image/jpeg", "image/webp", "image/gif"].includes(selected.type) || selected.size > 1024 * 1024) { setError("Иконка: PNG, JPEG, WebP или GIF, до 1 Мб."); e.target.value = ""; return; } setBusy(true); try { setIcon(await readBase64(selected)); setIconFile(selected); setError(""); } catch (error) { setError((error as Error).message); } finally { setBusy(false); } }} /><small>{iconFile ? `Выбрано: ${iconFile.name}` : "PNG, JPEG, WebP или GIF, до 1 Мб"}</small></label>{(icon || iconFile) && <button type="button" onClick={() => { setIcon(null); setIconFile(null); }}>Убрать иконку</button>}</div></div>
-    {error && <p role="alert" className="admin-error">{error}</p>}<div className="admin-actions"><button type="button" onClick={onClose}>Отмена</button><button className="primary" type="submit">{busy ? "Сохранение…" : entry ? "Сохранить" : "Создать"}</button></div>
+    {error && <p role="alert" className="admin-error">{error}</p>}
   </fieldset></form></Dialog>;
 }

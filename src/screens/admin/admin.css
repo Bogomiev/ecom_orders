@@ -97,8 +97,21 @@ html:has(.admin-page){scrollbar-gutter:stable}
 
 /* Keep the title and close button outside the scrolling form body. */
 .admin-dialog{display:flex;flex-direction:column;padding:0;overflow:hidden;max-height:90dvh}
-.admin-dialog-header{display:flex;align-items:center;gap:16px;flex-shrink:0;padding:18px 28px;border-bottom:1px solid var(--border);background:var(--panel)}
-.admin-dialog .admin-dialog-header h2{flex:1;min-width:0;margin:0;overflow-wrap:anywhere}
-.admin-dialog .admin-dialog-header button.admin-close{position:static;flex-shrink:0}
-.admin-dialog-body{min-height:0;overflow:auto;overscroll-behavior:contain;padding:24px 28px 28px}
-@media(max-width:650px){.admin-dialog-header{padding:12px 18px}.admin-dialog-body{padding:18px}}
+.admin-dialog-header{display:flex;align-items:center;gap:12px;flex-shrink:0;padding:12px 22px;border-bottom:1px solid var(--border);background:var(--panel)}
+.admin-dialog .admin-dialog-header h2{flex:1;min-width:0;margin:0;font-size:18px;line-height:1.3;overflow-wrap:anywhere}
+.admin-dialog .admin-dialog-header button.admin-close{position:static;flex-shrink:0;width:30px;height:30px;font-size:22px}
+.admin-dialog-body{min-height:0;overflow:auto;overscroll-behavior:contain;padding:10px 28px 28px}
+@media(max-width:650px){.admin-dialog-header{padding:10px 16px}.admin-dialog-body{padding:8px 18px 18px}}
+
+.admin-dialog-heading{flex:1;min-width:0}
+.admin-dialog-header{align-items:flex-start}
+.admin-dialog .admin-dialog-actions{justify-content:flex-start;margin:8px 0 0;gap:6px}
+.admin-dialog .admin-dialog-actions button{padding:6px 10px;border-radius:8px;font-size:13px;line-height:1.4;text-align:left}
+
+/* Avoid adding the first field margin to the body padding below the header. */
+.admin-dialog-body>form>label:first-child,.admin-dialog-body>form>fieldset>label:first-child{margin-top:0}
+
+.generated-task-filters{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;margin:16px 0}
+.generated-task-filters label{display:flex;flex-direction:column;gap:6px;min-width:0;max-width:100%;font-size:13px}
+.generated-task-filters select{max-width:100%;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+@media(max-width:650px){.generated-task-filters label{flex:1 1 100%}.generated-task-filters select{width:100%}}

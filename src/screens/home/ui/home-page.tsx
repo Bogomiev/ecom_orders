@@ -8,9 +8,9 @@ import { GoodsDistribution } from "@/widgets/goods-distribution";
 import { KeyIndicators } from "@/widgets/key-indicators";
 import { OrdersList } from "@/widgets/orders-list";
 import { OrdersPageHeader } from "@/widgets/orders-screen-header";
-import { PricePrinting } from "@/widgets/price-printing";
 import { ServiceDesk } from "@/widgets/service-desk";
 
+import { CurrentTasks } from "@/widgets/tasks/current-tasks";
 import { ServiceDashboard } from "./service-dashboard";
 
 export function HomePage() {
@@ -62,7 +62,7 @@ export function HomePage() {
         </WidgetPanel>
 
         <GoodsDistribution />
-        <PricePrinting />
+        <CurrentTasks />
         <ServiceDesk />
         <KeyIndicators />
         </ServiceDashboard>

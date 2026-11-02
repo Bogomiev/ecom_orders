@@ -6,6 +6,7 @@ import "./cash-collection.css";
 
 export type CashCollectionProps = {
   qrCodeSrc: string;
+  task_id?: number;
   onClose: () => void;
 };
 
