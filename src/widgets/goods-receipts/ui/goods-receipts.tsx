@@ -19,7 +19,7 @@ function formatReceiptDate(value: string) {
 }
 
 export function GoodsReceipts({ storeId, receipts }: { storeId?: string; receipts: ReturnType<typeof useGoodsReceipts> }) {
-  const { data, error, isLoading, refresh } = receipts;
+  const { data, error, isLoading, refresh, isHistoryEnabled, setIsHistoryEnabled, historyDays } = receipts;
   const [expanded, setExpanded] = useState(false);
   const [receipt, setReceipt] = useState<GoodsReceipt | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
@@ -97,12 +97,29 @@ export function GoodsReceipts({ storeId, receipts }: { storeId?: string; receipt
 
   return (
     <section className="mt-3 min-h-0 rounded-xl border app-border app-surface-muted">
-      <button type="button" aria-expanded={expanded} aria-controls="goods-receipts-list" disabled={pending !== null} onClick={() => setExpanded((value) => !value)} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-extrabold app-text transition focus:outline-none focus:ring-2 focus:ring-inset focus:ring-teal-400 disabled:opacity-60">
+      <div className="flex items-center gap-3 pr-3">
+      <button type="button" aria-expanded={expanded} aria-controls="goods-receipts-list" disabled={pending !== null} onClick={() => setExpanded((value) => !value)} className="flex min-w-0 flex-1 items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-extrabold app-text transition focus:outline-none focus:ring-2 focus:ring-inset focus:ring-teal-400 disabled:opacity-60">
         <span aria-hidden="true" className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-teal-100 text-teal-700">↓</span>
         <span className="flex-1">Приемка</span>
+      </button>
+      <button
+        type="button"
+        aria-label={isHistoryEnabled ? "Скрыть историю приемок" : "Показать историю приемок"}
+        aria-pressed={isHistoryEnabled}
+        title={`История приемок за ${historyDays} дн.`}
+        onClick={() => setIsHistoryEnabled((enabled) => !enabled)}
+        className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg border transition ${isHistoryEnabled ? "border-blue-600 bg-blue-600 text-white shadow-sm" : "app-border app-surface-muted app-muted hover:border-blue-400 hover:text-blue-600"}`}
+      >
+        <svg aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24">
+          <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+          <path d="M3 3v5h5M12 7v5l3 2" />
+        </svg>
+      </button>
+      <button type="button" aria-label={expanded ? "Свернуть приемку" : "Развернуть приемку"} aria-expanded={expanded} aria-controls="goods-receipts-list" disabled={pending !== null} onClick={() => setExpanded((value) => !value)} className="flex shrink-0 items-center gap-3 rounded-lg text-sm font-extrabold app-text focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-60">
         <span className="grid h-8 min-w-8 place-items-center rounded-full bg-indigo-100 text-xs font-black text-indigo-600">{data?.totalItems ?? 0}</span>
         <span aria-hidden="true">{expanded ? "⌃" : "⌄"}</span>
       </button>
+      </div>
       <div id="goods-receipts-list" hidden={!expanded} className="space-y-3 px-3 pb-3">
         {!storeId ? <p className="text-sm app-muted">Выберите торговую точку</p> : null}
         {isLoading || pending === "opening" ? <LoadingDots label="Загрузка приемок" /> : null}

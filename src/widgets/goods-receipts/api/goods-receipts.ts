@@ -3,10 +3,10 @@ import { authenticatedFetch } from "@/shared/api/auth";
 import { fetchJson } from "@/shared/api/fetch-json";
 
 export const GOODS_RECEIPTS_SERVICE_PATH = "/api/goods-receipts";
-export const GOODS_RECEIPTS_HISTORY_DAYS = 30;
 
-export async function fetchGoodsReceipts(store: string, signal?: AbortSignal, historyDays = GOODS_RECEIPTS_HISTORY_DAYS) {
-  const query = new URLSearchParams({ store, historyDays: String(historyDays) });
+export async function fetchGoodsReceipts(store: string, signal?: AbortSignal, historyDays?: number) {
+  const query = new URLSearchParams({ store });
+  if (historyDays !== undefined) query.set("historyDays", String(historyDays));
   const response = await fetchJson(`${GOODS_RECEIPTS_SERVICE_PATH}?${query}`, GoodsReceiptsResponseSchema, {
     cache: "no-store", signal
   });

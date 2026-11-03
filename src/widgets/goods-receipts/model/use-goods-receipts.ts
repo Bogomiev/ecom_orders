@@ -2,10 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { GoodsReceiptsResponse } from "@/entities/goods-receipt";
+import { useOrderHistoryDays } from "@/entities/order";
 import { ORDERS_REFRESH_INTERVAL_SECONDS } from "@/widgets/orders-list/api/orders";
 import { fetchGoodsReceipts } from "../api/goods-receipts";
 
 export function useGoodsReceipts(storeId?: string) {
+  const configuredHistoryDays = useOrderHistoryDays();
+  const [isHistoryEnabled, setIsHistoryEnabled] = useState(false);
+  const historyDays = isHistoryEnabled ? configuredHistoryDays : undefined;
   const [data, setData] = useState<GoodsReceiptsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(Boolean(storeId));
@@ -21,7 +25,7 @@ export function useGoodsReceipts(storeId?: string) {
       if (controller.signal.aborted) return Promise.resolve();
       pending = (async () => {
         try {
-          const result = await fetchGoodsReceipts(storeId, controller.signal);
+          const result = await fetchGoodsReceipts(storeId, controller.signal, historyDays);
           if (!controller.signal.aborted) {
             setData(result);
             setError(null);
@@ -47,7 +51,7 @@ export function useGoodsReceipts(storeId?: string) {
       window.clearInterval(timer);
       refreshRef.current = async () => {};
     };
-  }, [storeId]);
+  }, [storeId, historyDays]);
 
-  return { data, error, isLoading, refresh };
+  return { data, error, isLoading, refresh, isHistoryEnabled, setIsHistoryEnabled, historyDays: configuredHistoryDays };
 }
