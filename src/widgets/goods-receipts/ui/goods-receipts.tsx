@@ -13,6 +13,11 @@ import { confirmInvoice, printInvoice } from "../api/goods-receipts";
 import type { useGoodsReceipts } from "../model/use-goods-receipts";
 import { GoodsReceiptView } from "./goods-receipt-view";
 
+function formatReceiptDate(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value.trim());
+  return match ? `${match[3]}.${match[2]}.${match[1]}` : "—";
+}
+
 export function GoodsReceipts({ storeId, receipts }: { storeId?: string; receipts: ReturnType<typeof useGoodsReceipts> }) {
   const { data, error, isLoading, refresh } = receipts;
   const [expanded, setExpanded] = useState(false);
@@ -106,6 +111,7 @@ export function GoodsReceipts({ storeId, receipts }: { storeId?: string; receipt
         {data?.items.map((item) => <article key={item.id} className="w-full rounded-xl app-surface p-2.5 shadow-[0_2px_8px_rgb(0_0_0/12%)]">
           <div className="order-card-header flex items-center gap-2.5">
             <button type="button" disabled={pending !== null} onClick={() => void openReceipt(item)} className="min-w-0 flex-1 break-words text-left text-xs font-semibold app-text hover:underline">{item.number} ↗</button>
+            <span className="shrink-0 text-xs app-muted">{formatReceiptDate(item.created_at)}</span>
           </div>
           <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
             <span className="order-status-pill order-status-blue inline-flex min-h-7 items-center gap-2 rounded-full px-3 text-xs font-extrabold"><span className="status-dot h-2 w-2 rounded-full" />Новый</span>
