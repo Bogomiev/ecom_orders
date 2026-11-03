@@ -78,6 +78,9 @@ html:has(.admin-page){scrollbar-gutter:stable}
 .admin-table-tools{text-align:left;padding:12px 0;caption-side:top}
 .admin-table-tools .admin-actions,.admin-dialog .admin-table-tools .admin-actions{justify-content:flex-start;margin:0;align-items:center}
 .admin-table-tools .files-create-bar{margin:0}
+.task-color{flex-wrap:wrap}
+.task-color input:not([type=color]){flex:1;min-width:100px;width:0}
+.task-color button{white-space:nowrap}
 .task-type-options{display:grid;grid-template-columns:auto 120px minmax(0,1fr);gap:18px;align-items:center}
 .task-type-options>label,.task-type-options .icon-editor label{min-width:0}
 .task-type-options .icon-editor{gap:10px;min-width:0;flex-wrap:wrap}

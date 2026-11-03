@@ -9,5 +9,12 @@ describe("task QR images",()=>{
  });
  it("preserves an existing image data URL",()=>{
   expect(qrImageSource("data:image/png;base64,abc")).toBe("data:image/png;base64,abc");
+  expect(qrImageSource("data:image/svg+xml;base64,abc")).toBe("data:image/svg+xml;base64,abc");
+ });
+ it("recognizes SVG icons with XML declarations and leading whitespace",()=>{
+  for (const svg of ['<svg xmlns="http://www.w3.org/2000/svg"></svg>', '\n<?xml version="1.0"?>\n<!-- icon -->\n<svg></svg>']) {
+   const value = btoa(svg);
+   expect(qrImageSource(value)).toBe(`data:image/svg+xml;base64,${value}`);
+  }
  });
 });

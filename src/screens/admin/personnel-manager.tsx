@@ -9,7 +9,7 @@ type Position = Role & StoreFlags & { roles: Role[] };
 type User = Role & StoreFlags & { user_token: string; isAdmin: boolean; position: number | null; position_name: string | null; login_blocked_until: string | null; roles?: Role[] };
 type Kind = "roles" | "positions" | "users";
 type Entry = Role | Position | User;
-const ROLE_NAMES = ["admin", "orders", "products", "documents", "goods-receipts", "goods-distribution"] as const;
+const ROLE_NAMES = ["admin", "orders", "products", "documents", "goods-receipts", "goods-distribution", "cash-collection"] as const;
 const labels: Record<Kind,string> = { roles: "Роли", positions: "Должности", users: "Пользователи" };
 async function request<T>(path: string, method = "GET", body?: unknown): Promise<T> {
  const response = await authenticatedFetch(`/api/rms/${path}`, {method, ...(body === undefined ? {} : {headers: {"Content-Type":"application/json"}, body: JSON.stringify(body)})});

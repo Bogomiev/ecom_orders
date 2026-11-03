@@ -5,7 +5,8 @@ import { AUTH_CHANGED_EVENT, getCurrentUser, type User } from "../api/auth";
 // Services without a matching role are visible to everyone.
 export const SERVICE_ROLES: Readonly<Partial<Record<string, readonly string[]>>> = {
  orders: ["orders"], product: ["products"], receipts: ["goods-receipts"],
- distribution: ["goods-distribution"], documents: ["documents"], admin: ["admin"]
+ distribution: ["goods-distribution"], documents: ["documents"], admin: ["admin"],
+ cash_collection: ["cash-collection"]
 };
 export type Service = keyof typeof SERVICE_ROLES;
 export function canView(user: User | null, service: Service): boolean {

@@ -52,19 +52,20 @@ function StoreTasks({storeID}:{storeID?:string}) {
  return <WidgetPanel title="Задания" icon="check" accent="purple" count={visible.length}>
  {!storeID&&<p>Выберите магазин</p>}{error&&<p role="alert">{error}</p>}
  {storeID&&!visible.length&&<p>Нет текущих заданий</p>}
+ <div className="flex flex-col gap-2">
  {visible.map(task=>task.service!==TaskService.WithoutService ? <button
  key={task.id}
  type="button"
- className="app-border my-2 flex w-full cursor-pointer items-center gap-3 rounded-xl border p-3 text-left focus-visible:outline-2 focus-visible:outline-offset-2"
- style={{backgroundColor:isDark?task.color_dark:task.color}}
+ className="app-border app-text flex w-full cursor-pointer items-center gap-3 rounded-xl border px-3 py-3 text-left text-sm font-extrabold focus-visible:outline-2 focus-visible:outline-offset-2"
+ style={{backgroundColor:(isDark?task.color_dark:task.color)||"var(--panel-soft)"}}
  onClick={()=>setOpened(task.id)}
  >
- {task.icon&&<>
+ {task.icon&&<span style={{backgroundColor:"var(--accent-soft)"}} className="app-border grid h-9 w-9 shrink-0 place-items-center rounded-lg border">
  {/* eslint-disable-next-line @next/next/no-img-element */}
- <img src={qrImageSource(task.icon)} alt="" className="h-10 w-10 shrink-0 object-contain" />
- </>}
- <span className="font-semibold">{task.short_name}</span>
- </button> : <article key={task.id} className="app-border my-2 rounded-xl border p-3" aria-busy={busy===task.id}>
+ <img src={qrImageSource(task.icon)} alt="" width={36} height={36} className="h-9 w-9 shrink-0 object-contain" />
+ </span>}
+ <span>{task.short_name}</span>
+ </button> : <article key={task.id} className="app-border rounded-xl border p-3" style={{backgroundColor:(isDark?task.color_dark:task.color)||"var(--panel-soft)"}} aria-busy={busy===task.id}>
  <h3>{task.name}</h3>
  <div className="flex gap-2">
  <button disabled={busy!==null} onClick={()=>setConfirm({task,action:"cancel"})}>Отмена</button>
@@ -72,6 +73,7 @@ function StoreTasks({storeID}:{storeID?:string}) {
  </div>
  {busy===task.id&&<span role="status"><LoadingDots /></span>}
  </article>)}
+ </div>
  {confirm&&<Dialog ariaLabel={questions[confirm.action]} onClose={()=>{if(busy===null)setConfirm(null);}}><p>{questions[confirm.action]}</p>{error&&<p role="alert">{error}</p>}<button disabled={busy!==null} onClick={()=>void act()}>Да{busy!==null&&<LoadingDots />}</button><button disabled={busy!==null} onClick={()=>setConfirm(null)}>Нет</button></Dialog>}
  {selected&&<TaskServiceView service={selected.service} customFields={selected.custom_fields??{}} taskID={selected.id} onClose={()=>setOpened(null)} />}
  </WidgetPanel>;
