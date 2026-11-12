@@ -5,16 +5,16 @@ const user = (...names: string[]): User => ({role:"seller",position:2,roles:name
 describe("service permissions",()=>{
  it("requires a session for mapped services",()=>{
   expect(canView(null,"orders")).toBe(false);
-  expect(canView({role:"admin",position:2,roles:[{id:1,name:"product"}]},"orders")).toBe(false);
+  expect(canView({role:"admin",position:2,roles:[{id:1,name:"products"}]},"orders")).toBe(false);
  });
  it("maps domain services without granting unrelated access",()=>{
-  expect(canView(user("order"),"orders")).toBe(true);
-  expect(canView(user("order"),"goods")).toBe(true);
+  expect(canView(user("orders"),"orders")).toBe(true);
+  expect(canView(user("orders"),"goods")).toBe(true);
   expect(canView(user("goods-receipts"),"goods")).toBe(true);
   expect(canView(user("goods-receipts"),"product")).toBe(false);
-  expect(canView(user("document"),"serviceDesk")).toBe(true);
-  expect(canView(user("document"),"documents")).toBe(true);
-  expect(canView(user("product"),"tasks")).toBe(true);
+  expect(canView(user("documents"),"serviceDesk")).toBe(true);
+  expect(canView(user("documents"),"documents")).toBe(true);
+  expect(canView(user("products"),"tasks")).toBe(true);
  });
  it("gives admin access to every service",()=>{
   expect(canView(user("admin"),"admin")).toBe(true);
@@ -25,12 +25,12 @@ describe("service permissions",()=>{
 it("always shows services with no matching role", () => {
  for (const service of ["goods", "serviceDesk", "contacts", "dashboard", "tasks", "productCounting", "futureService"] as const) {
   expect(canView(null, service)).toBe(true);
-  expect(canView(user("order"), service)).toBe(true);
+  expect(canView(user("orders"), service)).toBe(true);
  }
- expect(canView(user("order"),"documents")).toBe(false);
+ expect(canView(user("orders"),"documents")).toBe(false);
 });
 it("keeps service access without a position or roles while restricting administration", () => {
- for (const current of [{role:"seller",position:null,roles:[{id:1,name:"order"}]},user()] satisfies User[]) {
+ for (const current of [{role:"seller",position:null,roles:[{id:1,name:"orders"}]},user()] satisfies User[]) {
   expect(canView(current,"admin")).toBe(false);
   expect(canView(current,"product")).toBe(true);
   expect(canView(current,"documents")).toBe(true);
@@ -38,7 +38,7 @@ it("keeps service access without a position or roles while restricting administr
 });
 
 it("checks parent blocks and nested services independently", () => {
- const current = user("order");
+ const current = user("orders");
  expect(canView(current,"serviceDesk")).toBe(true);
  expect(canView(current,"contacts")).toBe(true);
  expect(canView(current,"documents")).toBe(false);
@@ -50,7 +50,7 @@ it("checks parent blocks and nested services independently", () => {
 
 it("requires the admin role for administration", () => {
  expect(canView(null,"admin")).toBe(false);
- expect(canView(user("order"),"admin")).toBe(false);
+ expect(canView(user("orders"),"admin")).toBe(false);
  expect(canView({role:"admin",position:null,roles:[]},"admin")).toBe(false);
  expect(canView({role:"seller",position:null,roles:[{id:1,name:"admin"}]},"admin")).toBe(true);
 });
@@ -60,14 +60,14 @@ it("hides store dependent services even for admins until a store is selected", (
   expect(canViewWithStore(user("admin"), service, false)).toBe(false);
   expect(canViewWithStore(user("admin"), service, true)).toBe(true);
  }
- expect(canViewWithStore(user("order"), "receipts", true)).toBe(false);
- expect(canViewWithStore(user("product"), "product", false)).toBe(true);
+ expect(canViewWithStore(user("orders"), "receipts", true)).toBe(false);
+ expect(canViewWithStore(user("products"), "product", false)).toBe(true);
 });
 
 it("allows documents and product information without a store for admins and matching roles", () => {
  for (const service of ["documents", "product"]) {
   expect(canViewWithStore(user("admin"), service, false)).toBe(true);
  }
- expect(canViewWithStore(user("document"), "documents", false)).toBe(true);
- expect(canViewWithStore(user("product"), "documents", false)).toBe(false);
+ expect(canViewWithStore(user("documents"), "documents", false)).toBe(true);
+ expect(canViewWithStore(user("products"), "documents", false)).toBe(false);
 });

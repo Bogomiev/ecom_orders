@@ -15,13 +15,16 @@ const line: OrderItem = {
 };
 
 describe("isOrderLineComplete", () => {
-  it("требует точного количества для штучного товара", () => {
+  it("считает штучный товар собранным при достижении или превышении плана", () => {
     expect(isOrderLineComplete({ ...line, quantity_fact: 9 })).toBe(false);
     expect(isOrderLineComplete(line)).toBe(true);
+    expect(isOrderLineComplete({ ...line, quantity_fact: 11 })).toBe(true);
   });
 
-  it("считает весовой товар собранным от 80% плана", () => {
-    expect(isOrderLineComplete({ ...line, is_weight: true, quantity_fact: 8 })).toBe(true);
+  it("считает весовой товар собранным при достижении или превышении плана", () => {
+    expect(isOrderLineComplete({ ...line, is_weight: true, quantity_fact: 8 })).toBe(false);
+    expect(isOrderLineComplete({ ...line, is_weight: true, quantity_fact: 9.999 })).toBe(false);
+    expect(isOrderLineComplete({ ...line, is_weight: true, quantity_fact: 10 })).toBe(true);
     expect(isOrderLineComplete({ ...line, is_weight: true, quantity_fact: 12 })).toBe(true);
     expect(isOrderLineComplete({ ...line, is_weight: true, quantity_fact: 7.999 })).toBe(false);
     expect(isOrderLineComplete({ ...line, is_weight: true, quantity_fact: 12.001 })).toBe(true);
