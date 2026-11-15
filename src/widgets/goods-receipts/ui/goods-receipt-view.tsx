@@ -3,9 +3,10 @@
 import type { GoodsReceipt } from "@/entities/goods-receipt";
 import type { Product } from "@/entities/product";
 import { Dialog } from "@/shared/ui/dialog";
+import { LoadingDots } from "@/shared/ui/loading-dots";
 import { formatNumber } from "@/features/orders/ui/order-control/order-control-shared";
 
-export function GoodsReceiptView({ receipt, products, isConfirming, isPrinting, onClose }: {
+export function GoodsReceiptView({ receipt, products, isConfirming, isPrinting, onClose, onConfirm }: {
   receipt: GoodsReceipt;
   products: Product[];
   isConfirming: boolean;
@@ -42,6 +43,15 @@ export function GoodsReceiptView({ receipt, products, isConfirming, isPrinting, 
             </tr>;
           })}</tbody>
         </table>
+      </div>
+      <div className="document-footer flex min-h-16 items-center justify-end gap-4 border-t app-border app-surface-muted px-5 py-3 text-sm">
+        <div className="flex items-center gap-4">
+          {receipt.status.toUpperCase() === "SHIPPED" ? (
+            <button type="button" disabled={busy} onClick={onConfirm} className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white disabled:cursor-wait disabled:opacity-60">
+              {isConfirming ? <LoadingDots label="Подтверждение получения товара" /> : "Подтвердить получение товара"}
+            </button>
+          ) : null}
+        </div>
       </div>
     </Dialog>
   );

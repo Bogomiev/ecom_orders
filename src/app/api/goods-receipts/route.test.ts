@@ -9,11 +9,49 @@ import { requireSession } from "@/server/rms/client";
 import { fetchOneCJson, fetchOneCResponse } from "@/server/one-c/client";
 import { GET } from "./route";
 import { POST } from "./confirm/route";
+import { POST as complete } from "./complete/route";
 import { GET as print } from "./print/route";
 
 beforeEach(() => { vi.resetAllMocks(); vi.mocked(requireSession).mockResolvedValue(null); });
 
 describe("goods receipt routes", () => {
+  it("requires a session and validates receipt type, id and seller before completing", async () => {
+    const request = (body: unknown) => new Request("http://app.test/api/goods-receipts/complete", { method: "POST", body: JSON.stringify(body) });
+    vi.mocked(requireSession).mockResolvedValueOnce(new NextResponse(null, { status: 401 }));
+    expect((await complete(request({}))).status).toBe(401);
+    for (const body of [
+      { type: "RECEIPT", receiptsId: "receipt" },
+      { type: "RECEIPT", receiptsId: "receipt", seller: " " },
+      { type: "RECEIPT", receiptsId: "", seller: "seller" },
+      { type: "UNKNOWN", receiptsId: "receipt", seller: "seller" }
+    ]) {
+      expect((await complete(request(body))).status).toBe(400);
+    }
+    expect(fetchOneCResponse).not.toHaveBeenCalled();
+  });
+
+  it.each([200, 400])("forwards completion to 1C and preserves response status %s", async (status) => {
+    const body = { type: "TRANSFER", receiptsId: "receipt-id", seller: "seller-id" };
+    const data = { code: status === 200 ? 1 : 0, mess: "Ответ 1С", data: { status: "accepted" } };
+    vi.mocked(fetchOneCResponse).mockResolvedValue({ data, status, ok: status === 200, url: "" });
+    const response = await complete(new Request("http://app.test/api/goods-receipts/complete", { method: "POST", body: JSON.stringify(body) }));
+    expect(response.status).toBe(status);
+    expect(await response.json()).toEqual(data);
+    expect(fetchOneCResponse).toHaveBeenCalledWith("/CompleteGoodsReceipts", expect.anything(), {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), cache: "no-store"
+    });
+  });
+
+  it("returns a completion error when 1C is unavailable", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      vi.mocked(fetchOneCResponse).mockRejectedValue(new Error("Unavailable"));
+      const response = await complete(new Request("http://app.test/api/goods-receipts/complete", { method: "POST", body: JSON.stringify({ type: "RECEIPT", receiptsId: "receipt", seller: "seller" }) }));
+      expect(response.status).toBe(502);
+      expect(await response.json()).toEqual({ code: 0, mess: "Не удалось подтвердить получение товара в 1С" });
+    } finally { log.mockRestore(); }
+  });
+
   it("loads all pages and forwards store/historyDays to 1C", async () => {
     vi.mocked(fetchOneCJson)
       .mockResolvedValueOnce({ page: 1, perPage: 1, totalPages: 2, totalItems: 2, items: [{ id: "receipt" }] })

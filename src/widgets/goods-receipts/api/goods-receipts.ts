@@ -1,4 +1,4 @@
-import { GoodsReceiptsResponseSchema, InvoiceActionResponseSchema, type ConfirmInvoiceRequest } from "@/entities/goods-receipt";
+import { GoodsReceiptsResponseSchema, InvoiceActionResponseSchema, type ConfirmInvoiceRequest, type CompleteGoodsReceiptsRequest } from "@/entities/goods-receipt";
 import { authenticatedFetch } from "@/shared/api/auth";
 import { fetchJson } from "@/shared/api/fetch-json";
 
@@ -15,6 +15,15 @@ export async function fetchGoodsReceipts(store: string, signal?: AbortSignal, hi
 
 export function confirmInvoice(body: ConfirmInvoiceRequest) {
   return fetchJson(`${GOODS_RECEIPTS_SERVICE_PATH}/confirm`, InvoiceActionResponseSchema, {
+    acceptErrorResponse: true,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+}
+
+export function completeGoodsReceipts(body: CompleteGoodsReceiptsRequest) {
+  return fetchJson(`${GOODS_RECEIPTS_SERVICE_PATH}/complete`, InvoiceActionResponseSchema, {
     acceptErrorResponse: true,
     method: "POST",
     headers: { "Content-Type": "application/json" },

@@ -9,7 +9,7 @@ import { LoadingDots } from "@/shared/ui/loading-dots";
 import { PageNotificationStack } from "@/shared/ui/page-notification";
 import { PdfDialog } from "@/shared/ui/pdf-dialog";
 import { useProductsCache } from "@/widgets/orders-list/model/use-products-cache";
-import { confirmInvoice, printInvoice } from "../api/goods-receipts";
+import { completeGoodsReceipts, printInvoice } from "../api/goods-receipts";
 import type { useGoodsReceipts } from "../model/use-goods-receipts";
 import { GoodsReceiptView } from "./goods-receipt-view";
 
@@ -57,20 +57,20 @@ export function GoodsReceipts({ storeId, receipts }: { storeId?: string; receipt
   }
 
   async function acceptReceipt() {
-    if (!receipt || busyRef.current) return;
+    if (!receipt || receipt.status.toUpperCase() !== "SHIPPED" || busyRef.current) return;
     const seller = getStoredCurrentSeller();
     if (!seller) {
-      notify({ title: "Приемка", body: "Выберите сотрудника для принятия документа", tone: "warning" });
+      notify({ title: "Не выбран продавец!", body: "Нажмите на кнопку выбора продавца и отсканируйте штрихкод на бейдже.", tone: "error" });
       return;
     }
     busyRef.current = true;
     setPending("confirming");
     try {
-      const result = await confirmInvoice({ invoiceId: receipt.id, seller: seller.userId });
+      const result = await completeGoodsReceipts({ type: receipt.type, receiptsId: receipt.id, seller: seller.userId });
       if (!mounted.current) return;
       const succeeded = result.status === 200;
-      notify({ title: "Приемка", body: succeeded ? "Документ успешно принят" : `Не удалось принять документ: ${result.data.mess}`, tone: succeeded ? "success" : "warning" });
-      await refresh();
+      notify({ title: "Приемка", body: succeeded ? "Получение товара успешно подтверждено" : `Не удалось подтвердить получение товара: ${result.data.mess}`, tone: succeeded ? "success" : "warning" });
+      if (succeeded || result.status === 400) await refresh();
       if (mounted.current && succeeded) setReceipt(null);
     } catch (error) {
       reportError(error);
@@ -131,7 +131,7 @@ export function GoodsReceipts({ storeId, receipts }: { storeId?: string; receipt
             <span className="shrink-0 text-xs app-muted">{formatReceiptDate(item.created_at)}</span>
           </div>
           <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-            <span className="order-status-pill order-status-blue inline-flex min-h-7 items-center gap-2 rounded-full px-3 text-xs font-extrabold"><span className="status-dot h-2 w-2 rounded-full" />Новый</span>
+            <span className="order-status-pill order-status-blue inline-flex min-h-7 items-center gap-2 rounded-full px-3 text-xs font-extrabold"><span className="status-dot h-2 w-2 rounded-full" />{item.status.toUpperCase() === "ACCEPTED" ? "Принято" : item.status.toUpperCase() === "SHIPPED" ? "Отгружено" : "Новый"}</span>
             <span className="delivery-badge inline-flex min-h-7 items-center rounded-md border app-border app-surface px-2.5 text-xs font-extrabold">{item.type === "RECEIPT" ? "Приобретение" : (item.type === "ACCEPTANCE_ON_CONSIGNMENT" ? "Прием на комиссию" : "Перемещение")}</span>
           </div>
           <div className="mt-1 font-semibold text-xs app-text">{item.sender || "—"}</div>

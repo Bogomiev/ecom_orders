@@ -11,6 +11,7 @@ export const GoodsReceiptSchema = z.object({
   type: z.enum(["RECEIPT", "TRANSFER", "ACCEPTANCE_ON_CONSIGNMENT"]),
   id: z.string(),
   number: z.string(),
+  status: z.string().default(""),
   created_at: z.string(),
   sender: z.string(),
   shipment_store_name: z.string(),
@@ -32,6 +33,12 @@ export const ConfirmInvoiceRequestSchema = z.object({
   seller: z.string().trim().min(1)
 });
 
+export const CompleteGoodsReceiptsRequestSchema = z.object({
+  type: GoodsReceiptSchema.shape.type,
+  receiptsId: z.string().trim().min(1),
+  seller: z.string().trim().min(1)
+});
+
 export const InvoiceActionResponseSchema = z.object({
   code: z.number(),
   mess: z.string(),
@@ -41,3 +48,4 @@ export const InvoiceActionResponseSchema = z.object({
 export type GoodsReceipt = z.infer<typeof GoodsReceiptSchema>;
 export type GoodsReceiptsResponse = z.infer<typeof GoodsReceiptsResponseSchema>;
 export type ConfirmInvoiceRequest = z.infer<typeof ConfirmInvoiceRequestSchema>;
+export type CompleteGoodsReceiptsRequest = z.infer<typeof CompleteGoodsReceiptsRequestSchema>;
