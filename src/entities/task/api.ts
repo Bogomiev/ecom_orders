@@ -4,11 +4,13 @@ export enum TaskService {
  CashCollection = "cash_collection",
  PricePrint = "price_print",
  WithoutService = "without_service",
+ Stoppers = "stoppers",
 }
 export const taskServiceLabels: Record<TaskService, string> = {
  [TaskService.CashCollection]: "Инкассация",
  [TaskService.PricePrint]: "Печать ценников",
  [TaskService.WithoutService]: "Отсутствует",
+ [TaskService.Stoppers]: "Стопперы",
 };
 export type TaskType = { id: number; name: string; short_name: string; service: TaskService; icon: string | null; color: string; color_dark: string; is_active: boolean; sort_order: number; custom_fields: Record<string, unknown> };
 export type Schedule = { id: number; task_type_id: number; frequency: number; period_from: string; period_to: string; days: number[]; time: string | null; is_active: boolean; stores: string[] };

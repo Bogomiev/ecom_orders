@@ -3,7 +3,7 @@ import { InstructionsPage } from "@/screens/instructions";
 
 export const metadata: Metadata = {
   title: "Инструкции — Личный кабинет магазина",
-  description: "Инструкции по интернет-заказам, подсчету товаров, информации о товаре и приемке"
+  description: "Инструкции по интернет-заказам, подсчету товаров, информации о товаре, приемке и заданию «Стопперы»"
 };
 
 export default function Instructions() {

@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useId, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { authenticatedFetch } from "@/shared/api/auth";
 import { AdminDialog as Dialog, RefreshButton, SaveActions, shouldCloseAfterSave } from "./admin-controls";
 
@@ -9,7 +9,7 @@ type Position = Role & StoreFlags & { roles: Role[] };
 type User = Role & StoreFlags & { user_token: string; isAdmin: boolean; position: number | null; position_name: string | null; login_blocked_until: string | null; roles?: Role[] };
 type Kind = "roles" | "positions" | "users";
 type Entry = Role | Position | User;
-const ROLE_NAMES = ["admin", "orders", "products", "documents", "goods-receipts", "goods-distribution", "cash-collection"] as const;
+const ROLE_NAMES = ["admin", "orders", "products", "documents", "goods-receipts", "goods-distribution", "cash-collection", "manager"] as const;
 const labels: Record<Kind,string> = { roles: "Роли", positions: "Должности", users: "Пользователи" };
 async function request<T>(path: string, method = "GET", body?: unknown): Promise<T> {
  const response = await authenticatedFetch(`/api/rms/${path}`, {method, ...(body === undefined ? {} : {headers: {"Content-Type":"application/json"}, body: JSON.stringify(body)})});
@@ -35,6 +35,7 @@ export function PersonnelManager() {
  const [editor,setEditor] = useState<{kind:Kind; entry?:Entry} | null>(null);
  const [removing,setRemoving] = useState<Entry | null>(null);
  const [busy,setBusy] = useState(false);
+ const [link,setLink] = useState<User | null>(null);
  const reload = useCallback(() => {setLoading(true);setVersion(v=>v+1);},[]);
  useEffect(()=>{
   let active=true;
@@ -53,8 +54,9 @@ export function PersonnelManager() {
  return <div className="admin-panel"><div role="tablist" aria-label="Пользователи и роли" className="admin-tabs">{(Object.keys(labels) as Kind[]).map(k=><button key={k} role="tab" aria-selected={kind===k} onClick={()=>{setKind(k);setError("");}}>{labels[k]}</button>)}</div><h2>{labels[kind]}</h2>
  
  {error && <p role="alert" className="admin-error">{error}</p>}
- {loading ? <p role="status">Загрузка…</p> : <div className="files-table-wrap"><table className={`files-table personnel-table ${kind === "users" ? "personnel-users" : ""}`}><caption className="admin-table-tools"><div className="admin-actions"><button className="primary" disabled={loading || busy} onClick={()=>setEditor({kind})}>Создать</button><RefreshButton disabled={loading} onClick={reload} /></div></caption><thead><tr><th>Идентификатор</th><th>Имя</th>{kind==="positions" && <><th>Роли</th><th>Доступен выбор продавца</th><th>Доступен выбор магазина</th><th>Выбор магазина обязателен</th></>}{kind==="users" && <><th>Токен</th><th>Админ</th><th>Должность</th><th>Заблокирован до</th></>}<th>Действия</th></tr></thead><tbody>{entries.map(entry=><tr key={entry.id}><td>{entry.id}</td><td><button type="button" className="personnel-name-link" disabled={busy} onClick={()=>void edit(entry)}>{entry.name}</button></td>{kind==="positions" && <><td>{(entry as Position).roles.map(r=>r.name).join(", ")}</td><td><input type="checkbox" aria-label="Доступен выбор продавца" checked={(entry as Position).seller_selection_available} disabled /></td><td><input type="checkbox" aria-label="Доступен выбор магазина" checked={(entry as Position).store_selection_available} disabled /></td><td><input type="checkbox" aria-label="Выбор магазина обязателен" checked={(entry as Position).store_selection_required} disabled /></td></>}{kind==="users" && <><td>{(entry as User).user_token}</td><td><input type="checkbox" aria-label={`Админ: ${entry.name}`} checked={(entry as User).isAdmin} disabled /></td><td>{(entry as User).position_name ?? "—"}</td><td>{(entry as User).login_blocked_until ? new Date((entry as User).login_blocked_until!).toLocaleString("ru-RU") : "—"}</td></>}<td><div className="admin-actions"><button className="row-action" aria-label={`Изменить ${entry.name}`} title="Изменить" disabled={busy} onClick={()=>void edit(entry)}><svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m15 5 4 4M4 20l5-1L20 8a2.8 2.8 0 0 0-4-4L5 15z" /></svg></button><button className="row-action danger" aria-label={`Удалить ${entry.name}`} title="Удалить" disabled={busy} onClick={()=>{setError("");setRemoving(entry);}}><svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="m6 6 12 12M18 6 6 18" /></svg></button></div></td></tr>)}</tbody></table>{!entries.length && <p>Нет записей</p>}</div>}
+ {loading ? <p role="status">Загрузка…</p> : <div className="files-table-wrap"><table className={`files-table personnel-table ${kind === "users" ? "personnel-users" : ""}`}><caption className="admin-table-tools"><div className="admin-actions"><button className="primary" disabled={loading || busy} onClick={()=>setEditor({kind})}>Создать</button><RefreshButton disabled={loading} onClick={reload} /></div></caption><thead><tr><th>Идентификатор</th><th>Имя</th>{kind==="positions" && <><th>Роли</th><th>Доступен выбор продавца</th><th>Доступен выбор магазина</th><th>Выбор магазина обязателен</th></>}{kind==="users" && <><th>Токен</th><th>Админ</th><th>Должность</th><th>Заблокирован до</th></>}<th>Действия</th></tr></thead><tbody>{entries.map(entry=><tr key={entry.id}><td>{entry.id}</td><td><button type="button" className="personnel-name-link" disabled={busy} onClick={()=>void edit(entry)}>{entry.name}</button></td>{kind==="positions" && <><td>{(entry as Position).roles.map(r=>r.name).join(", ")}</td><td><input type="checkbox" aria-label="Доступен выбор продавца" checked={(entry as Position).seller_selection_available} disabled /></td><td><input type="checkbox" aria-label="Доступен выбор магазина" checked={(entry as Position).store_selection_available} disabled /></td><td><input type="checkbox" aria-label="Выбор магазина обязателен" checked={(entry as Position).store_selection_required} disabled /></td></>}{kind==="users" && <><td>{(entry as User).user_token}</td><td><input type="checkbox" aria-label={`Админ: ${entry.name}`} checked={(entry as User).isAdmin} disabled /></td><td>{(entry as User).position_name ?? "—"}</td><td>{(entry as User).login_blocked_until ? new Date((entry as User).login_blocked_until!).toLocaleString("ru-RU") : "—"}</td></>}<td><div className="admin-actions">{kind==="users" && <button className="row-action" aria-label={`Получить ссылку: ${entry.name}`} title="Получить ссылку" disabled={busy} onClick={()=>setLink(entry as User)}><svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1" /><path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" /></svg></button>}<button className="row-action" aria-label={`Изменить ${entry.name}`} title="Изменить" disabled={busy} onClick={()=>void edit(entry)}><svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m15 5 4 4M4 20l5-1L20 8a2.8 2.8 0 0 0-4-4L5 15z" /></svg></button><button className="row-action danger" aria-label={`Удалить ${entry.name}`} title="Удалить" disabled={busy} onClick={()=>{setError("");setRemoving(entry);}}><svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="m6 6 12 12M18 6 6 18" /></svg></button></div></td></tr>)}</tbody></table>{!entries.length && <p>Нет записей</p>}</div>}
  {editor && <PersonnelEditor key={`${editor.kind}-${editor.entry?.id ?? "new"}`} {...editor} roles={roles} positions={positions} onClose={()=>setEditor(null)} onSaved={close=>{if(close)setEditor(null);reload();}} />}
+ {link && <LoginLinkDialog user={link} onClose={()=>setLink(null)} />}
  {removing && <Dialog actions={<button className="danger" disabled={busy} onClick={()=>void remove()}>Удалить</button>} closeDisabled={busy} title={<>Удалить «{removing.name}»?</>} ariaLabel="Удаление записи" className="admin-dialog" onClose={()=>{if(!busy)setRemoving(null);}}><p>Удаление необратимо. Если запись используется в базе, RMS запретит удаление.</p>{error && <p role="alert" className="admin-error">{error}</p>}</Dialog>}
  </div>;
 }
@@ -114,4 +116,21 @@ function PasswordDialog({onClose,onSet}:{onClose:()=>void;onSet:(value:string)=>
  const formID=useId();
  const [password,setPassword]=useState("");const [repeat,setRepeat]=useState("");const [error,setError]=useState("");
  return <Dialog actions={<button type="submit" form={formID}>Применить</button>} ariaLabel="Установить пароль" className="admin-dialog" onClose={onClose}><form id={formID} onSubmit={e=>{e.preventDefault();if(password!==repeat){setError("Пароли не совпадают");return;}if(new TextEncoder().encode(password).length>72){setError("Пароль должен занимать не более 72 байт");return;}onSet(password);}}><label>Новый пароль<input type="password" autoComplete="new-password" required minLength={5} value={password} onChange={e=>setPassword(e.target.value)} /></label><label>Повторите пароль<input type="password" autoComplete="new-password" required value={repeat} onChange={e=>setRepeat(e.target.value)} /></label>{error && <p role="alert" className="admin-error">{error}</p>}</form></Dialog>;
+}
+// The link opens the service with the user's token; the PIN is still entered on the login screen.
+export function loginLink(origin: string, token: string) { return `${origin}/?${new URLSearchParams({ user_token: token })}`; }
+function LoginLinkDialog({user,onClose}:{user:User;onClose:()=>void}) {
+ const value = loginLink(window.location.origin, user.user_token);
+ const [copied,setCopied] = useState("");
+ async function copy(input: HTMLInputElement | null) {
+  try { await navigator.clipboard.writeText(value); setCopied("Ссылка скопирована"); }
+  catch { input?.select(); setCopied("Выделите ссылку и скопируйте её вручную"); }
+ }
+ const field = useRef<HTMLInputElement>(null);
+ return <Dialog title={<>Ссылка для входа: {user.name}</>} ariaLabel="Ссылка для входа" className="admin-dialog" onClose={onClose}>
+  <p>По ссылке откроется вход под токеном пользователя «{user.user_token}». Пароль (PIN) всё равно нужно ввести.</p>
+  <label>Ссылка<input readOnly value={value} ref={field} onFocus={e=>e.currentTarget.select()} /></label>
+  {copied && <p role="status">{copied}</p>}
+  <div className="admin-actions"><button type="button" className="primary" onClick={()=>void copy(field.current)}>Скопировать</button><button type="button" onClick={onClose}>Закрыть</button></div>
+ </Dialog>;
 }

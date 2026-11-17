@@ -42,6 +42,11 @@ describe("RMS proxy and Route Handler guard", () => {
     expect(new Headers(init.headers).get("Origin")).toBe("https://app.test");
     expect(init.redirect).toBe("error");
   });
+  it("sends a DELETE without a body when the browser sent none", async () => {
+    const fetch = vi.fn().mockResolvedValue(new Response("{}")); vi.stubGlobal("fetch", fetch);
+    await proxyRMS(new Request("https://app.test/api/rms/stoppers/5", { method: "DELETE" }), "/stoppers/5");
+    expect((fetch.mock.calls[0][1] as RequestInit).body).toBeUndefined();
+  });
   it("allows a longer timeout for product info while keeping the default for auth", async () => {
     const timeout = vi.spyOn(AbortSignal, "timeout");
     vi.stubGlobal("fetch", vi.fn().mockImplementation(() => Promise.resolve(new Response("{}"))));

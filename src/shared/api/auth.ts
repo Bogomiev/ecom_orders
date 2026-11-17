@@ -115,3 +115,9 @@ export async function restoreSession() {
   if (!data.userToken) throw new Error("RMS не вернул пользователя сессии");
   return { ...getCurrentUser(), userToken: data.userToken, role: getCurrentUser()?.role ?? "" };
 }
+
+// Ends the RMS session (RMS clears the cookies) and forgets the local user even if the request fails.
+export async function logout() {
+  try { await authenticatedFetch("/api/auth/logout", { method: "POST" }); }
+  finally { expireSession(); }
+}

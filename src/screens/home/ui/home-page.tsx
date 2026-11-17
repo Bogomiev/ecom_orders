@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { AUTH_CHANGED_EVENT, getCurrentUser } from "@/shared/api/auth";
+import { isStopperManagerOnly } from "@/shared/lib/permissions";
 import { useOrderHistoryDays } from "@/entities/order";
 import { PageShell } from "@/shared/ui/page-shell";
 import { WidgetPanel } from "@/shared/ui/widget-panel";
@@ -18,6 +21,14 @@ export function HomePage() {
   const [notificationOrdersCount, setNotificationOrdersCount] = useState(0);
   const [isHistoryEnabled, setIsHistoryEnabled] = useState(false);
   const historyDays = useOrderHistoryDays();
+  const router = useRouter();
+  // A manager sees only stopper management, also right after logging in by a link with a token.
+  useEffect(() => {
+    const redirect = () => { if (isStopperManagerOnly(getCurrentUser())) router.replace("/stoppers"); };
+    redirect();
+    window.addEventListener(AUTH_CHANGED_EVENT, redirect);
+    return () => window.removeEventListener(AUTH_CHANGED_EVENT, redirect);
+  }, [router]);
 
   return (
     <PageShell className="home-page-shell h-screen min-h-0 overflow-hidden pb-0">

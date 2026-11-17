@@ -51,10 +51,12 @@ export async function requireSession(request: Request, adminOnly = false): Promi
 export async function proxyRMS(request: Request, path: string, checkOrigin = false, timeoutMs = 15_000) {
   try {
     if (checkOrigin && !trustedOrigin(request)) return authError(403, 1002, "Недопустимый источник запроса");
+    // Node 20 fetch rejects an empty body on DELETE, so a request without a body is sent without one.
+    const body = ["GET", "HEAD"].includes(request.method) ? "" : await request.text();
     const response = await fetchRMS(path, {
       method: request.method, headers: rmsHeaders(request),
       signal: AbortSignal.timeout(timeoutMs),
-      body: ["GET", "HEAD"].includes(request.method) ? undefined : await request.text()
+      body: body || undefined
     });
     const headers = new Headers({ "Content-Type": response.headers.get("Content-Type") ?? "application/json", "Cache-Control": "no-store" });
     // Preserve both HttpOnly cookies, including their separate expiry/flags.

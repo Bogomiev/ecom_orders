@@ -32,3 +32,13 @@ export function usePermissions() {
  }, []);
  return (service: Service) => canViewWithStore(user, service, store !== null);
 }
+// Stopper management is a separate service for the manager role; admins may open it too.
+export function canManageStoppers(user: User | null): boolean {
+ const names = user?.roles?.map(r => r.name) ?? [];
+ return user?.role === "admin" || names.includes("admin") || names.includes("manager");
+}
+// A manager without admin rights sees only the stopper management page.
+export function isStopperManagerOnly(user: User | null): boolean {
+ const names = user?.roles?.map(r => r.name) ?? [];
+ return names.includes("manager") && user?.role !== "admin" && !names.includes("admin");
+}
