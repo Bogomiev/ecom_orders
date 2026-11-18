@@ -121,3 +121,50 @@ export async function logout() {
   try { await authenticatedFetch("/api/auth/logout", { method: "POST" }); }
   finally { expireSession(); }
 }
+
+// A QR login code lets a signed-in user open the service on a phone without the token and PIN.
+// It works once and for a short time; storeID is the store the phone opens.
+export async function createLoginCode(storeID?: string) {
+  const response = await authenticatedFetch("/api/auth/login-code", {
+    method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(storeID ? { store_id: storeID } : {})
+  });
+  const data = await response.json().catch(() => null) as { data?: { code?: string; expires_in?: number }; messages?: string[] } | null;
+  if (response.status === 401) throw new Error("Сначала войдите в сервис");
+  if (!response.ok || !data?.data?.code || !data.data.expires_in) throw new Error(data?.messages?.join("\n") || "Не удалось создать QR-код");
+  return { code: data.data.code, expiresIn: data.data.expires_in };
+}
+
+export function loginCodeURL(origin: string, code: string) {
+  return `${origin}/?${new URLSearchParams({ login_code: code })}`;
+}
+
+// Spends a QR login code and returns the store chosen on the device that showed the code.
+export async function loginByCode(code: string) {
+  const response = await fetch("/api/auth/login-code/redeem", {
+    method: "POST", credentials: "same-origin", cache: "no-store",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({ code })
+  });
+  const data = await response.json().catch(() => ({})) as AuthResponse & { store_id?: string; store_name?: string };
+  if (response.status === 401 && (data.resultCode ?? data.result_code) !== 1001) throw new Error("QR-код недействителен или устарел. Создайте новый в настройках.");
+  if (!response.ok) throw new Error(data.messages?.join("\n") || "Не удалось войти по QR-коду");
+  saveCSRF(data);
+  return data.store_id ? { id: data.store_id, name: data.store_name ?? "" } : null;
+}
+
+type CodeLoginStore = { id: string; name: string } | null;
+let codeLogin: Promise<CodeLoginStore> | null = null;
+// Takes ?login_code= out of the address and signs in with it. A page effect may run twice
+// (React Strict Mode), so a second call while the login is in flight gets the same promise.
+export function loginByCodeFromLocation(): Promise<CodeLoginStore> | null {
+  if (typeof window === "undefined") return null;
+  const url = new URL(window.location.href);
+  const code = url.searchParams.get("login_code")?.trim();
+  if (code) {
+    url.searchParams.delete("login_code");
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+    codeLogin = loginByCode(code).finally(() => { codeLogin = null; });
+  }
+  return codeLogin;
+}

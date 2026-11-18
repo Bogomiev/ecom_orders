@@ -14,7 +14,7 @@ import {
 } from "@/entities/store";
 import { getStores } from "@/entities/store/api/get-stores";
 import { getAccessTokenSettings } from "@/entities/store/api/access-token-is-valid";
-import { login, restoreSession, getCurrentUser, AUTH_CHANGED_EVENT, SESSION_EXPIRED_EVENT } from "@/shared/api/auth";
+import { login, loginByCodeFromLocation, restoreSession, getCurrentUser, AUTH_CHANGED_EVENT, SESSION_EXPIRED_EVENT } from "@/shared/api/auth";
 import { usePageNotifications } from "@/shared/lib/use-page-notifications";
 import { Dialog } from "@/shared/ui/dialog";
 import { PageNotificationStack } from "@/shared/ui/page-notification";
@@ -330,6 +330,18 @@ export function StoreSelector({ triggerContainer, hideTrigger = false }: { trigg
       try {
         setStoreAuthorized(false);
         clearLegacyAccessStorage();
+        // A QR code from the settings of another device signs in here and picks the same store.
+        const codeLogin = loginByCodeFromLocation();
+        if (codeLogin) {
+          try {
+            const store = await codeLogin;
+            if (controller.signal.aborted) return;
+            if (store) setStoredStoreSelection(store);
+          } catch (error) {
+            if (controller.signal.aborted) return;
+            notify({ body: error instanceof Error ? error.message : "Не удалось войти по QR-коду", title: "Вход по QR-коду", tone: "error" });
+          }
+        }
         const urlToken = getAccessTokenFromLocation();
         setIsCheckingAccessToken(true);
         const session = await restoreSession();

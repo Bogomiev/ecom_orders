@@ -12,6 +12,7 @@ import { InstructionsIcon } from "@/shared/ui/instructions-icon";
 import { useSelectedStore } from "@/entities/store";
 import { StoreSelector } from "@/features/store-selector";
 import { SellerSelector } from "@/features/seller-selector";
+import { PhoneLoginDialog } from "@/features/phone-login";
 import { playNotificationSound } from "@/shared/lib/notification-sound";
 import { PageNotificationStack } from "@/shared/ui/page-notification";
 import { usePageNotifications } from "@/shared/lib/use-page-notifications";
@@ -50,6 +51,7 @@ export function OrdersPageHeader({ ordersCount }: OrdersPageHeaderProps) {
   const userName = useSyncExternalStore(subscribeToRole, userNameSnapshot, serverUserTextSnapshot);
   const userPosition = useSyncExternalStore(subscribeToRole, userPositionSnapshot, serverUserTextSnapshot);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [phoneLoginOpen, setPhoneLoginOpen] = useState(false);
   const [storeTrigger, setStoreTrigger] = useState<HTMLDivElement | null>(null);
   const historyDays = useOrderHistoryDays();
   useActiveOrdersNotification(ordersCount, notify);
@@ -111,6 +113,17 @@ export function OrdersPageHeader({ ordersCount }: OrdersPageHeaderProps) {
               </svg>
               <span>Проверка уведомлений</span>
             </button>
+            {userName ? (
+              <button className="flex w-full items-center gap-3 rounded-lg border app-border app-surface-muted px-4 py-3 text-left text-sm font-bold" type="button" onClick={() => setPhoneLoginOpen(true)}>
+                <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24">
+                  <rect x="3" y="3" width="7" height="7" rx="1" />
+                  <rect x="14" y="3" width="7" height="7" rx="1" />
+                  <rect x="3" y="14" width="7" height="7" rx="1" />
+                  <path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3" />
+                </svg>
+                <span>Вход с телефона по QR-коду</span>
+              </button>
+            ) : null}
             <button className="flex w-full items-center gap-3 rounded-lg border app-border app-surface-muted px-4 py-3 text-left text-sm font-bold" type="button" onClick={toggleTheme}>
               {isDark ? (
                 <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" viewBox="0 0 24 24">
@@ -140,6 +153,7 @@ export function OrdersPageHeader({ ordersCount }: OrdersPageHeaderProps) {
           </div>
         </Dialog>
       ) : null}
+      {phoneLoginOpen ? <PhoneLoginDialog storeID={selectedStore?.id ?? null} storeName={selectedStore?.name ?? null} onClose={() => setPhoneLoginOpen(false)} /> : null}
       <PageNotificationStack
         notifications={notifications}
         onClose={dismiss}
