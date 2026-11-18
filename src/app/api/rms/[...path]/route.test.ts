@@ -9,6 +9,18 @@ const context = (path: string) => ({ params: Promise.resolve({ path: path.split(
 const call = (method: Method, path: string) => handlers[method](new Request(`http://app.test/api/rms/${path}`, { method }), context(path.split("?")[0]));
 beforeEach(() => { vi.resetAllMocks(); vi.mocked(requireSession).mockResolvedValue(null); vi.mocked(proxyRMS).mockResolvedValue(new NextResponse()); });
 it.each<[Method, string, string]>([
+  ["GET", "admin/stores", "/admin/stores/"],
+  ["PUT", "admin/stores/00000000-0000-0000-0000-000000000001", "/admin/stores/00000000-0000-0000-0000-000000000001"],
+])("checks admin access for %s %s", async (method, path, target) => {
+  vi.mocked(requireSession).mockResolvedValueOnce(new NextResponse(null, { status: 403 }));
+  expect((await call(method, path)).status).toBe(403);
+  expect(requireSession).toHaveBeenCalledWith(expect.any(Request), true);
+  expect(proxyRMS).not.toHaveBeenCalled();
+
+  expect((await call(method, path)).status).toBe(200);
+  expect(proxyRMS).toHaveBeenCalledWith(expect.any(Request), target);
+});
+it.each<[Method, string, string]>([
   ["GET", "stoppers", "/stoppers/"],
   ["POST", "stoppers", "/stoppers/"],
   ["PUT", "stoppers/3", "/stoppers/3"],
