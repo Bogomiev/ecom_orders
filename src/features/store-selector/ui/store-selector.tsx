@@ -173,8 +173,12 @@ function StoreSelectorModal({
   }, [searchQuery, state.stores]);
 
   function enterDigit(digit: string) {
-    const nextPin = pin.length === PIN_LENGTH ? digit : `${pin}${digit}`;
-    setPin(nextPin);
+    setPin((currentPin) => currentPin.length === PIN_LENGTH ? digit : `${currentPin}${digit}`);
+    setPinError(null);
+  }
+
+  function deleteDigit() {
+    setPin((currentPin) => currentPin.slice(0, -1));
     setPinError(null);
   }
 
@@ -185,7 +189,7 @@ function StoreSelectorModal({
   }
 
   async function confirmSelection() {
-    if ((showStore && pendingStore === null) || (pin.length !== PIN_LENGTH)) return;
+    if (isVerifyingPin || (showStore && pendingStore === null) || pin.length !== PIN_LENGTH) return;
 
     setIsVerifyingPin(true);
     setPinError(null);
@@ -199,11 +203,29 @@ function StoreSelectorModal({
     }
   }
 
+  function handlePinKeyDown(event: KeyboardEvent) {
+    if (isVerifyingPin || (showStore && pendingStore === null)) return;
+    if (event.isComposing || event.ctrlKey || event.altKey || event.metaKey) return;
+    if (event.target instanceof HTMLInputElement) return;
+
+    if (/^[0-9]$/.test(event.key)) {
+      event.preventDefault();
+      if (!event.repeat) enterDigit(event.key);
+    } else if (event.key === "Backspace") {
+      event.preventDefault();
+      deleteDigit();
+    } else if (event.key === "Enter" && pin.length === PIN_LENGTH) {
+      event.preventDefault();
+      if (!event.repeat) void confirmSelection();
+    }
+  }
+
   return (
     <Dialog
       ariaLabelledBy="store-selector-title"
       className="flex max-h-[96vh] w-full max-w-xl flex-col overflow-hidden rounded-[2rem] app-surface px-5 py-6 shadow-2xl sm:px-8"
       onClose={onClose}
+      onKeyDown={handlePinKeyDown}
     >
         <h2 id="store-selector-title" className="text-center text-2xl font-extrabold app-text">{loginOnly ? "Вход" : "Смена точки"}</h2>
         <p className="mt-3 text-center text-base app-muted">
@@ -287,7 +309,7 @@ function StoreSelectorModal({
           <button className="h-12 rounded-xl border app-border app-surface-muted text-xl font-bold app-text hover:bg-slate-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-300" disabled={(showStore && pendingStore === null) || isVerifyingPin} type="button" onClick={() => enterDigit("0")}>
             0
           </button>
-          <button aria-label="Удалить последнюю цифру" className="h-12 rounded-xl border app-border app-surface-muted text-lg font-bold app-muted hover:bg-slate-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-300" disabled={(showStore && pendingStore === null) || isVerifyingPin} type="button" onClick={() => { setPin((currentPin) => currentPin.slice(0, -1)); setPinError(null); }}>
+          <button aria-label="Удалить последнюю цифру" className="h-12 rounded-xl border app-border app-surface-muted text-lg font-bold app-muted hover:bg-slate-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-300" disabled={(showStore && pendingStore === null) || isVerifyingPin} type="button" onClick={deleteDigit}>
             ⌫
           </button>
         </div>

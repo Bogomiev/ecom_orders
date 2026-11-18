@@ -16,6 +16,7 @@ type DialogProps = {
   className?: string;
   closeOnBackdrop?: boolean;
   onClose: () => void;
+  onKeyDown?: (event: KeyboardEvent) => void;
 };
 
 const FOCUSABLE_SELECTOR = [
@@ -35,11 +36,13 @@ export function Dialog({
   children,
   className = "",
   closeOnBackdrop = true,
-  onClose
+  onClose,
+  onKeyDown
 }: DialogProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const dialogIdRef = useRef(Symbol("dialog"));
   const handleClose = useEffectEvent(onClose);
+  const handleDialogKeyDown = useEffectEvent((event: KeyboardEvent) => onKeyDown?.(event));
 
   useEffect(() => {
     const dialogId = dialogIdRef.current;
@@ -64,7 +67,11 @@ export function Dialog({
         return;
       }
 
-      if (event.key !== "Tab" || contentRef.current === null) return;
+      if (event.key !== "Tab") {
+        handleDialogKeyDown(event);
+        return;
+      }
+      if (contentRef.current === null) return;
       const focusable = Array.from(
         contentRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
       );
