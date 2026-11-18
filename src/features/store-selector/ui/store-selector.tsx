@@ -332,11 +332,13 @@ export function StoreSelector({ triggerContainer, hideTrigger = false }: { trigg
         clearLegacyAccessStorage();
         const urlToken = getAccessTokenFromLocation();
         setIsCheckingAccessToken(true);
-        const session = urlToken ? null : await restoreSession();
+        const session = await restoreSession();
         if (controller.signal.aborted) return;
-        const token = urlToken ?? session?.userToken ?? null;
+        const invitationToken = urlToken === session?.userToken ? null : urlToken;
+        if (urlToken && !invitationToken) removeAccessTokenFromLocation();
+        const token = invitationToken ?? session?.userToken ?? null;
         setAccessToken(token);
-        setLoginNeeded(Boolean(urlToken));
+        setLoginNeeded(Boolean(invitationToken));
         if (token === null) {
           setIsCheckingAccessToken(false);
           setSelectedStoreId(null);
@@ -345,10 +347,10 @@ export function StoreSelector({ triggerContainer, hideTrigger = false }: { trigg
           notify({ body: "Откройте сервис по ссылке с токеном доступа.", title: "Требуется вход", tone: "error" });
           return;
         }
-        const settings = urlToken ? await getAccessTokenSettings(urlToken, controller.signal) : getCurrentUser();
+        const settings = invitationToken ? await getAccessTokenSettings(invitationToken, controller.signal) : getCurrentUser();
         if (controller.signal.aborted) return;
         setStoreRequired(Boolean(settings?.store_selection_required));
-        if (urlToken && !settings) {
+        if (invitationToken && !settings) {
           setIsCheckingAccessToken(false);
           setSelectedStoreId(null);
           setStoredStoreSelection(null);
@@ -359,13 +361,13 @@ export function StoreSelector({ triggerContainer, hideTrigger = false }: { trigg
         }
         setIsCheckingAccessToken(false);
         setIsAccessTokenInvalid(false);
-        if (urlToken) setIsOpen(true);
-        const data = await getStores(controller.signal, urlToken ?? undefined);
+        if (invitationToken) setIsOpen(true);
+        const data = await getStores(controller.signal, invitationToken ?? undefined);
         if (controller.signal.aborted) return;
         setState({ error: null, isLoading: false, stores: data.items });
 
         const storedStore = getStoredStoreSelection();
-        const mappedStore = session ? data.items.find((store) => store.id === storedStore?.id) : null;
+        const mappedStore = session && !invitationToken ? data.items.find((store) => store.id === storedStore?.id) : null;
         if (mappedStore) {
           setSelectedStoreId(mappedStore.id);
           setStoredStoreSelection(toStoreSelectionSnapshot(mappedStore));
@@ -373,7 +375,7 @@ export function StoreSelector({ triggerContainer, hideTrigger = false }: { trigg
         } else {
           setSelectedStoreId(null);
           setStoredStoreSelection(null);
-          setIsOpen(Boolean(urlToken || getCurrentUser()?.store_selection_required));
+          setIsOpen(Boolean(invitationToken || getCurrentUser()?.store_selection_required));
         }
       } catch (error) {
         if (controller.signal.aborted) return;
