@@ -5,7 +5,7 @@ import { useState, useSyncExternalStore } from "react";
 import { AUTH_CHANGED_EVENT, getCurrentUser } from "@/shared/api/auth";
 import { APP_VERSION } from "@/shared/config/app-version";
 import { Dialog } from "@/shared/ui/dialog";
-import { useOrderHistoryDays, setStoredOrderHistoryDays } from "@/entities/order";
+import { useOrderHistoryDays, setStoredOrderHistoryDays, useSkipMarkFormatting, setStoredSkipMarkFormatting } from "@/entities/order";
 import Image from "next/image";
 import Link from "next/link";
 import { InstructionsIcon } from "@/shared/ui/instructions-icon";
@@ -54,6 +54,7 @@ export function OrdersPageHeader({ ordersCount }: OrdersPageHeaderProps) {
   const [phoneLoginOpen, setPhoneLoginOpen] = useState(false);
   const [storeTrigger, setStoreTrigger] = useState<HTMLDivElement | null>(null);
   const historyDays = useOrderHistoryDays();
+  const skipMarkFormatting = useSkipMarkFormatting();
   useActiveOrdersNotification(ordersCount, notify);
 
   function handleSignalTestClick() {
@@ -145,6 +146,10 @@ export function OrdersPageHeader({ ordersCount }: OrdersPageHeaderProps) {
                 if (Number.isFinite(value) && value >= 1) setStoredOrderHistoryDays(value);
               }} />
               <span>дней</span>
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" className="h-4 w-4" checked={skipMarkFormatting} onChange={(event) => setStoredSkipMarkFormatting(event.currentTarget.checked)} />
+              <span>Не преобразовывать марки</span>
             </label>
           </div>
           <div className="flex items-start justify-between gap-4 border-t app-border px-5 py-3 text-sm app-muted">

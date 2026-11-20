@@ -117,6 +117,31 @@ describe("applyBarcodeToOrder", () => {
     });
   });
 
+  it("в режиме без форматирования сохраняет префикс, разделители и криптохвост", () => {
+    const markedOrder = {
+      ...order,
+      items: [{ ...order.items[0], marking_product: true }]
+    };
+    const index = createBarcodeIndex([product]);
+    const scan = " ]d2\u001d010460123456789021йЦуКЁж\u001d91тест\u001d92Ab+/= ";
+    const expectedMark = " ]d2\u001d010460123456789021qWeR~;\u001d91ntcn\u001d92Ab+/= ";
+    const result = applyBarcodeToOrder(markedOrder, index, scan, true);
+
+    expect(result.status).toBe("success");
+    if (result.status !== "success") throw new Error("Марка не добавлена");
+
+    expect(result.order.controlledItems[0].mark).toBe(expectedMark);
+    expect(getCompleteOrderItems(result.order)[0].mark).toBe(expectedMark);
+    expect(applyBarcodeToOrder(result.order, index, scan, true)).toMatchObject({
+      status: "error",
+      code: "mark-already-scanned"
+    });
+    expect(applyBarcodeToOrder(result.order, index, "(01)04601234567890(21)qWeR~;")).toMatchObject({
+      status: "error",
+      code: "mark-already-scanned"
+    });
+  });
+
   const scannedMark = "010001622990644321serial";
 
   it.each(["016229906443", "0016229906443", "00016229906443"])(
