@@ -5,6 +5,7 @@ import type { Product } from "@/entities/product";
 import { Dialog } from "@/shared/ui/dialog";
 import { LoadingDots } from "@/shared/ui/loading-dots";
 import { formatNumber } from "@/features/orders/ui/order-control/order-control-shared";
+import { formatReceiptDate } from "../model/format-receipt-date";
 
 export function GoodsReceiptView({ receipt, products, isConfirming, isPrinting, onClose, onConfirm }: {
   receipt: GoodsReceipt;
@@ -21,7 +22,7 @@ export function GoodsReceiptView({ receipt, products, isConfirming, isPrinting, 
     <Dialog ariaLabelledBy="goods-receipt-title" closeOnBackdrop={false} onClose={() => { if (!busy) onClose(); }} className="document-dialog relative mx-auto flex h-[min(650px,calc(100vh-32px))] w-[min(700px,calc(100vw-32px))] flex-col overflow-hidden rounded-2xl app-surface shadow-2xl">
       <div className="document-header flex flex-wrap items-start justify-between gap-3 border-b app-border px-5 py-3.5">
         <div className="min-w-0 flex-1">
-          <h2 id="goods-receipt-title" className="break-words text-lg font-bold app-text">Приемка {receipt.number}</h2>
+          <h2 id="goods-receipt-title" className="break-words text-lg font-bold app-text">Приемка {receipt.number} от {formatReceiptDate(receipt.created_at)}</h2>
           <p className="mt-1 break-words text-xs app-muted">Отправитель: {receipt.sender}</p>
           <p className="mt-1 break-words text-xs app-muted">Торговая точка: {receipt.shipment_store_name}</p>
         </div>

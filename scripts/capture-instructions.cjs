@@ -214,7 +214,7 @@ const paginate = items => ({ page: 1, perPage: items.length, totalPages: items.l
     assert.equal(await goods.locator('#goods-receipts-list article').count(), 2);
     await screenshot('goods/receipts-current.png', goods);
     await goods.getByRole('button', { name: 'Открыть приемку' }).first().click();
-    target = dialog('Приемка ИКЦБ-000032');
+    target = dialog('Приемка ИКЦБ-000032 от 05.10.2026');
     await screenshot('goods/receipt-view-current.png', target);
     await close(target);
 

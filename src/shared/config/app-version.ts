@@ -1,2 +1,2 @@
 // Номер версии программы задаётся вручную перед выпуском.
-export const APP_VERSION = "1.2.6.1";
+export const APP_VERSION = "1.2.7.1";

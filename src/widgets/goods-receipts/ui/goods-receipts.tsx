@@ -10,13 +10,9 @@ import { PageNotificationStack } from "@/shared/ui/page-notification";
 import { PdfDialog } from "@/shared/ui/pdf-dialog";
 import { useProductsCache } from "@/widgets/orders-list/model/use-products-cache";
 import { completeGoodsReceipts, printInvoice } from "../api/goods-receipts";
+import { formatReceiptDate } from "../model/format-receipt-date";
 import type { useGoodsReceipts } from "../model/use-goods-receipts";
 import { GoodsReceiptView } from "./goods-receipt-view";
-
-function formatReceiptDate(value: string) {
-  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value.trim());
-  return match ? `${match[3]}.${match[2]}.${match[1]}` : "—";
-}
 
 export function GoodsReceipts({ storeId, receipts }: { storeId?: string; receipts: ReturnType<typeof useGoodsReceipts> }) {
   const { data, error, isLoading, refresh, isHistoryEnabled, setIsHistoryEnabled, historyDays } = receipts;
