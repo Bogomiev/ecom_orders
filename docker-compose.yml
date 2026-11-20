@@ -27,6 +27,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
+      - "127.0.0.1:18181:18181"
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - ./certbot/www:/var/www/certbot:ro
