@@ -14,6 +14,8 @@ export function formatStock(v: Pick<StopperTaskItem, "stock" | "unit">) {
  const n = stockValue(v);
  return n > 0 ? `${new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 3 }).format(n)} ${v.unit}` : "нет";
 }
+// The printed sheet names a product by the last 5 digits of its code: «ЦБ-00000988» → «00988».
+export function shortCode(code: string) { return code.replace(/\D/g, "").slice(-5); }
 export function formatDayMonth(value: string) { return `${value.slice(8, 10)}.${value.slice(5, 7)}`; }
 export function formatTaskStart(value: string) { return `${formatDayMonth(value)} в ${value.slice(11, 16)}`; }
 

@@ -1,7 +1,7 @@
 import { authError, proxyRMS, requireSession } from "@/server/rms/client";
 
 type Context = { params: Promise<{ path: string[] }> };
-const taskRoutes: [RegExp, string[]][] = [[/^tasks\/types$/, ["GET"]], [/^tasks\/manual$/, ["POST"]], [/^tasks\/[1-9]\d*\/stoppers$/, ["GET"]], [/^tasks\/[1-9]\d*\/stoppers\/check$/, ["PUT"]]];
+const taskRoutes: [RegExp, string[]][] = [[/^tasks\/types$/, ["GET"]], [/^tasks\/manual$/, ["POST"]], [/^tasks\/[1-9]\d*\/stoppers$/, ["GET"]], [/^tasks\/[1-9]\d*\/stoppers\/check$/, ["PUT"]], [/^tasks\/[1-9]\d*\/price_tags$/, ["GET", "POST"]], [/^tasks\/[1-9]\d*\/price_tags\/(printed)$/, ["PUT"]], [/^tasks\/[1-9]\d*\/price_tags\/products$/, ["GET"]], [/^tasks\/[1-9]\d*\/price_tags\/[1-9]\d*$/, ["PUT", "DELETE"]], [/^tasks\/price_tags\/product$/, ["GET", "POST"]]];
 const stopperRoutes: [RegExp, string[]][] = [[/^stoppers$/, ["GET", "POST"]], [/^stoppers\/[1-9]\d*$/, ["PUT", "DELETE"]], [/^stoppers\/positions$/, ["GET", "POST"]], [/^stoppers\/positions\/(stopper|period)$/, ["PUT"]], [/^stoppers\/products$/, ["GET"]]];
 async function handle(request: Request, context: Context) {
   const { path } = await context.params;

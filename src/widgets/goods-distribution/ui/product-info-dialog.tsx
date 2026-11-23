@@ -13,6 +13,7 @@ import { fetchProducts } from "@/widgets/orders-list/api/orders";
 import { findDisplayBarcode, getBarcodeFormat, isNumericBarcode } from "@/shared/lib/barcode-format";
 import { ProductBarcode } from "@/shared/ui/product-barcode";
 import { ProductPriceTag } from "./product-price-tag";
+import { PriceTagTaskControl, usePriceTagProduct } from "./price-tag-task-control";
 import { ProductInfoIcon } from "./product-info-icon";
 
 export function ProductInfoDialog({ storeId, onClose }: { storeId?: string; onClose: () => void }) {
@@ -150,7 +151,7 @@ export function ProductInfoDialog({ storeId, onClose }: { storeId?: string; onCl
       </form>
       <div aria-live="polite" role="status">{busy ? <p className="sr-only">Поиск товара…</p> : message ? <p className="mt-4 rounded-lg app-surface-muted p-4 text-sm app-text">{message}</p> : null}</div>
 
-      {selected ? <ProductCard key={selected.id} product={selected} /> : <ProductCardSkeleton />}
+      {selected ? <ProductCard key={selected.id} product={selected} storeId={storeId} /> : <ProductCardSkeleton />}
     </div>
   </Dialog>;
 }
@@ -165,8 +166,9 @@ function CarouselControls({ index, count, label, onChange }: { index: number; co
   </>;
 }
 
-function ProductCard({ product }: { product: ProductInfo }) {
+function ProductCard({ product, storeId }: { product: ProductInfo; storeId?: string }) {
   const [mobileSection, setMobileSection] = useState<"stock" | "price" | "photos">("stock");
+  const tag = usePriceTagProduct(storeId, product.id);
   const [imageIndex, setImageIndex] = useState(0);
   const [barcodeIndex, setBarcodeIndex] = useState(0);
   const [failedImages, setFailedImages] = useState<string[]>([]);
@@ -212,7 +214,7 @@ function ProductCard({ product }: { product: ProductInfo }) {
           <p className="product-info-metrics-muted mt-1 text-sm">Ориентировочно хватит на {count(product.stock_days)} дн.</p>
         </div>
       </section>
-      <div id="product-info-price" className={`min-w-0 ${mobileSection === "price" ? "" : "hidden md:block"}`}><ProductPriceTag product={product} /></div>
+      <div id="product-info-price" className={`min-w-0 ${mobileSection === "price" ? "" : "hidden md:block"}`}><ProductPriceTag product={product} stopper={tag.value?.stopper}><PriceTagTaskControl storeId={storeId} productId={product.id} tag={tag} /></ProductPriceTag></div>
       <div id="product-info-photos" className={`mx-auto w-full min-w-0 flex-col gap-3 md:gap-4 ${mobileSection === "photos" ? "flex" : "hidden md:flex"}`}>
         <div className="relative flex aspect-square shrink-0 items-center justify-center overflow-hidden rounded-2xl border app-border bg-white p-4">
           {photo && !failedImages.includes(photo) ? /* eslint-disable-next-line @next/next/no-img-element */

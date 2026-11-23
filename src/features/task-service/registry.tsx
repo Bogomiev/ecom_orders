@@ -3,6 +3,7 @@ import { TaskService } from "@/entities/task/api";
 import { qrImageSource } from "@/entities/task/image";
 import { CashCollection } from "@/widgets/cash_collection";
 import { StopperTask } from "@/widgets/stopper-task";
+import { PriceTagTaskView } from "@/widgets/price-tag-task";
 
 type ServiceProps = { task_id: number; onClose: () => void; [name: string]: unknown };
 // A service may show its status on the task tile, open its instruction and allow one active task a day.
@@ -19,6 +20,13 @@ const registry = new Map<string, Registration>([
   parameters: {},
   instructionsHref: "/instructions#stoppers",
   showsStatus: true,
+  oneActive: true,
+ }],
+ [TaskService.PricePrint, {
+  Component: ({ task_id, onClose }) => <PriceTagTaskView task_id={task_id} onClose={onClose} />,
+  parameters: {},
+  // The tile shows the number of tags to print instead of the status.
+  showsStatus: false,
   oneActive: true,
  }],
 ]);

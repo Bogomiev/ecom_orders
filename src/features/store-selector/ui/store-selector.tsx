@@ -354,6 +354,7 @@ export function StoreSelector({ triggerContainer, hideTrigger = false }: { trigg
         clearLegacyAccessStorage();
         // A QR code from the settings of another device signs in here and picks the same store.
         const codeLogin = loginByCodeFromLocation();
+        let codeError: string | null = null;
         if (codeLogin) {
           try {
             const store = await codeLogin;
@@ -361,13 +362,16 @@ export function StoreSelector({ triggerContainer, hideTrigger = false }: { trigg
             if (store) setStoredStoreSelection(store);
           } catch (error) {
             if (controller.signal.aborted) return;
-            notify({ body: error instanceof Error ? error.message : "Не удалось войти по QR-коду", title: "Вход по QR-коду", tone: "error" });
+            codeError = error instanceof Error ? error.message : "Не удалось войти по QR-коду";
           }
         }
         const urlToken = getAccessTokenFromLocation();
         setIsCheckingAccessToken(true);
         const session = await restoreSession();
         if (controller.signal.aborted) return;
+        // A home screen shortcut made right after a QR login keeps the spent code in its address: with a
+        // session of its own the device is signed in, so the stale code is not worth an error.
+        if (codeError && !session) notify({ body: codeError, title: "Вход по QR-коду", tone: "error" });
         const invitationToken = urlToken === session?.userToken ? null : urlToken;
         if (urlToken && !invitationToken) removeAccessTokenFromLocation();
         const token = invitationToken ?? session?.userToken ?? null;

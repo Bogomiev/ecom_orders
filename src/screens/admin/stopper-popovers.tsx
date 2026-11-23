@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { searchStopperProducts } from "@/entities/stopper/api";
-import { formatShortDate, maxStopperNameLength, stopperColors, stopperNameError, stopperTextColor, type Stopper, type StopperInput, type StopperProduct } from "@/entities/stopper/model";
+import { formatShortDate, maxStopperDays, maxStopperNameLength, stopperColors, stopperDays, stopperDaysLabel, stopperNameError, stopperTextColor, type Stopper, type StopperInput, type StopperProduct } from "@/entities/stopper/model";
 import { AdminDialog as Dialog } from "./admin-controls";
 
 export function StopperChip({ stopper, children }: { stopper: Pick<Stopper, "name" | "color">; children?: ReactNode }) {
@@ -36,7 +36,7 @@ export function Popover({ anchor, wide, label, onClose, children }: { anchor: DO
  return <div ref={ref} className={`stopper-pop${wide ? " wide" : ""}`} role="dialog" aria-label={label}>{children}</div>;
 }
 
-type Editing = { id: number | null; name: string; color: string; error: string };
+type Editing = { id: number | null; name: string; color: string; days: string; error: string };
 export function StopperPicker({ stoppers, current, busy, onPick, onSave, onDelete }: { stoppers: Stopper[]; current: number | null; busy: boolean; onPick: (id: number | null) => void; onSave: (id: number | null, input: StopperInput) => Promise<boolean>; onDelete: (stopper: Stopper) => void }) {
  const [editing, setEditing] = useState<Editing | null>(null);
  if (editing) {
@@ -46,11 +46,15 @@ export function StopperPicker({ stoppers, current, busy, onPick, onSave, onDelet
    if (!editing) return;
    const error = stopperNameError(editing.name, stoppers, editing.id);
    if (error) { setEditing({ ...editing, error }); return; }
-   if (await onSave(editing.id, { name: editing.name, color: editing.color })) setEditing(null);
+   const days = stopperDays(editing.days);
+   if (days === undefined) { setEditing({ ...editing, error: `Срок — целое число дней от 1 до ${maxStopperDays} или пусто.` }); return; }
+   if (await onSave(editing.id, { name: editing.name, color: editing.color, days })) setEditing(null);
   }
   return <><div className="stopper-pop-title">{stopper ? "Изменить стоппер" : "Новый стоппер"}</div>
    <form className="stopper-pop-form" onSubmit={submit}>
     <label>Наименование<input autoFocus value={editing.name} maxLength={maxStopperNameLength} placeholder="Например, «Сезон»" onChange={e => setEditing({ ...editing, name: e.target.value, error: "" })} /></label>
+    <label>Срок, дней<input type="number" inputMode="numeric" min={1} max={maxStopperDays} step={1} value={editing.days} placeholder="Пусто — открытый период" onChange={e => setEditing({ ...editing, days: e.target.value, error: "" })} /></label>
+    <small className="stopper-pop-hint">При установке стоппера дата «по» = дата «с» + срок, если позиция не заканчивается раньше. Период потом можно изменить; новый срок действует на следующие установки.</small>
     <div><div className="stopper-pop-caption">Цвет</div>
      <div className="stopper-swatches">{stopperColors.map(color => <button key={color} type="button" className={editing.color === color ? "on" : ""} style={{ background: color }} aria-label={`Цвет ${color}`} aria-pressed={editing.color === color} onClick={() => setEditing({ ...editing, color })} />)}</div></div>
     <div className="stopper-preview">Как будет выглядеть: <StopperChip stopper={{ name: editing.name.trim(), color: editing.color }} /></div>
@@ -65,12 +69,12 @@ export function StopperPicker({ stoppers, current, busy, onPick, onSave, onDelet
  }
  return <><div className="stopper-pop-title">Стоппер для товара</div>
   {stoppers.map(v => <div key={v.id} className={`stopper-option${current === v.id ? " on" : ""}`}>
-   <button type="button" className="stopper-option-pick" disabled={busy} data-autofocus={current === v.id || undefined} onClick={() => onPick(v.id)}><StopperChip stopper={v} />{current === v.id ? <span className="stopper-check">✓</span> : <span className="stopper-count">{v.positions}</span>}</button>
-   <button type="button" className="stopper-option-edit" disabled={busy} title="Изменить стоппер" aria-label={`Изменить ${v.name}`} onClick={() => setEditing({ id: v.id, name: v.name, color: v.color, error: "" })}>✎</button>
+   <button type="button" className="stopper-option-pick" disabled={busy} data-autofocus={current === v.id || undefined} onClick={() => onPick(v.id)}><StopperChip stopper={v} />{v.days ? <span className="stopper-days" title="Срок стоппера">{stopperDaysLabel(v.days)}</span> : null}{current === v.id ? <span className="stopper-check">✓</span> : <span className="stopper-count">{v.positions}</span>}</button>
+   <button type="button" className="stopper-option-edit" disabled={busy} title="Изменить стоппер" aria-label={`Изменить ${v.name}`} onClick={() => setEditing({ id: v.id, name: v.name, color: v.color, days: v.days ? String(v.days) : "", error: "" })}>✎</button>
   </div>)}
   <div className="stopper-pop-divider" />
   {current !== null && <button type="button" className="stopper-pop-link muted" disabled={busy} onClick={() => onPick(null)}>Снять стоппер</button>}
-  <button type="button" className="stopper-pop-link" disabled={busy} onClick={() => setEditing({ id: null, name: "", color: stopperColors[5], error: "" })}>+ Новый стоппер</button></>;
+  <button type="button" className="stopper-pop-link" disabled={busy} onClick={() => setEditing({ id: null, name: "", color: stopperColors[5], days: "", error: "" })}>+ Новый стоппер</button></>;
 }
 
 export function PeriodForm({ count, from, to, today, busy, onSave, onCancel }: { count: number; from: string; to: string; today: string; busy: boolean; onSave: (from: string, to: string | null) => void; onCancel: () => void }) {

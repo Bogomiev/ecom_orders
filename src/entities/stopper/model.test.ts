@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { addDays, promotedInStores, defaultWindow, filterPositions, formatShortDate, formatStopperPrice, periodState, positionGroup, positionID, sortPositions, stopperCounts, stopperNameError, stopperTextColor, type Stopper, type StopperPosition } from "./model";
+import { addDays, stopperDays, stopperDaysLabel, promotedInStores, defaultWindow, filterPositions, formatShortDate, formatStopperPrice, periodState, positionGroup, positionID, sortPositions, stopperCounts, stopperNameError, stopperTextColor, type Stopper, type StopperPosition } from "./model";
 
-const stoppers: Stopper[] = [{ id: 1, name: "Выгодно", color: "#F2B705", positions: 1 }, { id: 2, name: "ХИТ", color: "#D7261E", positions: 1 }];
+const stoppers: Stopper[] = [{ id: 1, name: "Выгодно", color: "#F2B705", days: null, positions: 1 }, { id: 2, name: "ХИТ", color: "#D7261E", days: 28, positions: 1 }];
 const position = (patch: Partial<StopperPosition>): StopperPosition => ({ doc_id: "doc", product_id: "p", code: "ЦБ-1", name: "Товар", thermal_mode: false, stopper_id: null, from: "2026-11-01", to: "2026-11-30", received: "2026-11-01", manual: false, stores: 1, prices: [], ...patch });
 
 describe("stopper dates", () => {
@@ -26,6 +26,13 @@ describe("stopper formatting", () => {
  it("keeps stopper text readable", () => {
   expect(stopperTextColor("#F2B705")).toBe("#13232A");
   expect(stopperTextColor("#1F5FBF")).toBe("#FFFFFF");
+ });
+ it("reads the stopper duration: empty is an open period, otherwise 1 to 365 whole days", () => {
+  expect(stopperDays("")).toBeNull();
+  expect(stopperDays(" 28 ")).toBe(28);
+  for (const bad of ["0", "366", "1.5", "-3", "две"]) expect(stopperDays(bad)).toBeUndefined();
+  expect(stopperDaysLabel(14)).toBe("+14 дн.");
+  expect(stopperDaysLabel(null)).toBe("без срока");
  });
  it("rejects empty and duplicate stopper names", () => {
   expect(stopperNameError(" ", stoppers, null)).toBe("Укажите наименование.");

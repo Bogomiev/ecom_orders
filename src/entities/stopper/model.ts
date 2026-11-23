@@ -1,5 +1,16 @@
-export type Stopper = { id: number; name: string; color: string; positions: number };
-export type StopperInput = { name: string; color: string };
+// days is the duration of a stopper: setting it on a position ends the position on «с» + days, unless the
+// position ends earlier; null keeps an open period. The period can still be changed by hand.
+export type Stopper = { id: number; name: string; color: string; days: number | null; positions: number };
+export type StopperInput = { name: string; color: string; days: number | null };
+export const maxStopperDays = 365;
+export function stopperDaysLabel(days: number | null) { return days ? `+${days} дн.` : "без срока"; }
+// The duration field: empty is an open period, otherwise whole days from 1 to a year.
+export function stopperDays(value: string): number | null | undefined {
+ const text = value.trim();
+ if (!text) return null;
+ const days = Number(text);
+ return Number.isInteger(days) && days >= 1 && days <= maxStopperDays ? days : undefined;
+}
 // Storage follows the 1C product flag isThermalMode: chilled or frozen goods versus the shelf.
 export const storageModes = [
  { thermal: true, label: "Терморежим", icon: "❄︎", place: "Холодильник или морозильный ларь" },

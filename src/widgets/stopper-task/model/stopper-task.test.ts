@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatStock, stopperTaskDone, formatTaskStart, groupStopperTaskItems, paginate, sheetsLabel, stopperTaskCounts, stopperTaskItemID, visibleStopperTaskItems, type StopperTaskItem } from "./stopper-task";
+import { formatStock, stopperTaskDone, formatTaskStart, groupStopperTaskItems, paginate, sheetsLabel, shortCode, stopperTaskCounts, stopperTaskItemID, visibleStopperTaskItems, type StopperTaskItem } from "./stopper-task";
 
 const item = (patch: Partial<StopperTaskItem>): StopperTaskItem => ({ doc_id: "doc", product_id: "p", code: "ЦБ-1", name: "Товар", thermal_mode: true, unit: "шт", stopper: "ХИТ", stopper_color: "#D7261E", from: "2026-11-01", to: null, remove: false, stock: "3", price: "1490.00", promo_price: "1190.00", barcode: "4607003760342", result: "", ...patch });
 const items = [
@@ -32,6 +32,10 @@ describe("stopper task list", () => {
  });
 });
 describe("stopper task formatting", () => {
+ it("names a product on the sheet by the last 5 digits of its code", () => {
+  expect(shortCode("ЦБ-00000988")).toBe("00988");
+  expect(shortCode("12")).toBe("12");
+ });
  it("formats stock, start and position keys", () => {
   expect(formatStock({ stock: "2.500", unit: "кг" })).toBe("2,5 кг");
   expect(formatStock({ stock: null, unit: "шт" })).toBe("нет");
