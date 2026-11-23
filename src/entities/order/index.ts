@@ -58,6 +58,14 @@ export {
 } from "./model/history-settings";
 export { useOrderHistoryDays } from "./model/use-order-history-days";
 export {
+  getStoredRemoveMarkCryptoTail,
+  getStoredSkipMarkFormatting,
+  setStoredRemoveMarkCryptoTail,
+  setStoredSkipMarkFormatting,
+  useRemoveMarkCryptoTail,
+  useSkipMarkFormatting
+} from "./model/mark-settings";
+export {
   normalizeOneCOrders,
   OneCOrdersResponseSchema
 } from "./model/one-c-order";

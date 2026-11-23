@@ -104,11 +104,12 @@ export function createBarcodeIndex(products: Product[]) {
 export function applyBarcodeToOrder(
   order: Order,
   barcodeIndex: Map<string, BarcodeIndexEntry>,
-  scannedBarcode: string
+  scannedBarcode: string,
+  skipMarkFormatting = false,
+  removeMarkCryptoTail = false
 ): ScanOrderResult {
   const barcode = scannedBarcode.trim();
   const parsedCode = parseScannedCode(barcode);
-  const mark = parsedCode.isMark ? formatScannedMark(scannedBarcode) : scannedBarcode;
   const exactBarcodeMatch = barcodeIndex.get(barcode);
   let barcodeMatch = exactBarcodeMatch ?? parsedCode.lookupBarcodes
     .filter((lookupBarcode) => lookupBarcode !== barcode)
@@ -151,9 +152,12 @@ export function applyBarcodeToOrder(
     return { status: "error", code: "mark-required", barcode, product };
   }
 
+  const markIdentity = parsedCode.isMark
+    ? formatScannedMark(scannedBarcode, { removeCryptoTail: true })
+    : null;
   if (
     orderItem.marking_product &&
-    order.controlledItems.some((item) => formatScannedMark(item.mark) === mark)
+    order.controlledItems.some((item) => formatScannedMark(item.mark, { removeCryptoTail: true }) === markIdentity)
   ) {
     return {
       status: "error",
@@ -201,7 +205,10 @@ export function applyBarcodeToOrder(
               product_id: product.uid,
               product_name: product.name,
               quantity: quantityToAdd,
-              mark,
+              mark: formatScannedMark(scannedBarcode, {
+                skipFormatting: skipMarkFormatting,
+                removeCryptoTail: removeMarkCryptoTail
+              }),
               result: true
             }
           ]
