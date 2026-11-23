@@ -2,14 +2,15 @@
 
 import { useSyncExternalStore } from "react";
 
-const storageKey = "order-mark-formatting-enabled";
-const changeEvent = "order-mark-formatting-enabled-changed";
+const removeCryptoTailKey = "order-remove-mark-crypto-tail";
+const storageKey = "order-skip-mark-formatting";
+const changeEvent = "order-mark-settings-changed";
 
-export function getStoredMarkFormattingEnabled() {
+export function getStoredSkipMarkFormatting() {
   return typeof window !== "undefined" && window.localStorage.getItem(storageKey) === "true";
 }
 
-export function setStoredMarkFormattingEnabled(value: boolean) {
+export function setStoredSkipMarkFormatting(value: boolean) {
   window.localStorage.setItem(storageKey, String(value));
   window.dispatchEvent(new Event(changeEvent));
 }
@@ -23,6 +24,19 @@ function subscribe(callback: () => void) {
   };
 }
 
-export function useMarkFormattingEnabled() {
-  return useSyncExternalStore(subscribe, getStoredMarkFormattingEnabled, () => false);
+export function useSkipMarkFormatting() {
+  return useSyncExternalStore(subscribe, getStoredSkipMarkFormatting, () => false);
+}
+
+export function getStoredRemoveMarkCryptoTail() {
+  return typeof window !== "undefined" && window.localStorage.getItem(removeCryptoTailKey) === "true";
+}
+
+export function setStoredRemoveMarkCryptoTail(value: boolean) {
+  window.localStorage.setItem(removeCryptoTailKey, String(value));
+  window.dispatchEvent(new Event(changeEvent));
+}
+
+export function useRemoveMarkCryptoTail() {
+  return useSyncExternalStore(subscribe, getStoredRemoveMarkCryptoTail, () => false);
 }

@@ -91,7 +91,7 @@ describe("parseScannedCode", () => {
 
 describe("applyBarcodeToOrder", () => {
   it.each([
-    ["010460123456789021йЦуКЁжЭбЮ\u001d91тест\u001d92Ab+/=", "(01)04601234567890(21)qWeR~;\",>"],
+    ["010460123456789021йЦуКЁжЭбЮ\u001d91тест\u001d92Ab+/=", "(01)04601234567890(21)qWeR~;\",>(91)ntcn(92)Ab+/="],
     ["(01)04601234567890(21)Serial", "(01)04601234567890(21)Serial"],
     [" 010460123456789021марка ", "(01)04601234567890(21)vfhrf"]
   ])("исправляет раскладку марки без потери спецсимволов: %j", (mark, expectedMark) => {
@@ -117,22 +117,26 @@ describe("applyBarcodeToOrder", () => {
     });
   });
 
-  it("в режиме без форматирования сохраняет префикс, разделители и криптохвост", () => {
+  it.each([
+    [false, false, "(01)04601234567890(21)qWeR~;(91)ntcn(92)Ab+/="],
+    [false, true, "(01)04601234567890(21)qWeR~;"],
+    [true, false, " ]d2\u001d010460123456789021qWeR~;\u001d91ntcn\u001d92Ab+/= "],
+    [true, true, " ]d2\u001d010460123456789021qWeR~;"]
+  ])("сохраняет марку при настройках пропуска форматирования %s и удаления хвоста %s", (skipFormatting, removeCryptoTail, expectedMark) => {
     const markedOrder = {
       ...order,
       items: [{ ...order.items[0], marking_product: true }]
     };
     const index = createBarcodeIndex([product]);
     const scan = " ]d2\u001d010460123456789021йЦуКЁж\u001d91тест\u001d92Ab+/= ";
-    const expectedMark = " ]d2\u001d010460123456789021qWeR~;\u001d91ntcn\u001d92Ab+/= ";
-    const result = applyBarcodeToOrder(markedOrder, index, scan, true);
+    const result = applyBarcodeToOrder(markedOrder, index, scan, skipFormatting, removeCryptoTail);
 
     expect(result.status).toBe("success");
     if (result.status !== "success") throw new Error("Марка не добавлена");
 
     expect(result.order.controlledItems[0].mark).toBe(expectedMark);
     expect(getCompleteOrderItems(result.order)[0].mark).toBe(expectedMark);
-    expect(applyBarcodeToOrder(result.order, index, scan, true)).toMatchObject({
+    expect(applyBarcodeToOrder(result.order, index, scan)).toMatchObject({
       status: "error",
       code: "mark-already-scanned"
     });
