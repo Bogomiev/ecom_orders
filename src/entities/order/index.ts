@@ -57,7 +57,7 @@ export {
   setStoredOrderHistoryDays
 } from "./model/history-settings";
 export { useOrderHistoryDays } from "./model/use-order-history-days";
-export { getStoredSkipMarkFormatting, setStoredSkipMarkFormatting, useSkipMarkFormatting } from "./model/mark-settings";
+export { getStoredMarkFormattingEnabled, setStoredMarkFormattingEnabled, useMarkFormattingEnabled } from "./model/mark-settings";
 export {
   normalizeOneCOrders,
   OneCOrdersResponseSchema

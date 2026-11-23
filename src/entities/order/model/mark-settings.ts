@@ -2,14 +2,14 @@
 
 import { useSyncExternalStore } from "react";
 
-const storageKey = "order-skip-mark-formatting";
-const changeEvent = "order-skip-mark-formatting-changed";
+const storageKey = "order-mark-formatting-enabled";
+const changeEvent = "order-mark-formatting-enabled-changed";
 
-export function getStoredSkipMarkFormatting() {
+export function getStoredMarkFormattingEnabled() {
   return typeof window !== "undefined" && window.localStorage.getItem(storageKey) === "true";
 }
 
-export function setStoredSkipMarkFormatting(value: boolean) {
+export function setStoredMarkFormattingEnabled(value: boolean) {
   window.localStorage.setItem(storageKey, String(value));
   window.dispatchEvent(new Event(changeEvent));
 }
@@ -23,6 +23,6 @@ function subscribe(callback: () => void) {
   };
 }
 
-export function useSkipMarkFormatting() {
-  return useSyncExternalStore(subscribe, getStoredSkipMarkFormatting, () => false);
+export function useMarkFormattingEnabled() {
+  return useSyncExternalStore(subscribe, getStoredMarkFormattingEnabled, () => false);
 }

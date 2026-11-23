@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { getStoredSkipMarkFormatting, type Order, type OrderItem } from "@/entities/order";
+import { getStoredMarkFormattingEnabled, type Order, type OrderItem } from "@/entities/order";
 import type { Product } from "@/entities/product";
 import {
   applyBarcodeToOrder,
@@ -236,7 +236,7 @@ export function OrderControlDetailsPanel({
       return;
     }
 
-    const result = applyBarcodeToOrder(order, productsByBarcode, scannedBarcode, getStoredSkipMarkFormatting());
+    const result = applyBarcodeToOrder(order, productsByBarcode, scannedBarcode, !getStoredMarkFormattingEnabled());
 
     if (result.status === "success") {
       onOrderChange(result.order);
