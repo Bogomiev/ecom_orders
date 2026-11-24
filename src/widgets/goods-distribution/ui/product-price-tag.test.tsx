@@ -14,7 +14,8 @@ const product = ProductInfoSchema.parse({
 
 describe("product price tag", () => {
   it("shows the printed 60×47 discount tag: promotional price with the regular one crossed out", () => {
-    expect(productTagView(product)).toEqual({ name: product.name, unit: "кг", barcode: "4601234567893", price: 849.5, old: 999.25, state: "promo" });
+    expect(productTagView(product)).toEqual({ name: product.name, unit: "кг", barcode: "", code: product.code, price: 849.5, old: 999.25, state: "promo" });
+    expect(productTagView({ ...product, isWeight: false })).toMatchObject({ barcode: "4601234567893", code: "" });
     const html = renderToStaticMarkup(<ProductPriceTag product={product} />);
     expect(html).toContain('class="pt-wrap"');
     expect(html).toContain('<span class="pt-int">849</span>');

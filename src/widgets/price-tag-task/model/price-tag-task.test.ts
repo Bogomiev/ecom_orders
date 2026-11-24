@@ -17,7 +17,9 @@ describe("price tag task", () => {
   expect(printable(item({ tag_type: "card", promo_price: "99.90" }))).toBe(true);
  });
  it("shows the promotional price with the regular one above it only for a discount or a card tag", () => {
-  expect(tagView(item({ promo_price: "99.90", is_weight: true, unit: "kg" }))).toEqual({ name: "Хлеб", unit: "кг", barcode: "4601234567893", price: 120, old: null, state: "regular" });
+  expect(tagView(item({ promo_price: "99.90", unit: "pc" }))).toEqual({ name: "Хлеб", unit: "шт", barcode: "4601234567893", code: "", price: 120, old: null, state: "regular" });
+ // A weighed product shows its code instead of a barcode.
+ expect(tagView(item({ promo_price: "99.90", is_weight: true, unit: "kg" }))).toEqual({ name: "Хлеб", unit: "кг", barcode: "", code: "001", price: 120, old: null, state: "regular" });
   expect(tagView(item({ tag_type: "promo", promo_price: "99.90" }))).toMatchObject({ price: 99.9, old: 120, state: "promo", unit: "шт" });
   expect(tagView(item({ tag_type: "card", promo_price: "99.90" }))).toMatchObject({ price: 99.9, old: 120, state: "card" });
  });

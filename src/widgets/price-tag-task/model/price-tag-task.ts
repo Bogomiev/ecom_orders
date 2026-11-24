@@ -46,12 +46,14 @@ export function tagPeriod(item: Pick<PriceTagItem, "tag_type" | "price_from" | "
 }
 
 // What one printed tag shows: the main price and, for a discount or a card price, the regular price above it.
-export type TagView = { name: string; unit: "кг" | "100 г" | "шт"; barcode: string; price: number; old: number | null; state: PriceTagType };
+// A weighed product has no barcode on the tag (the scales label carries it): the tag shows the product code
+// to find the product by instead.
+export type TagView = { name: string; unit: "кг" | "100 г" | "шт"; barcode: string; code: string; price: number; old: number | null; state: PriceTagType };
 export function tagView(item: PriceTagItem): TagView {
  const regular = Number(item.price ?? 0);
  const promo = item.tag_type !== "regular" && hasPromo(item);
  const unit = item.unit ?? (item.is_weight ? "kg" : "pc");
- return { name: item.name, unit: unit === "pc" ? "шт" : unit === "100g" ? "100 г" : "кг", barcode: item.barcode, price: unitPrice(promo ? Number(item.promo_price) : regular, unit), old: promo ? unitPrice(regular, unit) : null, state: promo ? item.tag_type : "regular" };
+ return { name: item.name, unit: unit === "pc" ? "шт" : unit === "100g" ? "100 г" : "кг", barcode: item.is_weight ? "" : item.barcode, code: item.is_weight ? item.code : "", price: unitPrice(promo ? Number(item.promo_price) : regular, unit), old: promo ? unitPrice(regular, unit) : null, state: promo ? item.tag_type : "regular" };
 }
 // Rubles with thousands split by a no-break space and kopecks apart: 11550 → ["11 550", "00"].
 export function priceParts(value: number): [string, string] {

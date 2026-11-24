@@ -8,6 +8,7 @@ import { cardName, expandTags, priceParts, sheets, tagView, type PriceTagItem, t
 // Price tag 60 × 47 mm from the approved specification «Ценник 60×47 мм — финальный вариант»: Impact price
 // 18 mm squeezed to 0.85, name in Arial Narrow 3.7 mm, the regular price slot above the main price
 // («цена БЕЗ КАРТЫ» or crossed out) and a 20 × 3.2 mm barcode with its digits. The dashed frame is the cut line.
+// The small digits (barcode number, product code, date) are bold: regular 1.9 mm Arial prints too thin.
 // A4 page: 3 columns × 6 rows edge to edge in the middle of the page (15 mm side margins, 7.5 mm top and
 // bottom), so neighbouring tags share one cut line.
 // The same CSS styles the preview and the print frame, so print is exactly what the preview shows.
@@ -32,12 +33,13 @@ export const priceTagSheetCss = `.pt-sheet{color:#141414}
 .pt-sheet .pt-cent{font-family:Impact,Haettenschweiler,"Arial Narrow",sans-serif;font-size:6.3mm;font-weight:400;text-decoration:underline;line-height:1}
 .pt-sheet .pt-unit{font-size:2.1mm;font-weight:700;text-transform:uppercase;text-align:center;line-height:1.15}
 .pt-sheet .pt-foot{display:flex;justify-content:space-between;align-items:stretch;font-size:1.9mm;margin-top:0.3mm}
-.pt-sheet .pt-bc{display:flex;flex-direction:column;gap:0.3mm}
-.pt-sheet .pt-bcnum{font-size:1.9mm;line-height:1.1;white-space:nowrap}
+.pt-sheet .pt-bc{display:flex;flex-direction:column;gap:0.3mm;min-height:5.6mm}
+.pt-sheet .pt-bcnum{font-size:1.9mm;font-weight:700;line-height:1.1;white-space:nowrap}
 .pt-sheet .pt-barcode{display:block;width:20mm;height:3.2mm}
+.pt-sheet .pt-code{margin-top:auto;font-size:1.9mm;font-weight:700;line-height:1.1;white-space:nowrap}
 .pt-sheet .pt-rcol{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end}
 .pt-sheet .pt-card{font-style:italic;font-size:2mm;line-height:1.1;text-align:right}
-.pt-sheet .pt-date{font-size:1.9mm;line-height:1.1;margin-top:auto}
+.pt-sheet .pt-date{font-size:1.9mm;font-weight:700;line-height:1.1;margin-top:auto}
 @media print{@page{size:A4 portrait;margin:0}html,body{margin:0;background:#fff}}`;
 
 function Barcode({ value }: { value: string }) {
@@ -66,7 +68,7 @@ export function PriceTag({ tag, date }: { tag: TagView; date: string }) {
    <div className="pt-price"><span className="pt-int">{integer}</span><span className="pt-centcol"><span className="pt-cent">{kopecks}</span><span className="pt-unit">руб.<br />{tag.unit === "100 г" ? "100\u00a0г" : tag.unit}</span></span></div>
   </div>
   <div className="pt-foot">
-   <div className="pt-bc">{tag.barcode && <><div className="pt-bcnum">{tag.barcode}</div><Barcode value={tag.barcode} /></>}</div>
+   <div className="pt-bc">{tag.barcode ? <><div className="pt-bcnum">{tag.barcode}</div><Barcode value={tag.barcode} /></> : tag.code && <div className="pt-code">код {tag.code}</div>}</div>
    <div className="pt-rcol">{tag.state === "card" && <span className="pt-card">цена <b>С КАРТОЙ</b> «{cardName}»</span>}<span className="pt-date">{date}</span></div>
   </div>
  </div></div>;

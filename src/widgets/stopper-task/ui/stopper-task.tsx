@@ -20,7 +20,7 @@ const icons = {
 };
 
 function Chip({ item, off }: { item: StopperTaskItem; off?: boolean }) {
- return <span className={`stopper-task-chip${off ? " off" : ""}`} style={{ background: item.stopper_color, color: stopperTextColor(item.stopper_color) }}>{item.stopper}</span>;
+ return <span className={`stopper-task-chip${off ? " off" : ""}`} title={item.stopper} style={{ background: item.stopper_color, color: stopperTextColor(item.stopper_color) }}>{item.stopper}</span>;
 }
 
 export function StopperTask({ task_id, onClose }: StopperTaskProps) {
