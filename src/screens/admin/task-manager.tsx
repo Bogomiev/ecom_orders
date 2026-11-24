@@ -145,7 +145,7 @@ function TypeEditor({ entry, onClose, onSaved }: { entry?: TaskType; onClose: ()
  }
  return <Dialog closeDisabled={busy} ariaLabel={entry ? `${entry.name} (ID: ${entry.id})` : "Новый"} actions={<><SaveActions form={formID} busy={busy} /><button type="button" disabled={!entry || busy} title={entry ? "Генерация за сегодня по сохранённому типу и расписаниям" : "Сначала сохраните тип задания"} onClick={() => void generate()}>Сгенерировать задания</button></>} className="admin-dialog task-dialog" onClose={() => { if (!busy) onClose(); }}><form id={formID} onSubmit={save}><fieldset disabled={busy}>
  <label>Имя<input required value={value.name} onChange={e => update("name", e.target.value)} /></label><label>Краткое имя<input value={value.short_name} onChange={e => update("short_name", e.target.value)} /></label>
- <label>Сервис<select value={value.service} onChange={e => update("service", e.target.value as TaskService)}>{Object.values(TaskService).filter(s => s !== TaskService.CashCollection || entry?.service === s).map(s => <option key={s} value={s}>{taskServiceLabels[s]}</option>)}</select></label>
+ <label>Сервис<select value={value.service} onChange={e => update("service", e.target.value as TaskService)}>{Object.values(TaskService).map(s => <option key={s} value={s}>{taskServiceLabels[s]}</option>)}</select></label>
  {value.service === TaskService.CashCollection && <label>Qr для входа<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={async e => {
  const file=e.target.files?.[0]; if(!file)return;
  if(!["image/png","image/jpeg","image/webp","image/gif"].includes(file.type)||file.size>1024*1024){setError("QR: PNG, JPEG, WebP или GIF, до 1 Мб.");return;}
