@@ -76,17 +76,19 @@ type AvailableType={id:number;name:string;short_name:string;service:string;icon:
 // Why RMS marks a type unavailable today: the task would be empty.
 const emptyTaskMessages:Record<string,string>={[TaskService.Stoppers]:"На сегодня нет стопперов, которые нужно проверить или снять",[TaskService.PricePrint]:"На сегодня нет ценников для печати"};
 const emptyTaskMessage=(service:string)=>emptyTaskMessages[service]??"На сегодня это задание создать нельзя";
+const manualTypes=(types:AvailableType[])=>types.filter(v=>v.service!==TaskService.CashCollection);
 function typeBlock(type:AvailableType,activeServices:string[]){
  if(taskServiceInfo(type.service).oneActive&&activeServices.includes(type.service))return "Уже есть активное задание на сегодня";
  return type.available===false?emptyTaskMessage(type.service):"";
 }
-// Store users create a task of any active type for the selected store; it starts now.
+// Store users create a task of any active type for the selected store; it starts now. Cash collection comes
+// only by schedule: its types are not offered here.
 function CreateTaskDialog({storeID,activeServices,onCreated,onClose}:{storeID:string;activeServices:string[];onCreated:(task:{id:number;service:string})=>void;onClose:()=>void}) {
  const [types,setTypes]=useState<AvailableType[]|null>(null);
  const [error,setError]=useState("");
  const [busy,setBusy]=useState<number|null>(null);
  const load=useCallback(()=>rmsRequest<AvailableType[]>(`tasks/types?${new URLSearchParams({store_id:storeID})}`),[storeID]);
- useEffect(()=>{let active=true;load().then(v=>{if(active)setTypes(v);}).catch(e=>{if(active){setTypes([]);setError((e as Error).message);}});return()=>{active=false;};},[load]);
+ useEffect(()=>{let active=true;load().then(v=>{if(active)setTypes(manualTypes(v));}).catch(e=>{if(active){setTypes([]);setError((e as Error).message);}});return()=>{active=false;};},[load]);
  async function create(type:AvailableType){
   if(busy!==null)return;setBusy(type.id);setError("");
   try{const task=await rmsRequest<{id:number}>("tasks/manual","POST",{type_id:type.id,store_id:storeID});onCreated({id:task.id,service:type.service});}
@@ -94,7 +96,7 @@ function CreateTaskDialog({storeID,activeServices,onCreated,onClose}:{storeID:st
    const message=(e as Error).message;
    // RMS answers 409 both for a second active task and for a task with nothing to do; the fresh list tells which.
    const fresh=message.startsWith("Запись используется")?await load().catch(()=>null):null;
-   if(fresh)setTypes(fresh);
+   if(fresh)setTypes(manualTypes(fresh));
    const block=fresh?typeBlock(fresh.find(v=>v.id===type.id)??type,activeServices):"";
    setError(block===emptyTaskMessage(type.service)?`${block}.`:fresh&&taskServiceInfo(type.service).oneActive?"Активное задание этого типа на сегодня уже есть.":message);setBusy(null);}
  }
