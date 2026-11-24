@@ -12,25 +12,41 @@ import { cardName, expandTags, priceParts, sheets, tagView, type PriceTagItem, t
 // A4 page: 3 columns × 6 rows edge to edge in the middle of the page (15 mm side margins, 7.5 mm top and
 // bottom), so neighbouring tags share one cut line.
 // The same CSS styles the preview and the print frame, so print is exactly what the preview shows.
-export const priceTagSheetCss = `.pt-sheet{color:#141414}
+// The fonts are served with the app (public/fonts/price-tag), so a tag prints the same on any computer: Anton for
+// the price digits (Impact is a Windows font), Roboto Condensed Bold for the name, Arimo (Arial metrics) for the rest.
+// Anton digits are taller and narrower than Impact ones: at 0.92 of the Impact size and without the 0.85 squeeze
+// they are as high and about as wide as the specified squeezed Impact.
+const priceTagFontFaces = `@font-face{font-family:"RMS Tag Price";src:url(/fonts/price-tag/anton-latin-400-normal.woff2) format("woff2");font-weight:400;font-style:normal;font-display:block;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"RMS Tag Name";src:url(/fonts/price-tag/roboto-condensed-latin-700-normal.woff2) format("woff2");font-weight:700;font-style:normal;font-display:block;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"RMS Tag Name";src:url(/fonts/price-tag/roboto-condensed-cyrillic-700-normal.woff2) format("woff2");font-weight:700;font-style:normal;font-display:block;unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:"RMS Tag Text";src:url(/fonts/price-tag/arimo-latin-400-normal.woff2) format("woff2");font-weight:400;font-style:normal;font-display:block;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"RMS Tag Text";src:url(/fonts/price-tag/arimo-cyrillic-400-normal.woff2) format("woff2");font-weight:400;font-style:normal;font-display:block;unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:"RMS Tag Text";src:url(/fonts/price-tag/arimo-latin-400-italic.woff2) format("woff2");font-weight:400;font-style:italic;font-display:block;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"RMS Tag Text";src:url(/fonts/price-tag/arimo-cyrillic-400-italic.woff2) format("woff2");font-weight:400;font-style:italic;font-display:block;unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:"RMS Tag Text";src:url(/fonts/price-tag/arimo-latin-700-normal.woff2) format("woff2");font-weight:700;font-style:normal;font-display:block;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"RMS Tag Text";src:url(/fonts/price-tag/arimo-cyrillic-700-normal.woff2) format("woff2");font-weight:700;font-style:normal;font-display:block;unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:"RMS Tag Text";src:url(/fonts/price-tag/arimo-latin-700-italic.woff2) format("woff2");font-weight:700;font-style:italic;font-display:block;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"RMS Tag Text";src:url(/fonts/price-tag/arimo-cyrillic-700-italic.woff2) format("woff2");font-weight:700;font-style:italic;font-display:block;unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}`;
+export const priceTagSheetCss = `${priceTagFontFaces}
+.pt-sheet{color:#141414}
 .pt-sheet *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .pt-sheet .pt-page{width:210mm;height:297mm;display:grid;grid-template-columns:repeat(3,60mm);grid-template-rows:repeat(6,47mm);justify-content:center;align-content:center;background:#fff;overflow:hidden;break-after:page}
 .pt-sheet .pt-page:last-child{break-after:auto}
 .pt-sheet .pt-wrap{background:#fff;border-right:0.3mm dashed #333;border-bottom:0.3mm dashed #333;width:60mm;height:47mm;position:relative;overflow:hidden;break-inside:avoid}
 .pt-sheet .pt-wrap:nth-child(3n+1){border-left:0.3mm dashed #333}
 .pt-sheet .pt-wrap:nth-child(-n+3){border-top:0.3mm dashed #333}
-.pt-sheet .pt-tag{background:#fff;color:#141414;width:100%;height:100%;padding:1.7mm 2.2mm .8mm 2.2mm;display:flex;flex-direction:column;gap:0.3mm;font-family:Arial,Helvetica,sans-serif;position:relative}
-.pt-sheet .pt-name{font-family:"Arial Narrow","Liberation Sans Narrow","Roboto Condensed",Arial,sans-serif;font-weight:700;text-transform:uppercase;font-size:3.7mm;line-height:1.16;letter-spacing:-.01em}
+.pt-sheet .pt-tag{background:#fff;color:#141414;width:100%;height:100%;padding:1.7mm 2.2mm .8mm 2.2mm;display:flex;flex-direction:column;gap:0.3mm;font-family:"RMS Tag Text",Arial,Helvetica,sans-serif;position:relative}
+.pt-sheet .pt-name{font-family:"RMS Tag Name","Arial Narrow","Roboto Condensed",Arial,sans-serif;font-weight:700;text-transform:uppercase;font-size:3.7mm;line-height:1.16;letter-spacing:-.01em}
 .pt-sheet .pt-pricerow{margin-top:auto;display:flex;align-items:flex-start;justify-content:flex-end;gap:1.6mm;position:relative}
 .pt-sheet .pt-old-wrap{position:absolute;left:0;bottom:100%;margin-bottom:2mm;line-height:0}
-.pt-sheet .pt-old{display:inline-flex;align-items:flex-start;gap:0.3mm;font-family:Impact,Haettenschweiler,"Arial Narrow",sans-serif;font-size:8.5mm;font-weight:400;line-height:.82;font-variant-numeric:tabular-nums;word-spacing:-1mm;white-space:nowrap;transform:scaleX(.85);transform-origin:left center;position:relative}
-.pt-sheet .pt-old sup{font-size:4.2mm;text-decoration:underline;font-weight:700;margin-top:0.5mm;font-family:Arial,sans-serif;line-height:1}
+.pt-sheet .pt-old{display:inline-flex;align-items:flex-start;gap:0.3mm;font-family:"RMS Tag Price",Impact,sans-serif;font-size:7.8mm;font-weight:400;line-height:.89;font-variant-numeric:tabular-nums;word-spacing:-1mm;white-space:nowrap;position:relative}
+.pt-sheet .pt-old sup{font-size:4.2mm;text-decoration:underline;font-weight:700;margin-top:0.5mm;font-family:"RMS Tag Text",Arial,sans-serif;line-height:1}
 .pt-sheet .pt-old.diag::after{content:"";position:absolute;left:0;right:0;top:0;bottom:0;background:linear-gradient(to bottom right,transparent calc(50% - 0.25mm),#000 calc(50% - 0.25mm),#000 calc(50% + 0.25mm),transparent calc(50% + 0.25mm));pointer-events:none}
 .pt-sheet .pt-oldcap{position:absolute;left:0;top:100%;margin-top:1mm;font-size:1.9mm;line-height:1.1;font-style:italic;white-space:nowrap}
-.pt-sheet .pt-price{display:flex;align-items:stretch;gap:1.2mm;transform:scaleX(.85);transform-origin:right center}
-.pt-sheet .pt-int{font-family:Impact,Haettenschweiler,"Arial Narrow",sans-serif;font-size:18mm;font-weight:400;line-height:.82;font-variant-numeric:tabular-nums;word-spacing:-2mm;white-space:nowrap}
+.pt-sheet .pt-price{display:flex;align-items:stretch;gap:1mm}
+.pt-sheet .pt-int{font-family:"RMS Tag Price",Impact,sans-serif;font-size:16.6mm;font-weight:400;line-height:.89;font-variant-numeric:tabular-nums;word-spacing:-2mm;white-space:nowrap}
 .pt-sheet .pt-centcol{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end;margin-top:0.2mm}
-.pt-sheet .pt-cent{font-family:Impact,Haettenschweiler,"Arial Narrow",sans-serif;font-size:6.3mm;font-weight:400;text-decoration:underline;line-height:1}
+.pt-sheet .pt-cent{font-family:"RMS Tag Price",Impact,sans-serif;font-size:5.8mm;font-weight:400;text-decoration:underline;line-height:1}
 .pt-sheet .pt-unit{font-size:2.1mm;font-weight:700;text-transform:uppercase;text-align:center;line-height:1.15}
 .pt-sheet .pt-foot{display:flex;justify-content:space-between;align-items:stretch;font-size:1.9mm;margin-top:0.3mm}
 .pt-sheet .pt-bc{display:flex;flex-direction:column;gap:0.3mm;min-height:5.6mm}
@@ -98,7 +114,9 @@ export function printPriceTagSheet(sheet: HTMLElement, done: (ok: boolean) => vo
  const finish = (ok: boolean) => { if (finished) return; finished = true; window.removeEventListener("focus", back); frame.remove(); done(ok); };
  const back = () => finish(true);
  target.addEventListener("afterprint", () => finish(true), { once: true });
- void doc.fonts.ready.then(() => {
+ // The tag fonts load on first use: print only after they are there (a font that fails falls back to the system one).
+ const fonts = ['400 10px "RMS Tag Price"', '700 10px "RMS Tag Name"', '400 10px "RMS Tag Text"', '700 10px "RMS Tag Text"', 'italic 400 10px "RMS Tag Text"', 'italic 700 10px "RMS Tag Text"'];
+ void Promise.all(fonts.map(font => doc.fonts.load(font, "0Цц").catch(() => []))).then(() => doc.fonts.ready).then(() => {
   try { target.focus(); target.print(); window.addEventListener("focus", back, { once: true }); } catch { finish(false); }
  });
 }
