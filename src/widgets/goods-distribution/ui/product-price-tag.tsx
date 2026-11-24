@@ -16,11 +16,11 @@ export function priceTagPeriod(product: Pick<ProductInfo, "price_promo" | "price
 }
 
 // The tag of the card is the printed one: a discount while a promotion runs, otherwise a regular tag;
-// weighed goods are priced per kilogram.
-export function productTagView(product: Pick<ProductInfo, "name" | "price" | "price_promo" | "isWeight" | "barcodes">): TagView {
+// weighed goods are priced per kilogram and show the product code instead of a barcode.
+export function productTagView(product: Pick<ProductInfo, "code" | "name" | "price" | "price_promo" | "isWeight" | "barcodes">): TagView {
   const promo = product.price_promo > 0;
   return {
-    name: product.name, unit: product.isWeight ? "кг" : "шт", barcode: findDisplayBarcode(product.barcodes) ?? "",
+    name: product.name, unit: product.isWeight ? "кг" : "шт", barcode: product.isWeight ? "" : findDisplayBarcode(product.barcodes) ?? "", code: product.isWeight ? product.code : "",
     price: promo ? product.price_promo : product.price, old: promo ? product.price : null, state: promo ? "promo" : "regular"
   };
 }
