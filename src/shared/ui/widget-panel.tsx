@@ -8,7 +8,6 @@ type WidgetPanelProps = {
   accent?: "blue" | "cyan" | "orange" | "purple" | "teal";
   children?: ReactNode;
   className?: string;
-  count?: number;
   description?: string;
   icon?: WidgetIconName;
   headerAction?: ReactNode;
@@ -70,7 +69,6 @@ export function WidgetPanel({
   accent = "blue",
   children,
   className = "",
-  count,
   description,
   icon,
   headerAction,
@@ -104,11 +102,6 @@ export function WidgetPanel({
               {instructionsHref ? <Link href={instructionsHref} aria-label={`Инструкции: ${title}`} title={`Инструкции: ${title}`} className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border app-border app-surface-muted app-muted transition hover:border-blue-400 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <InstructionsIcon />
               </Link> : null}
-              {typeof count === "number" ? (
-                <span className="widget-count grid h-8 min-w-8 place-items-center rounded-full text-xs font-black">
-                  {count}
-                </span>
-              ) : null}
             </div>
           </div>
         </header>

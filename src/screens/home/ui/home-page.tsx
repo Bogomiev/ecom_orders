@@ -17,7 +17,6 @@ import { CurrentTasks } from "@/widgets/tasks/current-tasks";
 import { ServiceDashboard } from "./service-dashboard";
 
 export function HomePage() {
-  const [ordersCount, setOrdersCount] = useState(0);
   const [notificationOrdersCount, setNotificationOrdersCount] = useState(0);
   const [isHistoryEnabled, setIsHistoryEnabled] = useState(false);
   const historyDays = useOrderHistoryDays();
@@ -39,7 +38,6 @@ export function HomePage() {
         <WidgetPanel
           accent="blue"
           className="orders-widget h-full min-h-0 self-stretch"
-          count={ordersCount}
           instructionsHref="/instructions#orders"
           description="Обработка и сборка"
           icon="cart"
@@ -68,7 +66,6 @@ export function HomePage() {
             layout="list"
             historyDays={isHistoryEnabled ? historyDays : undefined}
             onNotificationOrdersCountChange={setNotificationOrdersCount}
-            onOrdersCountChange={setOrdersCount}
           />
         </WidgetPanel>
 

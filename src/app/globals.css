@@ -195,18 +195,6 @@ button {
   font-weight: 900;
 }
 
-.widget-count {
-  display: grid;
-  min-width: 32px;
-  height: 32px;
-  place-items: center;
-  border-radius: 999px;
-  background: var(--accent-soft);
-  color: var(--accent);
-  font-size: 13px;
-  font-weight: 900;
-}
-
 .widget-content {
   padding: 12px;
 }
