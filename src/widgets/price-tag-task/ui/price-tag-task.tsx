@@ -42,7 +42,8 @@ export function PriceTagTaskView({ task_id, onClose }: { task_id: number; onClos
  const [busy, setBusy] = useState(false);
  const [preview, setPreview] = useState<{ items: PriceTagItem[]; date: string } | null>(null);
  const [printing, setPrinting] = useState(false);
- const [asking, setAsking] = useState<PriceTagItem[] | null>(null);
+ // The positions to mark printed: after printing, or by hand without printing (manual).
+ const [asking, setAsking] = useState<{ items: PriceTagItem[]; manual: boolean } | null>(null);
  const [filter, setFilter] = useState<PrintFilter>("pending");
  const sheetRef = useRef<HTMLDivElement>(null);
  const inputRef = useRef<HTMLInputElement>(null);
@@ -113,7 +114,7 @@ export function PriceTagTaskView({ task_id, onClose }: { task_id: number; onClos
   setPrinting(true);
   printPriceTagSheet(sheet, ok => {
    setPrinting(false);
-   if (ok) { setPreview(null); setAsking(printed); } else setError("Не удалось открыть печать ценников");
+   if (ok) { setPreview(null); setAsking({ items: printed, manual: false }); } else setError("Не удалось открыть печать ценников");
   });
  }
  async function confirmPrinted(list: PriceTagItem[]) {
@@ -144,8 +145,16 @@ export function PriceTagTaskView({ task_id, onClose }: { task_id: number; onClos
    {error && <p role="alert" className="price-tag-task-error">{error}{!task && <button type="button" onClick={reload}>Повторить</button>}</p>}
    {!task && !error && <p role="status" className="price-tag-task-empty"><LoadingDots /></p>}
    {task && !open && <p className="price-tag-task-note">{task.status === "completed" ? "Все ценники напечатаны — задание закрыто." : "Задание отменено."} Новые ценники появятся в новом задании.</p>}
-   {task && items.length > 0 && <div className="price-tag-task-filter" role="group" aria-label="Статус печати">
-    {filters.map(f => { const n = byPrintStatus(items, f.id).length; return <button key={f.id} type="button" aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>{f.label} <span>{n}</span></button>; })}
+   {task && items.length > 0 && <div className="price-tag-task-filterbar">
+    <div className="price-tag-task-filter" role="group" aria-label="Статус печати">
+     {filters.map(f => { const n = byPrintStatus(items, f.id).length; return <button key={f.id} type="button" aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>{f.label} <span>{n}</span></button>; })}
+    </div>
+    <div className="price-tag-task-selection">
+     {/* With nothing chosen the button selects every printable position of the current filter. */}
+     {counts.selected ? <button type="button" disabled={busy} onClick={() => setSelected(new Set())}>Снять все</button>
+      : <button type="button" disabled={!shownPrintable.length || busy} onClick={() => setSelected(new Set(shownPrintable.map(v => v.id)))}>Выбрать все</button>}
+     <button type="button" disabled={!counts.selected || !open || busy} title="Отметить выбранные позиции напечатанными без печати" onClick={() => setAsking({ items: items.filter(v => chosen.has(v.id)), manual: true })}>Пометить напечатанными</button>
+    </div>
    </div>}
    {task && shown.length > 0 && <div className="price-tag-task-list">
     <div className="price-tag-task-row head">
@@ -207,10 +216,10 @@ export function PriceTagTaskView({ task_id, onClose }: { task_id: number; onClos
     </div>
    </Dialog>;
   })()}
-  {asking && <Dialog ariaLabel="Ценники напечатались?" onClose={() => { if (!busy) setAsking(null); }} className="price-tag-task-confirm">
-   <p>Ценники напечатались?</p>
-   <small>{asking.reduce((sum, v) => sum + v.quantity, 0)} ценн. по {asking.length} поз. будут отмечены напечатанными.</small>
-   <div><button type="button" className="primary" disabled={busy} onClick={() => void confirmPrinted(asking)}>Да{busy && <LoadingDots />}</button><button type="button" disabled={busy} onClick={() => setAsking(null)}>Нет</button></div>
+  {asking && <Dialog ariaLabel={asking.manual ? "Пометить напечатанными?" : "Ценники напечатались?"} onClose={() => { if (!busy) setAsking(null); }} className="price-tag-task-confirm">
+   <p>{asking.manual ? "Пометить напечатанными без печати?" : "Ценники напечатались?"}</p>
+   <small>{asking.items.reduce((sum, v) => sum + v.quantity, 0)} ценн. по {asking.items.length} поз. будут отмечены напечатанными.</small>
+   <div><button type="button" className="primary" disabled={busy} onClick={() => void confirmPrinted(asking.items)}>Да{busy && <LoadingDots />}</button><button type="button" disabled={busy} onClick={() => setAsking(null)}>Нет</button></div>
   </Dialog>}
  </Dialog>;
 }

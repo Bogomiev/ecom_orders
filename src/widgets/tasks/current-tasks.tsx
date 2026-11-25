@@ -53,7 +53,7 @@ function StoreTasks({storeID}:{storeID?:string}) {
  const selected=tasks.find(t=>t.id===opened);
  async function created(task:{id:number;service:string}){setCreating(false);await refresh.current();if(mounted.current&&taskHasService(task.service))setOpened(task.id);}
  const add=<button type="button" className="app-border app-surface-muted app-muted grid h-8 w-8 shrink-0 place-items-center rounded-lg border text-lg font-black leading-none transition hover:border-blue-400 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50" title="Создать задание" aria-label="Создать задание" disabled={!storeID} onClick={()=>setCreating(true)}>+</button>;
- return <WidgetPanel title="Задания" icon="check" accent="purple" count={visible.length} headerAction={add}>
+ return <WidgetPanel title="Задания" icon="check" accent="purple" headerAction={add}>
  {!storeID&&<p>Выберите магазин</p>}{error&&<p role="alert">{error}</p>}
  {storeID&&!visible.length&&<p>Нет текущих заданий</p>}
  <div className="flex flex-col gap-2">
