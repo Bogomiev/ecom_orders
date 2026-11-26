@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { Dialog } from "@/shared/ui/dialog";
 import { LoadingDots } from "@/shared/ui/loading-dots";
 import { formatStopperPrice, stopperTextColor, storageMode } from "@/entities/stopper/model";
-import { completeStopperTask, loadStopperTask, saveStopperTaskCheck } from "../api";
-import { formatDayMonth, formatStock, formatTaskStart, groupStopperTaskItems, sheetsLabel, stockValue, stopperTaskCounts, stopperTaskDone, stopperTaskItemID, visibleStopperTaskItems, paginate, type StopperTask as Task, type StopperTaskFilter, type StopperTaskItem } from "../model/stopper-task";
+import { completeStopperTask, loadStopperTask, saveStopperTaskCheck, startStopperTask } from "../api";
+import { formatDayMonth, formatStock, formatTaskStart, groupStopperTaskItems, sheetsLabel, stockValue, stopperTaskCounts, stopperTaskItemID, stopperTaskLeft, visibleStopperTaskItems, paginate, type StopperTask as Task, type StopperTaskFilter, type StopperTaskItem } from "../model/stopper-task";
 import { StopperSheet, printStopperSheet, stopperSheetCss } from "./stopper-sheet";
 import "./stopper-task.css";
 
@@ -62,7 +62,10 @@ export function StopperTask({ task_id, onClose }: StopperTaskProps) {
  }
  async function complete() {
   setCompleting("busy"); setError("");
-  try { await completeStopperTask(task_id); onClose(); }
+  try {
+   if (task?.status === "new") await startStopperTask(task_id);
+   await completeStopperTask(task_id); onClose();
+  }
   catch (e) { setError((e as Error).message); setCompleting(null); }
  }
  function print() {
@@ -75,7 +78,8 @@ export function StopperTask({ task_id, onClose }: StopperTaskProps) {
  const groups = groupStopperTaskItems(check, remove);
  // The A4 register lists the same positions as the screen with the current filters.
  const printCheck = check, printRemove = remove;
- const finished = stopperTaskDone(items);
+ // The store may complete the task with positions left: they come back in the next task.
+ const left = stopperTaskLeft(items);
  const printSheets = paginate(Array.from({ length: printCheck.length + printRemove.length })).length;
  const filterChip = (value: StopperTaskFilter, label: string, extra = "") => <button type="button" className={`stopper-task-filter${extra}${filter === value ? " active" : ""}`} aria-pressed={filter === value} onClick={() => setFilter(value)}>{label}</button>;
 
@@ -86,7 +90,7 @@ export function StopperTask({ task_id, onClose }: StopperTaskProps) {
     {task && <small>{task.store_code} — {task.store_name} · обновлено {formatTaskStart(task.start)} · {all ? "все позиции" : "только товары на остатках"} · по режимам хранения</small>}</div>
    <span className="stopper-task-count">{counts.base}</span>
    <button type="button" className="stopper-task-print" disabled={!task} onClick={() => setPreview(true)}>{icons.print}Распечатать</button>
-   {open && finished && <button type="button" className="stopper-task-complete" onClick={() => setCompleting("ask")}>Завершить</button>}
+   {open && <button type="button" className={`stopper-task-complete${left ? " early" : ""}`} title={left ? `Не сделано позиций: ${left}` : undefined} onClick={() => setCompleting("ask")}>Завершить</button>}
    <button type="button" className="stopper-task-close" aria-label="Закрыть" onClick={onClose}>×</button>
   </header>
   {task && <div className="stopper-task-tools">
@@ -141,6 +145,7 @@ export function StopperTask({ task_id, onClose }: StopperTaskProps) {
   </Dialog>}
   {completing && <Dialog ariaLabel="Завершить задание?" onClose={() => { if (completing !== "busy") setCompleting(null); }} className="stopper-task-confirm">
    <p>Завершить задание?</p>
+   {left > 0 && <small>Не сделано позиций: {left}. Они останутся невыполненными и попадут в следующее задание.</small>}
    <div><button type="button" className="primary" disabled={completing === "busy"} onClick={() => void complete()}>Да{completing === "busy" && <LoadingDots />}</button><button type="button" disabled={completing === "busy"} onClick={() => setCompleting(null)}>Нет</button></div>
   </Dialog>}
  </Dialog>;

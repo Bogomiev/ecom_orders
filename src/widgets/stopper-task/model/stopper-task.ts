@@ -34,6 +34,10 @@ export function matchesQuery(v: Pick<StopperTaskItem, "code" | "name" | "barcode
 export function stopperTaskDone(items: StopperTaskItem[]) {
  return items.every(v => v.remove ? v.result === "removed" : stockValue(v) <= 0 || v.result === "ok");
 }
+// Positions still to do: products in stock not matching yet (unchecked or sent to print) and ended stoppers not removed.
+export function stopperTaskLeft(items: StopperTaskItem[]) {
+ return items.filter(v => v.remove ? v.result !== "removed" : stockValue(v) > 0 && v.result !== "ok").length;
+}
 export function visibleStopperTaskItems(items: StopperTaskItem[], { all, query, filter }: { all: boolean; query: string; filter: StopperTaskFilter }) {
  let check = filter === "rm" ? [] : items.filter(v => !v.remove && (all || stockValue(v) > 0) && matchesQuery(v, query));
  let remove = filter === "bad" ? [] : items.filter(v => v.remove && matchesQuery(v, query));

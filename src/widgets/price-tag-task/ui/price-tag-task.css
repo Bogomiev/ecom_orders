@@ -41,6 +41,9 @@
 .price-tag-task-source.promo_start{color:var(--pt-warn);border-color:color-mix(in srgb,var(--pt-warn) 45%,var(--border))}
 .price-tag-task-source.stopper_bad{color:var(--pt-crit);border-color:color-mix(in srgb,var(--pt-crit) 45%,var(--border))}
 .price-tag-task-status{font-weight:700;font-size:10.5px;padding:1px 7px;border-radius:10px;color:var(--pt-good);border:1px solid color-mix(in srgb,var(--pt-good) 45%,var(--border))}
+.price-tag-task-mark{font:inherit;font-weight:700;font-size:10.5px;padding:1px 8px;border-radius:10px;border:1px solid color-mix(in srgb,var(--pt-good) 45%,var(--border));background:var(--panel);color:var(--pt-good);cursor:pointer}
+.price-tag-task-mark:hover:not(:disabled){background:color-mix(in srgb,var(--pt-good) 12%,var(--panel))}
+.price-tag-task-mark:disabled{opacity:.5;cursor:default}
 .price-tag-task-status.pending{color:var(--pt-warn);border-color:color-mix(in srgb,var(--pt-warn) 45%,var(--border))}
 /* The print status filter on the left, the selection actions on the right. */
 .price-tag-task-filterbar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:10px 0 2px}
@@ -48,6 +51,8 @@
 .price-tag-task-selection{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
 .price-tag-task-selection button{border:1px solid var(--border);background:var(--panel);color:var(--text);border-radius:8px;padding:5px 12px;font-weight:700;font-size:12.5px;cursor:pointer}
 .price-tag-task-selection button:hover:not(:disabled){border-color:var(--pt-accent);color:var(--pt-accent)}
+.price-tag-task-selection button.mark{color:var(--pt-good);border-color:color-mix(in srgb,var(--pt-good) 45%,var(--border))}
+.price-tag-task-selection button.mark:hover:not(:disabled){background:color-mix(in srgb,var(--pt-good) 12%,var(--panel));color:var(--pt-good);border-color:var(--pt-good)}
 .price-tag-task-selection button:disabled{opacity:.5;cursor:default}
 .price-tag-task-filter button{border:1px solid var(--border);background:var(--panel-soft);color:var(--text);border-radius:16px;padding:5px 12px;font-weight:700;font-size:12.5px;cursor:pointer}
 .price-tag-task-filter button span{color:var(--muted);font-variant-numeric:tabular-nums;margin-left:3px}

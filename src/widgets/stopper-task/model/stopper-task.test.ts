@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatStock, stopperTaskDone, formatTaskStart, groupStopperTaskItems, paginate, sheetsLabel, shortCode, stopperTaskCounts, stopperTaskItemID, visibleStopperTaskItems, type StopperTaskItem } from "./stopper-task";
+import { formatStock, stopperTaskDone, stopperTaskLeft, formatTaskStart, groupStopperTaskItems, paginate, sheetsLabel, shortCode, stopperTaskCounts, stopperTaskItemID, visibleStopperTaskItems, type StopperTaskItem } from "./stopper-task";
 
 const item = (patch: Partial<StopperTaskItem>): StopperTaskItem => ({ doc_id: "doc", product_id: "p", code: "ЦБ-1", name: "Товар", thermal_mode: true, unit: "шт", stopper: "ХИТ", stopper_color: "#D7261E", from: "2026-11-01", to: null, remove: false, stock: "3", price: "1490.00", promo_price: "1190.00", barcode: "4607003760342", result: "", ...patch });
 const items = [
@@ -54,6 +54,8 @@ describe("stopper task completion", () => {
   expect(stopperTaskDone([item({ result: "bad" })])).toBe(false);
   expect(stopperTaskDone([item({ result: "" })])).toBe(false);
   expect(stopperTaskDone([item({ remove: true, result: "" })])).toBe(false);
+  // Left: unchecked or sent-to-print products in stock and ended stoppers not removed; no stock does not count.
+  expect(stopperTaskLeft([item({ result: "ok" }), item({ product_id: "a", result: "bad" }), item({ product_id: "b" }), item({ product_id: "c", stock: "0" }), item({ product_id: "d", remove: true }), item({ product_id: "e", remove: true, result: "removed" })])).toBe(3);
  });
  it("finds a product by barcode", () => {
   expect(visibleStopperTaskItems(items, { all: true, query: "46070037", filter: "all" }).check.length).toBe(4);

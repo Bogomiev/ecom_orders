@@ -4,7 +4,7 @@ import React, { useCallback, useState, type ReactNode } from "react";
 import { formatReceiptDate, type ProductInfo } from "../../../entities/product/model/info";
 import { findDisplayBarcode } from "../../../shared/lib/barcode-format";
 import { stopperTextColor, type PriceTagStopper } from "../../../entities/price-tag/model";
-import type { TagView } from "../../price-tag-task/model/price-tag-task";
+import { tagName, type TagView } from "../../price-tag-task/model/price-tag-task";
 import { PriceTag, priceTagSheetCss } from "../../price-tag-task/ui/price-tag-sheet";
 
 export function priceTagPeriod(product: Pick<ProductInfo, "price_promo" | "price_from" | "price_promo_from" | "price_promo_to">) {
@@ -20,7 +20,7 @@ export function priceTagPeriod(product: Pick<ProductInfo, "price_promo" | "price
 export function productTagView(product: Pick<ProductInfo, "code" | "name" | "price" | "price_promo" | "isWeight" | "barcodes">): TagView {
   const promo = product.price_promo > 0;
   return {
-    name: product.name, unit: product.isWeight ? "кг" : "шт", barcode: product.isWeight ? "" : findDisplayBarcode(product.barcodes) ?? "", code: product.isWeight ? product.code : "",
+    name: tagName(product.name), unit: product.isWeight ? "кг" : "шт", barcode: product.isWeight ? "" : findDisplayBarcode(product.barcodes) ?? "", code: product.isWeight ? product.code : "",
     price: promo ? product.price_promo : product.price, old: promo ? product.price : null, state: promo ? "promo" : "regular"
   };
 }

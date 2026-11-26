@@ -72,6 +72,8 @@ export function PriceTagTaskView({ task_id, onClose }: { task_id: number; onClos
  const shown = byPrintStatus(items, filter);
  const shownPrintable = shown.filter(printable);
  const results = search.length >= 2 && found.query === search ? found : null;
+ // Chosen positions not printed yet, to mark printed without printing.
+ const toMark = items.filter(v => v.pending && chosen.has(v.id));
 
  function reload() { setVersion(v => v + 1); }
  function patch(id: number, change: Partial<PriceTagItem>) { setTask(t => t && { ...t, items: t.items.map(v => v.id === id ? { ...v, ...change } : v) }); }
@@ -153,7 +155,7 @@ export function PriceTagTaskView({ task_id, onClose }: { task_id: number; onClos
      {/* With nothing chosen the button selects every printable position of the current filter. */}
      {counts.selected ? <button type="button" disabled={busy} onClick={() => setSelected(new Set())}>Снять все</button>
       : <button type="button" disabled={!shownPrintable.length || busy} onClick={() => setSelected(new Set(shownPrintable.map(v => v.id)))}>Выбрать все</button>}
-     <button type="button" disabled={!counts.selected || !open || busy} title="Отметить выбранные позиции напечатанными без печати" onClick={() => setAsking({ items: items.filter(v => chosen.has(v.id)), manual: true })}>Пометить напечатанными</button>
+     {open && <button type="button" className="mark" disabled={!toMark.length || busy} title="Ценники напечатаны в другой системе — отметить выбранные без печати" onClick={() => setAsking({ items: toMark, manual: true })}>✓ Отметить напечатанными{toMark.length ? ` (${toMark.length})` : ""}</button>}
     </div>
    </div>}
    {task && shown.length > 0 && <div className="price-tag-task-list">
@@ -166,7 +168,7 @@ export function PriceTagTaskView({ task_id, onClose }: { task_id: number; onClos
      <div className="price-tag-task-product">
       <div className="name">{item.name}</div>
       <div className="meta">{item.barcode ? `Штрих-код ${item.barcode}` : "Без штрих-кода"} · {item.code}</div>
-      <div className="meta"><span className={`price-tag-task-status${item.pending ? " pending" : ""}`}>{item.pending ? "Не напечатан" : `Напечатан ${formatMoment(item.printed_at)}`}</span><span className={`price-tag-task-source ${item.source}`}>{sourceLabels[item.source]}</span>{tagPeriod(item) && <span>{tagPeriod(item)}</span>}</div>
+      <div className="meta"><span className={`price-tag-task-status${item.pending ? " pending" : ""}`}>{item.pending ? "Не напечатан" : `Напечатан ${formatMoment(item.printed_at)}`}</span>{item.pending && open && <button type="button" className="price-tag-task-mark" disabled={busy} title="Ценник напечатан в другой системе — отметить без печати" onClick={() => setAsking({ items: [item], manual: true })}>✓ Отметить напечатанным</button>}<span className={`price-tag-task-source ${item.source}`}>{sourceLabels[item.source]}</span>{tagPeriod(item) && <span>{tagPeriod(item)}</span>}</div>
       <div className="meta"><span>Задание для печати {formatMoment(item.actual_at)}</span></div>
       <div className="meta"><span>{item.last_printed_at ? `Последняя печать ${formatMoment(item.last_printed_at)}` : "Ещё не печатался"}</span></div>
      </div>
@@ -216,9 +218,9 @@ export function PriceTagTaskView({ task_id, onClose }: { task_id: number; onClos
     </div>
    </Dialog>;
   })()}
-  {asking && <Dialog ariaLabel={asking.manual ? "Пометить напечатанными?" : "Ценники напечатались?"} onClose={() => { if (!busy) setAsking(null); }} className="price-tag-task-confirm">
-   <p>{asking.manual ? "Пометить напечатанными без печати?" : "Ценники напечатались?"}</p>
-   <small>{asking.items.reduce((sum, v) => sum + v.quantity, 0)} ценн. по {asking.items.length} поз. будут отмечены напечатанными.</small>
+  {asking && <Dialog ariaLabel={asking.manual ? "Отметить напечатанным?" : "Ценники напечатались?"} onClose={() => { if (!busy) setAsking(null); }} className="price-tag-task-confirm">
+   <p>{asking.manual ? asking.items.length === 1 ? `Отметить «${asking.items[0].name}» напечатанным без печати?` : `Отметить ${asking.items.length} поз. напечатанными без печати?` : "Ценники напечатались?"}</p>
+   <small>{asking.manual ? `Например, если ${asking.items.length === 1 ? "ценник уже напечатан" : "ценники уже напечатаны"} в другой системе: ${asking.items.length === 1 ? "позиция перейдёт" : "позиции перейдут"} в «Напечатаны».` : `${asking.items.reduce((sum, v) => sum + v.quantity, 0)} ценн. по ${asking.items.length} поз. будут отмечены напечатанными.`}</small>
    <div><button type="button" className="primary" disabled={busy} onClick={() => void confirmPrinted(asking.items)}>Да{busy && <LoadingDots />}</button><button type="button" disabled={busy} onClick={() => setAsking(null)}>Нет</button></div>
   </Dialog>}
  </Dialog>;

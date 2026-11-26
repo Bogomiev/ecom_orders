@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { unitPrice, byPrintStatus, expandTags, formatMoment, priceParts, printable, sheets, summary, tagPeriod, tagView, type PriceTagItem } from "./price-tag-task";
+import { unitPrice, byPrintStatus, expandTags, formatMoment, priceParts, printable, sheets, summary, tagName, tagPeriod, tagView, type PriceTagItem } from "./price-tag-task";
 
 const item = (patch: Partial<PriceTagItem>): PriceTagItem => ({
  id: 1, product_id: "p", source: "revaluation", doc_id: null, tag_type: "regular", quantity: 1, pending: true, actual_at: "2026-11-10T00:00:00", printed_at: null, last_printed_at: null, unit: "pc",
@@ -17,6 +17,9 @@ describe("price tag task", () => {
   expect(printable(item({ tag_type: "card", promo_price: "99.90" }))).toBe(true);
  });
  it("shows the promotional price with the regular one above it only for a discount or a card tag", () => {
+  // The $$$ mark of 1C names is not printed; other characters stay.
+  expect([tagName("$$$Барабулька с/м 1кг"), tagName("$$$*Квас «Пилигрим»"), tagName(" $$ Чай"), tagName("Чай $ 2")]).toEqual(["Барабулька с/м 1кг", "*Квас «Пилигрим»", "Чай", "Чай $ 2"]);
+  expect(tagView(item({ name: "$$$Хлеб" })).name).toBe("Хлеб");
   expect(tagView(item({ promo_price: "99.90", unit: "pc" }))).toEqual({ name: "Хлеб", unit: "шт", barcode: "4601234567893", code: "", price: 120, old: null, state: "regular" });
  // A weighed product shows its code instead of a barcode.
  expect(tagView(item({ promo_price: "99.90", is_weight: true, unit: "kg" }))).toEqual({ name: "Хлеб", unit: "кг", barcode: "", code: "001", price: 120, old: null, state: "regular" });
