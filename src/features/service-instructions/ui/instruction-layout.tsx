@@ -2,9 +2,13 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 
 // Pass the real size of small screenshots so they are not stretched to the full guide width.
-export function Screenshot({ alt, src, width = 1440, height = 900 }: { alt: string; src: string; width?: number; height?: number }) {
+// marks are numbered circles over the picture: [label, left %, top %] of their centers.
+export function Screenshot({ alt, src, width = 1440, height = 900, marks }: { alt: string; src: string; width?: number; height?: number; marks?: [string, number, number][] }) {
   return <figure className="mt-5 overflow-hidden rounded-xl border app-border app-surface-muted" style={width < 1440 ? { maxWidth: width } : undefined}>
-    <Image alt={alt} className="h-auto w-full" height={height} src={src} width={width} />
+    <div className="relative">
+      <Image alt={alt} className="h-auto w-full" height={height} src={src} width={width} />
+      {marks?.map(([label, left, top]) => <span key={label} aria-hidden="true" className="absolute grid h-5 w-5 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-red-500 text-[11px] font-extrabold text-white shadow-[0_0_0_2px_#fff]" style={{ left: `${left}%`, top: `${top}%` }}>{label}</span>)}
+    </div>
     <figcaption className="border-t app-border px-4 py-2.5 text-xs leading-5 app-muted">{alt}</figcaption>
   </figure>;
 }
