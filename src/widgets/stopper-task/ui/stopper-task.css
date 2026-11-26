@@ -91,6 +91,9 @@
 .stopper-task-preview header small{display:block;font-size:12px;color:var(--muted);font-weight:500}
 .stopper-task-preview .scroll{overflow:auto;padding:16px;background:var(--panel-soft);flex:1}
 .stopper-task-confirm{background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:14px;padding:20px;width:min(420px,calc(100vw - 24px))}
+.stopper-task button.stopper-task-complete.early{border-color:var(--border);color:var(--text)}
+.stopper-task button.stopper-task-complete.early:hover{border-color:var(--st-good);color:var(--st-good)}
+.stopper-task-confirm>small{display:block;margin-top:6px;color:var(--muted);font-size:12.5px;line-height:1.4}
 .stopper-task-confirm>div{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
 .stopper-task-confirm button{border:1px solid var(--border);border-radius:8px;padding:8px 14px;display:inline-flex;gap:6px;align-items:center}
 .stopper-task-confirm button.primary{background:var(--blue);border-color:var(--blue);color:#fff}
