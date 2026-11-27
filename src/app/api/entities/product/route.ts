@@ -2,11 +2,35 @@ import { requireSession } from "@/server/rms/client";
 import { NextResponse } from "next/server";
 import { ProductsResponseSchema } from "@/entities/product";
 import { fetchOneCJson } from "@/server/one-c/client";
-import { revalidateTag } from "next/cache";
 
 export const dynamic = "force-dynamic";
-const revalidate = 900;
-const PRODUCTS_CACHE_TAG = "products-catalog";
+const PRODUCTS_CACHE_TTL_MS = 15 * 60 * 1_000;
+
+type Products = Awaited<ReturnType<typeof loadProducts>>;
+
+let cachedProducts: { data: Products; expiresAt: number } | undefined;
+let pendingProducts: Promise<Products> | undefined;
+
+async function loadProducts() {
+  // The full catalog can exceed the Next.js Data Cache entry limit.
+  const data = await fetchOneCJson("/GetGoods", ProductsResponseSchema, {
+    cache: "no-store"
+  });
+  cachedProducts = { data, expiresAt: Date.now() + PRODUCTS_CACHE_TTL_MS };
+  return data;
+}
+
+function getProducts(refresh: boolean) {
+  if (pendingProducts) return pendingProducts;
+  if (!refresh && cachedProducts && Date.now() < cachedProducts.expiresAt) {
+    return cachedProducts.data;
+  }
+
+  pendingProducts = loadProducts().finally(() => {
+    pendingProducts = undefined;
+  });
+  return pendingProducts;
+}
 
 export async function GET(request: Request) {
   const authError = await requireSession(request);
@@ -15,21 +39,7 @@ export async function GET(request: Request) {
     new URL(request.url).searchParams.get("refresh") === "1";
 
   try {
-    const products = await fetchOneCJson(
-      "/GetGoods",
-      ProductsResponseSchema,
-      {
-        // The first request builds the full catalog before it can be cached.
-        signal: AbortSignal.timeout(90_000),
-        ...(shouldRefresh
-          ? { cache: "no-store" as const }
-          : { next: { revalidate, tags: [PRODUCTS_CACHE_TAG] } })
-      }
-    );
-
-    if (shouldRefresh) {
-      revalidateTag(PRODUCTS_CACHE_TAG, { expire: 0 });
-    }
+    const products = await getProducts(shouldRefresh);
 
     return NextResponse.json(products, {
       headers: {
