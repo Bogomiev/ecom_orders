@@ -101,15 +101,11 @@ export function createBarcodeIndex(products: Product[]) {
   return index;
 }
 
-export function applyBarcodeToOrder(
-  order: Order,
+export function findScannedProduct(
   barcodeIndex: Map<string, BarcodeIndexEntry>,
-  scannedBarcode: string,
-  skipMarkFormatting = false,
-  removeMarkCryptoTail = false
-): ScanOrderResult {
-  const barcode = scannedBarcode.trim();
-  const parsedCode = parseScannedCode(barcode);
+  barcode: string,
+  parsedCode: ParsedScannedCode
+) {
   const exactBarcodeMatch = barcodeIndex.get(barcode);
   let barcodeMatch = exactBarcodeMatch ?? parsedCode.lookupBarcodes
     .filter((lookupBarcode) => lookupBarcode !== barcode)
@@ -130,11 +126,32 @@ export function applyBarcodeToOrder(
     }
   }
 
+  if (!barcodeMatch) return undefined;
+  return {
+    ...barcodeMatch,
+    quantity: exactBarcodeMatch === undefined
+      ? parsedCode.weight ?? barcodeMatch.barcodeInfo.ratio ?? 1
+      : barcodeMatch.barcodeInfo.ratio ?? 1,
+    isWeightBarcode: exactBarcodeMatch === undefined && parsedCode.weight !== undefined
+  };
+}
+
+export function applyBarcodeToOrder(
+  order: Order,
+  barcodeIndex: Map<string, BarcodeIndexEntry>,
+  scannedBarcode: string,
+  skipMarkFormatting = false,
+  removeMarkCryptoTail = false
+): ScanOrderResult {
+  const barcode = scannedBarcode.trim();
+  const parsedCode = parseScannedCode(barcode);
+  const barcodeMatch = findScannedProduct(barcodeIndex, barcode, parsedCode);
+
   if (barcodeMatch === undefined) {
     return { status: "error", code: "barcode-not-found", barcode };
   }
 
-  const { barcodeInfo, product } = barcodeMatch;
+  const { product, quantity: quantityToAdd, isWeightBarcode } = barcodeMatch;
   const orderItem = order.items.find(
     (item) => item.product_id === product.uid && !item.canceled
   );
@@ -167,11 +184,7 @@ export function applyBarcodeToOrder(
     };
   }
 
-  const quantityToAdd = exactBarcodeMatch === undefined
-    ? parsedCode.weight ?? barcodeInfo.ratio ?? 1
-    : barcodeInfo.ratio ?? 1;
   const nextQuantityFact = orderItem.quantity_fact + quantityToAdd;
-  const isWeightBarcode = exactBarcodeMatch === undefined && parsedCode.weight !== undefined;
   const isWeightItem = orderItem.is_weight || isWeightBarcode;
   const maximumQuantity = isWebsiteOrder(order) && isWeightItem
     ? Number.POSITIVE_INFINITY

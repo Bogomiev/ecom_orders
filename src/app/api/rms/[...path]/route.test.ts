@@ -52,3 +52,21 @@ it.each<[Method, string]>([["PUT", "stoppers"], ["GET", "stoppers/3"], ["DELETE"
   expect(requireSession).not.toHaveBeenCalled();
   expect(proxyRMS).not.toHaveBeenCalled();
 });
+
+it("forwards return history, saves, and status changes", async () => {
+  const id = "12f04198-820d-11f1-95f7-00155d1a2b22";
+  await call("GET", `return_request?store_id=${id}&history_days=-3`);
+  expect(proxyRMS).toHaveBeenLastCalledWith(expect.any(Request), `/return_request/?store_id=${id}&history_days=-3`);
+
+  await call("POST", `return_request?store_id=${id}`);
+  expect(proxyRMS).toHaveBeenLastCalledWith(expect.any(Request), `/return_request/?store_id=${id}`);
+
+  await call("PUT", `return_request/${id}?store_id=${id}`);
+  expect(proxyRMS).toHaveBeenLastCalledWith(expect.any(Request), `/return_request/${id}?store_id=${id}`);
+
+  await call("POST", `return_request/${id}/status?store_id=${id}`);
+  expect(proxyRMS).toHaveBeenLastCalledWith(expect.any(Request), `/return_request/${id}/status?store_id=${id}`, false, 30_000);
+
+  await call("GET", `return_request/${id}/status?store_id=${id}`);
+  expect(proxyRMS).toHaveBeenLastCalledWith(expect.any(Request), `/return_request/${id}/status?store_id=${id}`, false, 30_000);
+});

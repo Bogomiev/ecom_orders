@@ -10,6 +10,7 @@ import { WidgetPanel } from "@/shared/ui/widget-panel";
 import { fetchProducts } from "@/widgets/orders-list/api/orders";
 import { GoodsReceipts } from "@/widgets/goods-receipts/ui/goods-receipts";
 import { useGoodsReceipts } from "@/widgets/goods-receipts/model/use-goods-receipts";
+import { ReturnRequests } from "@/widgets/return-request/ui/return-requests";
 import { ProductCountingDialog } from "./product-counting-dialog";
 
 export function GoodsDistribution() {
@@ -57,6 +58,7 @@ function GoodsDistributionService({ storeId }: { storeId?: string }) {
           <span>Информация о товаре</span>
         </button>}
         {can("receipts") && <GoodsReceipts storeId={storeId} receipts={receipts} />}
+        <ReturnRequests storeId={storeId} />
       </WidgetPanel>
       {can("product") && infoOpen ? <ProductInfoDialog storeId={storeId} onClose={() => setInfoOpen(false)} /> : null}
       {can("productCounting") && isOpen ? <ProductCountingDialog isLoading={isLoading} isOpen loadError={loadError} products={products} onClose={() => setIsOpen(false)} /> : null}

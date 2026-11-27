@@ -25,6 +25,7 @@ const registry = new Map<string, Registration>([
  [TaskService.PricePrint, {
   Component: ({ task_id, onClose }) => <PriceTagTaskView task_id={task_id} onClose={onClose} />,
   parameters: {},
+  instructionsHref: "/instructions#price-tags",
   // The tile shows the number of tags to print instead of the status.
   showsStatus: false,
   oneActive: true,
